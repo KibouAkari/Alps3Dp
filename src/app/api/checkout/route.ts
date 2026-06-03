@@ -18,7 +18,7 @@ const checkoutSchema = z.object({
   city: z.string().min(2).optional(),
   country: z.string().min(2).max(2).default("CH").optional(),
   email: z.string().email(),
-  paymentMethod: z.enum(["CARD", "TWINT"]),
+  paymentMethod: z.enum(["INVOICE", "CARD", "TWINT"]),
   savedPaymentMethodId: z.string().optional(),
 });
 
@@ -84,11 +84,7 @@ export async function POST(request: Request) {
     include: {
       items: {
         include: {
-          product: {
-            include: {
-              images: true,
-            },
-          },
+          product: true,
         },
       },
     },
@@ -105,6 +101,16 @@ export async function POST(request: Request) {
   const shippingCents = await getShippingCents();
   const totalCents = subtotalCents + shippingCents;
 
+  if (parsed.data.savedPaymentMethodId) {
+    const savedMethod = await db.savedPaymentMethod.findUnique({
+      where: { id: parsed.data.savedPaymentMethodId },
+      select: { id: true, userId: true },
+    });
+    if (!savedMethod || savedMethod.userId !== sessionUser.id) {
+      return NextResponse.json({ error: "Zahlungsart nicht gefunden." }, { status: 404 });
+    }
+  }
+
   const order = await db.order.create({
     data: {
       userId: sessionUser.id,
@@ -112,7 +118,7 @@ export async function POST(request: Request) {
       subtotalCents,
       shippingCents,
       totalCents,
-      paymentProvider: "stripe",
+      paymentProvider: parsed.data.paymentMethod === "INVOICE" ? "manual" : "stripe",
       paymentMethod: parsed.data.paymentMethod,
       savedPaymentMethodId: parsed.data.savedPaymentMethodId || null,
       customerEmail: parsed.data.email,
@@ -142,11 +148,11 @@ export async function POST(request: Request) {
   const stripe = getStripe();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-  if (!stripe) {
+  if (parsed.data.paymentMethod === "INVOICE") {
     await db.$transaction([
       db.order.update({
         where: { id: order.id },
-        data: { status: "PAID", paidAt: new Date(), paymentReference: `manual-${order.id}` },
+        data: { paymentReference: `invoice-${order.id}` },
       }),
       db.cartItem.deleteMany({ where: { cartId: cart.id } }),
     ]);
@@ -163,7 +169,22 @@ export async function POST(request: Request) {
       })),
     });
 
-    return NextResponse.json({ success: true, orderId: order.id, mode: "manual" });
+    return NextResponse.json({
+      success: true,
+      orderId: order.id,
+      mode: "invoice",
+      message: "Bestellung erfasst. Du erhaeltst die Zahlungsinfos per E-Mail.",
+    });
+  }
+
+  if (!stripe) {
+    return NextResponse.json(
+      {
+        error:
+          "Karten/TWINT sind aktuell nicht verfuegbar. Bitte 'Rechnung / Vorkasse' waehlen.",
+      },
+      { status: 400 }
+    );
   }
 
   const paymentMethodTypes: Array<"card" | "twint"> = parsed.data.paymentMethod === "TWINT" ? ["twint"] : ["card"];

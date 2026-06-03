@@ -6,6 +6,8 @@ import { mapProduct } from "@/lib/product-mapper";
 import { makeSlug } from "@/lib/security";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+export const revalidate = 60;
+
 const productSchema = z.object({
   title: z.string().min(2).max(200),
   description: z.string().min(4).max(10000),

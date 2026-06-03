@@ -27,6 +27,7 @@ export default function CartPage() {
       throw new Error(data.error || "Warenkorb konnte nicht geladen werden.");
     }
     setRows(data.items || []);
+    window.dispatchEvent(new Event("cart:updated"));
   };
 
   useEffect(() => {

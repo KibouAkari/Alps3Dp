@@ -31,6 +31,7 @@ export function AddToCartButton({ productId }: AddToCartButtonProps) {
               return;
             }
             setMessage("Zum Warenkorb hinzugefuegt.");
+            window.dispatchEvent(new Event("cart:updated"));
           } finally {
             setLoading(false);
           }

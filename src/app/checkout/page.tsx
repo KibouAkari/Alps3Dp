@@ -26,7 +26,7 @@ type SavedAddress = {
 
 type SavedPaymentMethod = {
   id: string;
-  type: "card" | "twint";
+  type: "card" | "twint" | "invoice";
   last4: string | null;
   isDefault: boolean;
 };
@@ -49,7 +49,7 @@ export default function CheckoutPage() {
   const [address1, setAddress1] = useState("");
   const [zip, setZip] = useState("");
   const [city, setCity] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"CARD" | "TWINT">("CARD");
+  const [paymentMethod, setPaymentMethod] = useState<"INVOICE" | "CARD" | "TWINT">("INVOICE");
 
   useEffect(() => {
     fetch("/api/cart", { credentials: "include" })
@@ -95,7 +95,9 @@ export default function CheckoutPage() {
         }
         if (defaultMethod) {
           setSelectedMethodId(defaultMethod.id);
-          setPaymentMethod(defaultMethod.type === "twint" ? "TWINT" : "CARD");
+          setPaymentMethod(
+            defaultMethod.type === "twint" ? "TWINT" : defaultMethod.type === "invoice" ? "INVOICE" : "CARD"
+          );
         }
         if (data.profile?.email) {
           setEmail(data.profile.email);
@@ -119,7 +121,9 @@ export default function CheckoutPage() {
     <div className="grid gap-6 fade-in-up lg:grid-cols-[1.2fr_1fr]">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-bold text-slate-900">Checkout</h1>
-        <p className="mt-2 text-sm text-slate-600">Kreditkarte und TWINT laufen ueber Stripe (falls konfiguriert).</p>
+        <p className="mt-2 text-sm text-slate-600">
+          Empfohlen: Rechnung/Vorkasse (kostenlos). Karte und TWINT bleiben optional verfuegbar.
+        </p>
         {status && <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{status}</p>}
         {error && <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
         <form
@@ -177,7 +181,7 @@ export default function CheckoutPage() {
                   headers: { "Content-Type": "application/json" },
                   credentials: "include",
                   body: JSON.stringify({
-                    type: paymentMethod === "TWINT" ? "twint" : "card",
+                    type: paymentMethod === "TWINT" ? "twint" : paymentMethod === "INVOICE" ? "invoice" : "card",
                     isDefault: savedMethods.length === 0,
                   }),
                 });
@@ -243,14 +247,17 @@ export default function CheckoutPage() {
                 if (!method) {
                   return;
                 }
-                setPaymentMethod(method.type === "twint" ? "TWINT" : "CARD");
+                  setPaymentMethod(
+                    method.type === "twint" ? "TWINT" : method.type === "invoice" ? "INVOICE" : "CARD"
+                  );
               }}
               className="sm:col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
             >
               <option value="">Neue Zahlungsart verwenden</option>
               {savedMethods.map((method) => (
                 <option key={method.id} value={method.id}>
-                  {method.type === "twint" ? "TWINT" : "Karte"}{method.last4 ? ` ****${method.last4}` : ""}
+                    {method.type === "twint" ? "TWINT" : method.type === "invoice" ? "Rechnung/Vorkasse" : "Karte"}
+                    {method.last4 ? ` ****${method.last4}` : ""}
                 </option>
               ))}
             </select>
@@ -258,18 +265,19 @@ export default function CheckoutPage() {
 
           <select
             value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value as "CARD" | "TWINT")}
+              onChange={(e) => setPaymentMethod(e.target.value as "INVOICE" | "CARD" | "TWINT")}
             className="sm:col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
           >
-            <option value="CARD">Bankkarte (Stripe)</option>
-            <option value="TWINT">TWINT (Stripe)</option>
+              <option value="INVOICE">Rechnung / Vorkasse (kostenlos)</option>
+              <option value="CARD">Bankkarte (optional via Stripe)</option>
+              <option value="TWINT">TWINT (optional via Stripe)</option>
           </select>
           <label className="sm:col-span-2 flex items-center gap-2 text-sm text-slate-700">
             <input type="checkbox" checked={saveMethod} onChange={(e) => setSaveMethod(e.target.checked)} />
-            Zahlungsart fuer naechste Bestellung speichern
+              Zahlungsart fuer naechste Bestellung speichern
           </label>
           <button type="submit" className="sm:col-span-2 rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white transition hover:bg-sky-700">
-            Zahlung starten
+              Bestellung abschliessen
           </button>
         </form>
       </section>

@@ -14,7 +14,7 @@ function getCookieToken(request: Request) {
 }
 
 const createPaymentMethodSchema = z.object({
-  type: z.enum(["card", "twint"]),
+  type: z.enum(["card", "twint", "invoice"]),
   last4: z.string().max(4).optional(),
   holderName: z.string().max(120).optional(),
   expiryMonth: z.number().min(1).max(12).optional(),

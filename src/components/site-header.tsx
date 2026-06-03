@@ -11,7 +11,44 @@ import { useMockSession } from "@/hooks/use-mock-session";
 export function SiteHeader() {
   const { user, isLoading, signOut } = useMockSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    const refreshCartCount = async () => {
+      try {
+        const response = await fetch("/api/cart", { credentials: "include", cache: "no-store" });
+        const data = await response.json();
+        if (!active || !response.ok) {
+          return;
+        }
+        const nextCount = Array.isArray(data.items)
+          ? data.items.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0)
+          : 0;
+        setCartCount(nextCount);
+      } catch {
+        if (active) {
+          setCartCount(0);
+        }
+      }
+    };
+
+    const onCartUpdated = () => {
+      void refreshCartCount();
+    };
+
+    void refreshCartCount();
+    window.addEventListener("cart:updated", onCartUpdated);
+    window.addEventListener("focus", onCartUpdated);
+
+    return () => {
+      active = false;
+      window.removeEventListener("cart:updated", onCartUpdated);
+      window.removeEventListener("focus", onCartUpdated);
+    };
+  }, []);
 
   useEffect(() => {
     const onClickOutside = (event: MouseEvent) => {
@@ -50,10 +87,15 @@ export function SiteHeader() {
         <div className="flex items-center gap-2" ref={menuRef}>
           <Link
             href="/cart"
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
+            className="relative inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
           >
             <CartIcon />
             <span className="hidden sm:inline">Warenkorb</span>
+            {cartCount > 0 && (
+              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-sky-600 px-1 text-[11px] font-semibold text-white soft-pop">
+                {cartCount > 99 ? "99+" : cartCount}
+              </span>
+            )}
           </Link>
 
           {!isLoading && user && (
