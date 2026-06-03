@@ -9,7 +9,7 @@ export default function HomePage() {
           Handgefertigte 3D-gedruckte Produkte aus der Schweiz
         </h1>
         <p className="mt-4 max-w-2xl text-slate-600">
-          Jedes Produkt wird auf Bestellung gedruckt – individuell, langlebig und direkt zu dir geliefert.
+          Jedes Produkt wird auf Bestellung gedruckt und direkt zu dir geliefert.
         </p>
       </section>
       <ShopClient />

@@ -53,7 +53,7 @@ export function ShopClient() {
 
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [maxPrice, setMaxPrice] = useState(500);
+  const [maxPrice, setMaxPrice] = useState(35);
   const [sortMode, setSortMode] = useState<SortMode>("relevance");
   const [onlySale, setOnlySale] = useState(false);
 
@@ -72,6 +72,31 @@ export function ShopClient() {
   }, []);
 
   const availableCategories = useMemo(() => ["All", ...categories], [categories]);
+
+  const visibleProducts = useMemo(() => products.filter((product) => !product.isHidden), [products]);
+
+  const maxAvailablePrice = useMemo(() => {
+    if (visibleProducts.length === 0) {
+      return 35;
+    }
+
+    const maxCents = Math.max(...visibleProducts.map((product) => getDisplayPriceCents(product)));
+    return Math.max(1, Math.ceil(maxCents / 100));
+  }, [visibleProducts]);
+
+  const minSliderPrice = useMemo(() => Math.min(5, maxAvailablePrice), [maxAvailablePrice]);
+
+  useEffect(() => {
+    setMaxPrice((current) => {
+      if (current > maxAvailablePrice) {
+        return maxAvailablePrice;
+      }
+      if (current === 35 && maxAvailablePrice !== 35) {
+        return maxAvailablePrice;
+      }
+      return current;
+    });
+  }, [maxAvailablePrice]);
 
   const filteredProducts = useMemo(() => {
     const base = products.filter((product) => {
@@ -100,13 +125,13 @@ export function ShopClient() {
     return base;
   }, [maxPrice, onlySale, products, query, selectedCategory, sortMode]);
 
-  const hasActiveFilters = query || selectedCategory !== "All" || sortMode !== "relevance" || maxPrice !== 500 || onlySale;
+  const hasActiveFilters = query || selectedCategory !== "All" || sortMode !== "relevance" || maxPrice !== maxAvailablePrice || onlySale;
 
   const resetAll = () => {
     setQuery("");
     setSelectedCategory("All");
     setSortMode("relevance");
-    setMaxPrice(500);
+    setMaxPrice(maxAvailablePrice);
     setOnlySale(false);
   };
 
@@ -179,14 +204,14 @@ export function ShopClient() {
           <FilterGroup title="Max. Preis">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs text-slate-500">
-                <span>CHF 0</span>
+                <span>{formatChf(minSliderPrice * 100)}</span>
                 <span className="font-medium text-slate-700">{formatChf(maxPrice * 100)}</span>
               </div>
               <input
                 type="range"
-                min={10}
-                max={1000}
-                step={5}
+                min={minSliderPrice}
+                max={maxAvailablePrice}
+                step={1}
                 value={maxPrice}
                 onChange={(event) => setMaxPrice(Number(event.target.value))}
                 className="w-full accent-sky-600"
