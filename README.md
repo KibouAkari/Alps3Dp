@@ -118,15 +118,36 @@ Use Resend (or Postmark) with transactional templates:
 
 ## Vercel Deployment
 
+### Auto Deploy via GitHub
+
+This project is connected to GitHub and Vercel. You do not need to deploy manually.
+
+- Commit your changes
+- Push to your connected branch (for example `main`)
+- Vercel will build and deploy automatically
+
 1. Link project
 
 ```bash
 vercel link --project alps3dp
 ```
 
-2. Create or connect a Postgres database (Neon, Vercel Postgres, Supabase, Railway, etc.) and copy the connection string.
+2. If you use Vercel Connected Storage (Prisma Postgres), install/connect it in Vercel.
 
-3. Set production environment variables in Vercel:
+The app now supports all of these environment variable names automatically:
+
+- `DATABASE_URL`
+- `Alps3Dp_DATABASE_URL`
+- `Alps3Dp_PRISMA_DATABASE_URL`
+- `Alps3Dp_POSTGRES_URL`
+- `PRISMA_DATABASE_URL`
+- `POSTGRES_PRISMA_URL`
+- `POSTGRES_URL`
+- `POSTGRES_URL_NON_POOLING`
+
+If `DATABASE_URL` is not set, the app and seed process will fall back to the connected-storage variables above.
+
+3. Set production environment variables in Vercel (if they are not already set by Connected Storage):
 
 ```bash
 vercel env add DATABASE_URL production

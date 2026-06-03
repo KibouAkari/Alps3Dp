@@ -1,6 +1,25 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
+function resolveDatabaseUrl() {
+  return (
+    process.env.DATABASE_URL ||
+    process.env.Alps3Dp_DATABASE_URL ||
+    process.env.Alps3Dp_PRISMA_DATABASE_URL ||
+    process.env.Alps3Dp_POSTGRES_URL ||
+    process.env.PRISMA_DATABASE_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    ""
+  );
+}
+
+const resolvedDatabaseUrl = resolveDatabaseUrl();
+if (!process.env.DATABASE_URL && resolvedDatabaseUrl) {
+  process.env.DATABASE_URL = resolvedDatabaseUrl;
+}
+
 const prisma = new PrismaClient();
 
 async function main() {
