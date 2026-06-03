@@ -5,7 +5,9 @@ import { db } from "@/lib/db";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
 const updateProfileSchema = z.object({
-  name: z.string().min(2).max(120),
+  firstName: z.string().min(1).max(60).optional(),
+  lastName: z.string().min(1).max(60).optional(),
+  salutation: z.enum(["Herr", "Frau"]).optional(),
 });
 
 function getCookieToken(request: Request) {
@@ -24,6 +26,37 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Nicht eingeloggt." }, { status: 401 });
   }
 
+  const fullUser = await db.user.findUnique({
+    where: { id: sessionUser.id },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      salutation: true,
+      email: true,
+      emailVerifiedAt: true,
+      addresses: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          salutation: true,
+          firstName: true,
+          lastName: true,
+          street: true,
+          zipCode: true,
+          city: true,
+          country: true,
+          isDefault: true,
+          createdAt: true,
+        },
+      },
+    },
+  });
+
+  if (!fullUser) {
+    return NextResponse.json({ error: "Benutzer nicht gefunden." }, { status: 404 });
+  }
+
   const orders = await db.order.findMany({
     where: { userId: sessionUser.id },
     orderBy: { createdAt: "desc" },
@@ -37,7 +70,15 @@ export async function GET(request: Request) {
   });
 
   return NextResponse.json({
-    user: sessionUser,
+    profile: {
+      id: fullUser.id,
+      firstName: fullUser.firstName,
+      lastName: fullUser.lastName,
+      salutation: fullUser.salutation,
+      email: fullUser.email,
+      emailVerified: Boolean(fullUser.emailVerifiedAt),
+      addresses: fullUser.addresses,
+    },
     orders: orders.map((entry: { id: string; createdAt: Date; status: string; totalCents: number }) => ({
       id: entry.id,
       date: entry.createdAt,
@@ -58,20 +99,24 @@ export async function PATCH(request: Request) {
   const parsed = updateProfileSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Ungueltiger Name." }, { status: 400 });
+    return NextResponse.json({ error: "Ungueltige Eingaben." }, { status: 400 });
   }
 
-  const user = await db.user.update({
+  const updatedUser = await db.user.update({
     where: { id: sessionUser.id },
-    data: { name: parsed.data.name.trim() },
+    data: {
+      firstName: parsed.data.firstName ?? undefined,
+      lastName: parsed.data.lastName ?? undefined,
+      salutation: parsed.data.salutation ?? undefined,
+    },
   });
 
   return NextResponse.json({
-    user: {
-      id: user.id,
-      name: user.name || user.email.split("@")[0],
-      email: user.email,
-      role: user.role,
-    },
+    id: updatedUser.id,
+    firstName: updatedUser.firstName,
+    lastName: updatedUser.lastName,
+    salutation: updatedUser.salutation,
+    email: updatedUser.email,
+    emailVerified: Boolean(updatedUser.emailVerifiedAt),
   });
 }

@@ -7,7 +7,9 @@ import { hashPassword, createOpaqueToken, hashOpaqueToken } from "@/lib/security
 import { createSessionForUser, AUTH_COOKIE_NAME } from "@/lib/session";
 
 const registerSchema = z.object({
-  name: z.string().min(2).max(120),
+  firstName: z.string().min(1).max(60).optional(),
+  lastName: z.string().min(1).max(60).optional(),
+  salutation: z.enum(["Herr", "Frau"]).optional(),
   email: z.string().email(),
   password: z.string().min(8).max(128),
 });
@@ -28,7 +30,9 @@ export async function POST(request: Request) {
 
   const user = await db.user.create({
     data: {
-      name: parsed.data.name.trim(),
+      firstName: parsed.data.firstName?.trim() || null,
+      lastName: parsed.data.lastName?.trim() || null,
+      salutation: parsed.data.salutation || null,
       email,
       passwordHash: await hashPassword(parsed.data.password),
     },
@@ -51,7 +55,9 @@ export async function POST(request: Request) {
   const response = NextResponse.json({
     user: {
       id: user.id,
-      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      salutation: user.salutation,
       email: user.email,
       role: user.role,
       emailVerified: Boolean(user.emailVerifiedAt),

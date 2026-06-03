@@ -31,7 +31,9 @@ export async function POST(request: Request) {
   const response = NextResponse.json({
     user: {
       id: user.id,
-      name: user.name || user.email.split("@")[0],
+      firstName: user.firstName,
+      lastName: user.lastName,
+      salutation: user.salutation,
       email: user.email,
       role: user.role,
       emailVerified: Boolean(user.emailVerifiedAt),

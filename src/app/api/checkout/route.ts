@@ -8,15 +8,18 @@ import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 import { getShippingCents } from "@/lib/site-settings";
 
 const checkoutSchema = z.object({
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  email: z.string().email(),
-  address1: z.string().min(4),
+  // Address: either use saved address or provide new one
+  addressId: z.string().optional(),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  address1: z.string().min(4).optional(),
   address2: z.string().optional(),
-  zip: z.string().min(2),
-  city: z.string().min(2),
-  country: z.string().min(2).max(2).default("CH"),
+  zip: z.string().min(2).optional(),
+  city: z.string().min(2).optional(),
+  country: z.string().min(2).max(2).default("CH").optional(),
+  email: z.string().email(),
   paymentMethod: z.enum(["CARD", "TWINT"]),
+  savedPaymentMethodId: z.string().optional(),
 });
 
 function getCookieToken(request: Request) {
@@ -38,6 +41,42 @@ export async function POST(request: Request) {
   const parsed = checkoutSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Bitte alle Pflichtfelder korrekt ausfuellen." }, { status: 400 });
+  }
+
+  // Resolve address
+  let addressData = { firstName: "", lastName: "", address1: "", address2: "", zip: "", city: "", country: "CH" };
+  
+  if (parsed.data.addressId) {
+    // Use saved address
+    const saved = await db.userAddress.findUnique({
+      where: { id: parsed.data.addressId },
+    });
+    if (!saved || saved.userId !== sessionUser.id) {
+      return NextResponse.json({ error: "Adresse nicht gefunden." }, { status: 404 });
+    }
+    addressData = {
+      firstName: saved.firstName,
+      lastName: saved.lastName,
+      address1: saved.street,
+      address2: "",
+      zip: saved.zipCode,
+      city: saved.city,
+      country: saved.country,
+    };
+  } else {
+    // Use provided address
+    if (!parsed.data.firstName || !parsed.data.lastName || !parsed.data.address1 || !parsed.data.zip || !parsed.data.city) {
+      return NextResponse.json({ error: "Adresse erforderlich." }, { status: 400 });
+    }
+    addressData = {
+      firstName: parsed.data.firstName,
+      lastName: parsed.data.lastName,
+      address1: parsed.data.address1,
+      address2: parsed.data.address2 || "",
+      zip: parsed.data.zip,
+      city: parsed.data.city,
+      country: parsed.data.country || "CH",
+    };
   }
 
   const cart = await db.cart.findUnique({
@@ -75,13 +114,14 @@ export async function POST(request: Request) {
       totalCents,
       paymentProvider: "stripe",
       paymentMethod: parsed.data.paymentMethod,
+      savedPaymentMethodId: parsed.data.savedPaymentMethodId || null,
       customerEmail: parsed.data.email,
-      customerName: `${parsed.data.firstName} ${parsed.data.lastName}`,
-      shippingAddress1: parsed.data.address1,
-      shippingAddress2: parsed.data.address2 || null,
-      shippingZip: parsed.data.zip,
-      shippingCity: parsed.data.city,
-      shippingCountry: parsed.data.country,
+      customerName: `${addressData.firstName} ${addressData.lastName}`,
+      shippingAddress1: addressData.address1,
+      shippingAddress2: addressData.address2 || null,
+      shippingZip: addressData.zip,
+      shippingCity: addressData.city,
+      shippingCountry: addressData.country,
       items: {
         create: cart.items.map((item: { productId: string; quantity: number; product: { salePriceCents: number | null; priceCents: number } }) => ({
           productId: item.productId,
