@@ -2,6 +2,10 @@ export type UserRole = "CUSTOMER" | "ADMIN";
 
 export type SessionUser = {
   id: string;
+  username?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  salutation?: string | null;
   name: string;
   email: string;
   role: UserRole;

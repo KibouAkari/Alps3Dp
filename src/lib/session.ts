@@ -8,9 +8,11 @@ const SESSION_TTL_DAYS = 30;
 
 export type SessionUser = {
   id: string;
+  username: string | null;
   firstName: string | null;
   lastName: string | null;
   salutation: string | null;
+  name: string;
   email: string;
   role: "CUSTOMER" | "ADMIN";
 };
@@ -54,9 +56,15 @@ export async function getSessionUserFromToken(rawToken?: string | null): Promise
 
   return {
     id: session.user.id,
+    username: session.user.username,
     firstName: session.user.firstName,
     lastName: session.user.lastName,
     salutation: session.user.salutation,
+    name:
+      [session.user.firstName, session.user.lastName].filter(Boolean).join(" ") ||
+      session.user.username ||
+      session.user.email.split("@")[0] ||
+      "User",
     email: session.user.email,
     role: session.user.role,
   };

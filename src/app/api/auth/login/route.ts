@@ -31,9 +31,11 @@ export async function POST(request: Request) {
   const response = NextResponse.json({
     user: {
       id: user.id,
+      username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,
       salutation: user.salutation,
+      name: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username || user.email.split("@")[0],
       email: user.email,
       role: user.role,
       emailVerified: Boolean(user.emailVerifiedAt),

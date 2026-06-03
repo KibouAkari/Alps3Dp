@@ -8,6 +8,7 @@ const updateProfileSchema = z.object({
   firstName: z.string().min(1).max(60).optional(),
   lastName: z.string().min(1).max(60).optional(),
   salutation: z.enum(["Herr", "Frau"]).optional(),
+  username: z.string().min(3).max(32).regex(/^[a-zA-Z0-9_.-]+$/).optional(),
 });
 
 function getCookieToken(request: Request) {
@@ -33,6 +34,7 @@ export async function GET(request: Request) {
       firstName: true,
       lastName: true,
       salutation: true,
+      username: true,
       email: true,
       emailVerifiedAt: true,
       addresses: {
@@ -46,6 +48,19 @@ export async function GET(request: Request) {
           zipCode: true,
           city: true,
           country: true,
+          isDefault: true,
+          createdAt: true,
+        },
+      },
+      savedPaymentMethods: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          type: true,
+          last4: true,
+          holderName: true,
+          expiryMonth: true,
+          expiryYear: true,
           isDefault: true,
           createdAt: true,
         },
@@ -75,9 +90,11 @@ export async function GET(request: Request) {
       firstName: fullUser.firstName,
       lastName: fullUser.lastName,
       salutation: fullUser.salutation,
+      username: fullUser.username,
       email: fullUser.email,
       emailVerified: Boolean(fullUser.emailVerifiedAt),
       addresses: fullUser.addresses,
+      paymentMethods: fullUser.savedPaymentMethods,
     },
     orders: orders.map((entry: { id: string; createdAt: Date; status: string; totalCents: number }) => ({
       id: entry.id,
@@ -102,20 +119,40 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Ungueltige Eingaben." }, { status: 400 });
   }
 
+  if (parsed.data.username) {
+    const normalized = parsed.data.username.trim().toLowerCase();
+    const existing = await db.user.findFirst({
+      where: {
+        username: normalized,
+        id: { not: sessionUser.id },
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      return NextResponse.json({ error: "Username ist bereits vergeben." }, { status: 409 });
+    }
+  }
+
   const updatedUser = await db.user.update({
     where: { id: sessionUser.id },
     data: {
       firstName: parsed.data.firstName ?? undefined,
       lastName: parsed.data.lastName ?? undefined,
       salutation: parsed.data.salutation ?? undefined,
+      username: parsed.data.username ? parsed.data.username.trim().toLowerCase() : undefined,
     },
   });
 
   return NextResponse.json({
     id: updatedUser.id,
+    username: updatedUser.username,
     firstName: updatedUser.firstName,
     lastName: updatedUser.lastName,
     salutation: updatedUser.salutation,
+    name:
+      [updatedUser.firstName, updatedUser.lastName].filter(Boolean).join(" ") ||
+      updatedUser.username ||
+      updatedUser.email.split("@")[0],
     email: updatedUser.email,
     emailVerified: Boolean(updatedUser.emailVerifiedAt),
   });

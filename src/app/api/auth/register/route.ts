@@ -10,6 +10,7 @@ const registerSchema = z.object({
   firstName: z.string().min(0).max(60).optional().default(""),
   lastName: z.string().min(0).max(60).optional().default(""),
   salutation: z.string().refine(v => !v || ["Herr", "Frau"].includes(v)).optional(),
+  username: z.string().min(3).max(32).regex(/^[a-zA-Z0-9_.-]+$/).optional(),
   email: z.string().email(),
   password: z.string().min(8).max(128),
 });
@@ -23,9 +24,17 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.data.email.trim().toLowerCase();
+  const username = parsed.data.username?.trim().toLowerCase() || null;
   const existing = await db.user.findUnique({ where: { email } });
   if (existing) {
     return NextResponse.json({ error: "E-Mail ist bereits registriert." }, { status: 409 });
+  }
+
+  if (username) {
+    const existingUsername = await db.user.findUnique({ where: { username } });
+    if (existingUsername) {
+      return NextResponse.json({ error: "Username ist bereits vergeben." }, { status: 409 });
+    }
   }
 
   const user = await db.user.create({
@@ -33,6 +42,7 @@ export async function POST(request: Request) {
       firstName: parsed.data.firstName?.trim() || null,
       lastName: parsed.data.lastName?.trim() || null,
       salutation: parsed.data.salutation || null,
+      username,
       email,
       passwordHash: await hashPassword(parsed.data.password),
     },
@@ -55,9 +65,11 @@ export async function POST(request: Request) {
   const response = NextResponse.json({
     user: {
       id: user.id,
+      username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,
       salutation: user.salutation,
+      name: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username || user.email.split("@")[0],
       email: user.email,
       role: user.role,
       emailVerified: Boolean(user.emailVerifiedAt),

@@ -10,15 +10,15 @@ import {
 } from "@/lib/mock-auth";
 
 type SignInInput = {
-  name?: string;
   email: string;
   password?: string;
-  role?: UserRole;
-  avatar?: string;
 };
 
 type RegisterInput = {
-  name: string;
+  firstName?: string;
+  lastName?: string;
+  salutation?: "Herr" | "Frau";
+  username?: string;
   email: string;
   password: string;
 };
@@ -26,6 +26,10 @@ type RegisterInput = {
 type SessionApiResponse = {
   user: {
     id: string;
+    username?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    salutation?: string | null;
     name: string;
     email: string;
     role: UserRole;
@@ -45,6 +49,10 @@ async function fetchSession(): Promise<SessionUser | null> {
 
   return {
     id: data.user.id,
+    username: data.user.username ?? null,
+    firstName: data.user.firstName ?? null,
+    lastName: data.user.lastName ?? null,
+    salutation: data.user.salutation ?? null,
     name: data.user.name,
     email: data.user.email,
     role: data.user.role,
@@ -95,10 +103,14 @@ export function useMockSession() {
 
     const nextUser: SessionUser = {
       id: data.user.id,
+      username: data.user.username ?? null,
+      firstName: data.user.firstName ?? null,
+      lastName: data.user.lastName ?? null,
+      salutation: data.user.salutation ?? null,
       name: data.user.name,
       email: data.user.email,
       role: data.user.role,
-      avatar: input.avatar || DEFAULT_AVATAR,
+      avatar: DEFAULT_AVATAR,
     };
 
     window.dispatchEvent(new Event(AUTH_EVENT));
@@ -111,7 +123,14 @@ export function useMockSession() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify(input),
+      body: JSON.stringify({
+        firstName: input.firstName,
+        lastName: input.lastName,
+        salutation: input.salutation,
+        username: input.username,
+        email: input.email,
+        password: input.password,
+      }),
     });
 
     const data = await response.json();
@@ -121,6 +140,10 @@ export function useMockSession() {
 
     const nextUser: SessionUser = {
       id: data.user.id,
+      username: data.user.username ?? null,
+      firstName: data.user.firstName ?? null,
+      lastName: data.user.lastName ?? null,
+      salutation: data.user.salutation ?? null,
       name: data.user.name,
       email: data.user.email,
       role: data.user.role,
@@ -146,7 +169,12 @@ export function useMockSession() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ name: partial.name }),
+      body: JSON.stringify({
+        firstName: partial.firstName,
+        lastName: partial.lastName,
+        salutation: partial.salutation,
+        username: partial.username,
+      }),
     });
 
     const data = await response.json();
@@ -155,17 +183,21 @@ export function useMockSession() {
     }
 
     const nextUser: SessionUser = {
-      id: data.user.id,
-      name: data.user.name,
-      email: data.user.email,
-      role: data.user.role,
-      avatar: partial.avatar || user?.avatar || DEFAULT_AVATAR,
+      id: data.id,
+      username: data.username ?? null,
+      firstName: data.firstName ?? null,
+      lastName: data.lastName ?? null,
+      salutation: data.salutation ?? null,
+      name: data.name,
+      email: data.email,
+      role: user?.role || "CUSTOMER",
+      avatar: user?.avatar || DEFAULT_AVATAR,
     };
 
     window.dispatchEvent(new Event(AUTH_EVENT));
     setUser(nextUser);
     return nextUser;
-  }, [user?.avatar]);
+  }, [user?.avatar, user?.role]);
 
   return { user, isLoading, signIn, register, signOut, updateProfile };
 }

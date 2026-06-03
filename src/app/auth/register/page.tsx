@@ -8,7 +8,10 @@ import { useMockSession } from "@/hooks/use-mock-session";
 export default function RegisterPage() {
   const router = useRouter();
   const { register } = useMockSession();
-  const [name, setName] = useState("");
+  const [salutation, setSalutation] = useState<"" | "Herr" | "Frau">("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +29,14 @@ export default function RegisterPage() {
           setError(null);
           setStatus(null);
           try {
-            await register({ name, email, password });
+            await register({
+              salutation: salutation || undefined,
+              firstName: firstName || undefined,
+              lastName: lastName || undefined,
+              username: username || undefined,
+              email,
+              password,
+            });
             setStatus("Registrierung erfolgreich. Bitte bestaetige deine E-Mail.");
             router.push("/account");
           } catch (err) {
@@ -34,11 +44,34 @@ export default function RegisterPage() {
           }
         }}
       >
+        <select
+          value={salutation}
+          onChange={(event) => setSalutation(event.target.value as "" | "Herr" | "Frau")}
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+        >
+          <option value="">Anrede (optional)</option>
+          <option value="Herr">Herr</option>
+          <option value="Frau">Frau</option>
+        </select>
         <input
           type="text"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Vorname Nachname"
+          value={firstName}
+          onChange={(event) => setFirstName(event.target.value)}
+          placeholder="Vorname (optional)"
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+        />
+        <input
+          type="text"
+          value={lastName}
+          onChange={(event) => setLastName(event.target.value)}
+          placeholder="Nachname (optional)"
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+        />
+        <input
+          type="text"
+          value={username}
+          onChange={(event) => setUsername(event.target.value)}
+          placeholder="Username (optional, z.B. max.muster)"
           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
         />
         <input
