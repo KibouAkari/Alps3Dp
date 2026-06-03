@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   }
 
   if (username) {
-    const existingUsername = await db.user.findUnique({ where: { username } });
+    const existingUsername = await db.user.findFirst({ where: { username } });
     if (existingUsername) {
       return NextResponse.json({ error: "Username ist bereits vergeben." }, { status: 409 });
     }
