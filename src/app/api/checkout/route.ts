@@ -168,44 +168,55 @@ export async function POST(request: Request) {
 
   const paymentMethodTypes: Array<"card" | "twint"> = parsed.data.paymentMethod === "TWINT" ? ["twint"] : ["card"];
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    currency: "chf",
-    payment_method_types: paymentMethodTypes,
-    client_reference_id: order.id,
-    metadata: {
-      orderId: order.id,
-      userId: sessionUser.id,
-    },
-    success_url: `${appUrl}/checkout?success=1&order=${order.id}`,
-    cancel_url: `${appUrl}/checkout?canceled=1`,
-    line_items: [
-      ...order.items.map((item: { quantity: number; unitCents: number; product: { title: string } }) => ({
-        quantity: item.quantity,
-        price_data: {
-          currency: "chf",
-          unit_amount: item.unitCents,
-          product_data: {
-            name: item.product.title,
-          },
-        },
-      })),
-      ...(shippingCents > 0
-        ? [
-            {
-              quantity: 1,
-              price_data: {
-                currency: "chf",
-                unit_amount: shippingCents,
-                product_data: { name: "Lieferkosten" },
-              },
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      currency: "chf",
+      payment_method_types: paymentMethodTypes,
+      client_reference_id: order.id,
+      metadata: {
+        orderId: order.id,
+        userId: sessionUser.id,
+      },
+      success_url: `${appUrl}/checkout?success=1&order=${order.id}`,
+      cancel_url: `${appUrl}/checkout?canceled=1`,
+      line_items: [
+        ...order.items.map((item: { quantity: number; unitCents: number; product: { title: string } }) => ({
+          quantity: item.quantity,
+          price_data: {
+            currency: "chf",
+            unit_amount: item.unitCents,
+            product_data: {
+              name: item.product.title,
             },
-          ]
-        : []),
-    ],
-  });
+          },
+        })),
+        ...(shippingCents > 0
+          ? [
+              {
+                quantity: 1,
+                price_data: {
+                  currency: "chf",
+                  unit_amount: shippingCents,
+                  product_data: { name: "Lieferkosten" },
+                },
+              },
+            ]
+          : []),
+      ],
+    });
 
-  await db.order.update({ where: { id: order.id }, data: { paymentReference: session.id } });
+    await db.order.update({ where: { id: order.id }, data: { paymentReference: session.id } });
 
-  return NextResponse.json({ checkoutUrl: session.url, orderId: order.id });
+    return NextResponse.json({ checkoutUrl: session.url, orderId: order.id });
+  } catch (error) {
+    console.error("[checkout:stripe]", error);
+    return NextResponse.json(
+      {
+        error:
+          "Zahlung konnte nicht gestartet werden. Bitte Stripe-Schluessel in Vercel pruefen.",
+      },
+      { status: 502 }
+    );
+  }
 }
