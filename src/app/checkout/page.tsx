@@ -14,11 +14,28 @@ type CartRow = {
   };
 };
 
+type SavedAddress = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  street: string;
+  zipCode: string;
+  city: string;
+  isDefault: boolean;
+};
+
+type SavedPaymentMethod = {
+  id: string;
+  type: "card" | "twint";
+  last4: string | null;
+  isDefault: boolean;
+};
+
 export default function CheckoutPage() {
   const [rows, setRows] = useState<CartRow[]>([]);
   const [shippingCents, setShippingCents] = useState(0);
-  const [savedAddresses, setSavedAddresses] = useState<Array<any>>([]);
-  const [savedMethods, setSavedMethods] = useState<Array<any>>([]);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [savedMethods, setSavedMethods] = useState<SavedPaymentMethod[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [selectedMethodId, setSelectedMethodId] = useState("");
   const [saveAddress, setSaveAddress] = useState(false);
@@ -65,8 +82,8 @@ export default function CheckoutPage() {
         setSavedAddresses(addresses);
         setSavedMethods(methods);
 
-        const defaultAddress = addresses.find((entry: any) => entry.isDefault);
-        const defaultMethod = methods.find((entry: any) => entry.isDefault);
+        const defaultAddress = addresses.find((entry: SavedAddress) => entry.isDefault);
+        const defaultMethod = methods.find((entry: SavedPaymentMethod) => entry.isDefault);
 
         if (defaultAddress) {
           setSelectedAddressId(defaultAddress.id);

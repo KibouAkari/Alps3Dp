@@ -12,6 +12,28 @@ type AccountOrder = {
   totalCents: number;
 };
 
+type SavedAddress = {
+  id: string;
+  salutation: string | null;
+  firstName: string;
+  lastName: string;
+  street: string;
+  zipCode: string;
+  city: string;
+  country: string;
+  isDefault: boolean;
+};
+
+type SavedPaymentMethod = {
+  id: string;
+  type: "card" | "twint";
+  last4: string | null;
+  holderName: string | null;
+  expiryMonth: number | null;
+  expiryYear: number | null;
+  isDefault: boolean;
+};
+
 export default function AccountPage() {
   const { user, isLoading, updateProfile } = useMockSession();
   const [orders, setOrders] = useState<AccountOrder[]>([]);
@@ -26,8 +48,8 @@ export default function AccountPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
-  const [addresses, setAddresses] = useState<Array<any>>([]);
-  const [payments, setPayments] = useState<Array<any>>([]);
+  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+  const [payments, setPayments] = useState<SavedPaymentMethod[]>([]);
   const [addressForm, setAddressForm] = useState({
     salutation: "" as "" | "Herr" | "Frau",
     firstName: "",
