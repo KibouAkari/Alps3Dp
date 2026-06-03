@@ -17,6 +17,12 @@ type CartRow = {
 export default function CheckoutPage() {
   const [rows, setRows] = useState<CartRow[]>([]);
   const [shippingCents, setShippingCents] = useState(0);
+  const [savedAddresses, setSavedAddresses] = useState<Array<any>>([]);
+  const [savedMethods, setSavedMethods] = useState<Array<any>>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [selectedMethodId, setSelectedMethodId] = useState("");
+  const [saveAddress, setSaveAddress] = useState(false);
+  const [saveMethod, setSaveMethod] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -44,6 +50,38 @@ export default function CheckoutPage() {
         const data = await response.json();
         if (response.ok) {
           setShippingCents(data.shippingCents || 0);
+        }
+      })
+      .catch(() => undefined);
+
+    fetch("/api/account", { credentials: "include" })
+      .then(async (response) => {
+        if (!response.ok) {
+          return;
+        }
+        const data = await response.json();
+        const addresses = data.profile?.addresses || [];
+        const methods = data.profile?.paymentMethods || [];
+        setSavedAddresses(addresses);
+        setSavedMethods(methods);
+
+        const defaultAddress = addresses.find((entry: any) => entry.isDefault);
+        const defaultMethod = methods.find((entry: any) => entry.isDefault);
+
+        if (defaultAddress) {
+          setSelectedAddressId(defaultAddress.id);
+          setFirstName(defaultAddress.firstName || "");
+          setLastName(defaultAddress.lastName || "");
+          setAddress1(defaultAddress.street || "");
+          setZip(defaultAddress.zipCode || "");
+          setCity(defaultAddress.city || "");
+        }
+        if (defaultMethod) {
+          setSelectedMethodId(defaultMethod.id);
+          setPaymentMethod(defaultMethod.type === "twint" ? "TWINT" : "CARD");
+        }
+        if (data.profile?.email) {
+          setEmail(data.profile.email);
         }
       })
       .catch(() => undefined);
@@ -79,6 +117,8 @@ export default function CheckoutPage() {
               headers: { "Content-Type": "application/json" },
               credentials: "include",
               body: JSON.stringify({
+                addressId: selectedAddressId || undefined,
+                savedPaymentMethodId: selectedMethodId || undefined,
                 firstName,
                 lastName,
                 email,
@@ -97,6 +137,35 @@ export default function CheckoutPage() {
             }
 
             if (data.checkoutUrl) {
+              if (saveAddress && !selectedAddressId) {
+                await fetch("/api/account/addresses", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include",
+                  body: JSON.stringify({
+                    firstName,
+                    lastName,
+                    street: address1,
+                    zipCode: zip,
+                    city,
+                    country: "CH",
+                    isDefault: savedAddresses.length === 0,
+                  }),
+                });
+              }
+
+              if (saveMethod && !selectedMethodId) {
+                await fetch("/api/account/payment-methods", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include",
+                  body: JSON.stringify({
+                    type: paymentMethod === "TWINT" ? "twint" : "card",
+                    isDefault: savedMethods.length === 0,
+                  }),
+                });
+              }
+
               window.location.href = data.checkoutUrl;
               return;
             }
@@ -104,12 +173,72 @@ export default function CheckoutPage() {
             setStatus("Bestellung erfolgreich gespeichert.");
           }}
         >
+          {savedAddresses.length > 0 && (
+            <select
+              value={selectedAddressId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setSelectedAddressId(id);
+                if (!id) {
+                  return;
+                }
+                const address = savedAddresses.find((entry) => entry.id === id);
+                if (!address) {
+                  return;
+                }
+                setFirstName(address.firstName || "");
+                setLastName(address.lastName || "");
+                setAddress1(address.street || "");
+                setZip(address.zipCode || "");
+                setCity(address.city || "");
+              }}
+              className="sm:col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+            >
+              <option value="">Neue Adresse eingeben</option>
+              {savedAddresses.map((address) => (
+                <option key={address.id} value={address.id}>
+                  {address.firstName} {address.lastName}, {address.street}, {address.zipCode} {address.city}
+                </option>
+              ))}
+            </select>
+          )}
           <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Vorname" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
           <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Nachname" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
           <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-Mail" className="sm:col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
           <input value={address1} onChange={(e) => setAddress1(e.target.value)} placeholder="Adresse" className="sm:col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
           <input value={zip} onChange={(e) => setZip(e.target.value)} placeholder="PLZ" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
           <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ort" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+          <label className="sm:col-span-2 flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />
+            Adresse fuer naechste Bestellung speichern
+          </label>
+
+          {savedMethods.length > 0 && (
+            <select
+              value={selectedMethodId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setSelectedMethodId(id);
+                if (!id) {
+                  return;
+                }
+                const method = savedMethods.find((entry) => entry.id === id);
+                if (!method) {
+                  return;
+                }
+                setPaymentMethod(method.type === "twint" ? "TWINT" : "CARD");
+              }}
+              className="sm:col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+            >
+              <option value="">Neue Zahlungsart verwenden</option>
+              {savedMethods.map((method) => (
+                <option key={method.id} value={method.id}>
+                  {method.type === "twint" ? "TWINT" : "Karte"}{method.last4 ? ` ****${method.last4}` : ""}
+                </option>
+              ))}
+            </select>
+          )}
+
           <select
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value as "CARD" | "TWINT")}
@@ -118,6 +247,10 @@ export default function CheckoutPage() {
             <option value="CARD">Bankkarte (Stripe)</option>
             <option value="TWINT">TWINT (Stripe)</option>
           </select>
+          <label className="sm:col-span-2 flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" checked={saveMethod} onChange={(e) => setSaveMethod(e.target.checked)} />
+            Zahlungsart fuer naechste Bestellung speichern
+          </label>
           <button type="submit" className="sm:col-span-2 rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white transition hover:bg-sky-700">
             Zahlung starten
           </button>
