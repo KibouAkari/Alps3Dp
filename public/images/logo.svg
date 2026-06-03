@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 172" fill="none">
+  <!-- Right solid mountain -->
+  <polygon points="142,25 188,138 96,138" fill="#4AB4C4"/>
+  <!-- Left main mountain -->
+  <polygon points="70,8 148,138 0,138" fill="#4AB4C4"/>
+  <!-- White lightning bolt cutout on left mountain -->
+  <polygon points="72,50 88,82 62,82 80,114 66,114 44,80 68,80 56,50" fill="white"/>
+</svg>

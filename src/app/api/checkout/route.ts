@@ -1,0 +1,171 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+
+import { db } from "@/lib/db";
+import { sendOrderEmails } from "@/lib/mail";
+import { getStripe } from "@/lib/payments";
+import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
+import { getShippingCents } from "@/lib/site-settings";
+
+const checkoutSchema = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  email: z.string().email(),
+  address1: z.string().min(4),
+  address2: z.string().optional(),
+  zip: z.string().min(2),
+  city: z.string().min(2),
+  country: z.string().min(2).max(2).default("CH"),
+  paymentMethod: z.enum(["CARD", "TWINT"]),
+});
+
+function getCookieToken(request: Request) {
+  return request.headers
+    .get("cookie")
+    ?.split(";")
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith(`${AUTH_COOKIE_NAME}=`))
+    ?.split("=")[1];
+}
+
+export async function POST(request: Request) {
+  const sessionUser = await getSessionUserFromToken(getCookieToken(request));
+  if (!sessionUser) {
+    return NextResponse.json({ error: "Bitte zuerst einloggen." }, { status: 401 });
+  }
+
+  const body = await request.json().catch(() => null);
+  const parsed = checkoutSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Bitte alle Pflichtfelder korrekt ausfuellen." }, { status: 400 });
+  }
+
+  const cart = await db.cart.findUnique({
+    where: { userId: sessionUser.id },
+    include: {
+      items: {
+        include: {
+          product: {
+            include: {
+              images: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!cart || cart.items.length === 0) {
+    return NextResponse.json({ error: "Warenkorb ist leer." }, { status: 400 });
+  }
+
+  const subtotalCents = cart.items.reduce((sum: number, item: { product: { salePriceCents: number | null; priceCents: number }; quantity: number }) => {
+    const unit = item.product.salePriceCents ?? item.product.priceCents;
+    return sum + unit * item.quantity;
+  }, 0);
+  const shippingCents = await getShippingCents();
+  const totalCents = subtotalCents + shippingCents;
+
+  const order = await db.order.create({
+    data: {
+      userId: sessionUser.id,
+      status: "PENDING",
+      subtotalCents,
+      shippingCents,
+      totalCents,
+      paymentProvider: "stripe",
+      paymentMethod: parsed.data.paymentMethod,
+      customerEmail: parsed.data.email,
+      customerName: `${parsed.data.firstName} ${parsed.data.lastName}`,
+      shippingAddress1: parsed.data.address1,
+      shippingAddress2: parsed.data.address2 || null,
+      shippingZip: parsed.data.zip,
+      shippingCity: parsed.data.city,
+      shippingCountry: parsed.data.country,
+      items: {
+        create: cart.items.map((item: { productId: string; quantity: number; product: { salePriceCents: number | null; priceCents: number } }) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          unitCents: item.product.salePriceCents ?? item.product.priceCents,
+        })),
+      },
+    },
+    include: {
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+
+  const stripe = getStripe();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+  if (!stripe) {
+    await db.$transaction([
+      db.order.update({
+        where: { id: order.id },
+        data: { status: "PAID", paidAt: new Date(), paymentReference: `manual-${order.id}` },
+      }),
+      db.cartItem.deleteMany({ where: { cartId: cart.id } }),
+    ]);
+
+    await sendOrderEmails({
+      customerEmail: order.customerEmail,
+      customerName: order.customerName,
+      orderId: order.id,
+      totalCents: order.totalCents,
+      lines: order.items.map((item: { quantity: number; unitCents: number; product: { title: string } }) => ({
+        title: item.product.title,
+        quantity: item.quantity,
+        unitCents: item.unitCents,
+      })),
+    });
+
+    return NextResponse.json({ success: true, orderId: order.id, mode: "manual" });
+  }
+
+  const paymentMethodTypes: Array<"card" | "twint"> = parsed.data.paymentMethod === "TWINT" ? ["twint"] : ["card"];
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    currency: "chf",
+    payment_method_types: paymentMethodTypes,
+    client_reference_id: order.id,
+    metadata: {
+      orderId: order.id,
+      userId: sessionUser.id,
+    },
+    success_url: `${appUrl}/checkout?success=1&order=${order.id}`,
+    cancel_url: `${appUrl}/checkout?canceled=1`,
+    line_items: [
+      ...order.items.map((item: { quantity: number; unitCents: number; product: { title: string } }) => ({
+        quantity: item.quantity,
+        price_data: {
+          currency: "chf",
+          unit_amount: item.unitCents,
+          product_data: {
+            name: item.product.title,
+          },
+        },
+      })),
+      ...(shippingCents > 0
+        ? [
+            {
+              quantity: 1,
+              price_data: {
+                currency: "chf",
+                unit_amount: shippingCents,
+                product_data: { name: "Lieferkosten" },
+              },
+            },
+          ]
+        : []),
+    ],
+  });
+
+  await db.order.update({ where: { id: order.id }, data: { paymentReference: session.id } });
+
+  return NextResponse.json({ checkoutUrl: session.url, orderId: order.id });
+}
