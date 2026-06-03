@@ -24,7 +24,7 @@ const updatePaymentMethodSchema = z.object({
 // PATCH - Update payment method
 export async function PATCH(
   request: Request,
-  { params }: { params: { methodId: string } }
+  { params }: { params: Promise<{ methodId: string }> }
 ) {
   const user = await getSessionUserFromToken(getCookieToken(request));
 
@@ -32,8 +32,10 @@ export async function PATCH(
     return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
   }
 
+  const { methodId } = await params;
+
   const method = await db.savedPaymentMethod.findUnique({
-    where: { id: params.methodId },
+    where: { id: methodId },
   });
 
   if (!method || method.userId !== user.id) {
@@ -50,13 +52,13 @@ export async function PATCH(
   // If setting as default, unset all other defaults
   if (parsed.data.isDefault) {
     await db.savedPaymentMethod.updateMany({
-      where: { userId: user.id, id: { not: params.methodId } },
+      where: { userId: user.id, id: { not: methodId } },
       data: { isDefault: false },
     });
   }
 
   const updated = await db.savedPaymentMethod.update({
-    where: { id: params.methodId },
+    where: { id: methodId },
     data: parsed.data,
   });
 
@@ -75,7 +77,7 @@ export async function PATCH(
 // DELETE - Delete payment method
 export async function DELETE(
   request: Request,
-  { params }: { params: { methodId: string } }
+  { params }: { params: Promise<{ methodId: string }> }
 ) {
   const user = await getSessionUserFromToken(getCookieToken(request));
 
@@ -83,8 +85,10 @@ export async function DELETE(
     return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
   }
 
+  const { methodId } = await params;
+
   const method = await db.savedPaymentMethod.findUnique({
-    where: { id: params.methodId },
+    where: { id: methodId },
   });
 
   if (!method || method.userId !== user.id) {
@@ -92,7 +96,7 @@ export async function DELETE(
   }
 
   await db.savedPaymentMethod.delete({
-    where: { id: params.methodId },
+    where: { id: methodId },
   });
 
   return NextResponse.json({ success: true });

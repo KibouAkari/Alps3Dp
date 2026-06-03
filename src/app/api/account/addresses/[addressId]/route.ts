@@ -27,7 +27,7 @@ const updateAddressSchema = z.object({
 // PATCH - Update address
 export async function PATCH(
   request: Request,
-  { params }: { params: { addressId: string } }
+  { params }: { params: Promise<{ addressId: string }> }
 ) {
   const user = await getSessionUserFromToken(getCookieToken(request));
 
@@ -35,8 +35,10 @@ export async function PATCH(
     return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
   }
 
+  const { addressId } = await params;
+
   const address = await db.userAddress.findUnique({
-    where: { id: params.addressId },
+    where: { id: addressId },
   });
 
   if (!address || address.userId !== user.id) {
@@ -53,13 +55,13 @@ export async function PATCH(
   // If setting as default, unset all other defaults
   if (parsed.data.isDefault) {
     await db.userAddress.updateMany({
-      where: { userId: user.id, id: { not: params.addressId } },
+      where: { userId: user.id, id: { not: addressId } },
       data: { isDefault: false },
     });
   }
 
   const updated = await db.userAddress.update({
-    where: { id: params.addressId },
+    where: { id: addressId },
     data: parsed.data,
   });
 
@@ -69,7 +71,7 @@ export async function PATCH(
 // DELETE - Delete address
 export async function DELETE(
   request: Request,
-  { params }: { params: { addressId: string } }
+  { params }: { params: Promise<{ addressId: string }> }
 ) {
   const user = await getSessionUserFromToken(getCookieToken(request));
 
@@ -77,8 +79,10 @@ export async function DELETE(
     return NextResponse.json({ error: "Nicht authentifiziert." }, { status: 401 });
   }
 
+  const { addressId } = await params;
+
   const address = await db.userAddress.findUnique({
-    where: { id: params.addressId },
+    where: { id: addressId },
   });
 
   if (!address || address.userId !== user.id) {
@@ -86,7 +90,7 @@ export async function DELETE(
   }
 
   await db.userAddress.delete({
-    where: { id: params.addressId },
+    where: { id: addressId },
   });
 
   return NextResponse.json({ success: true });
