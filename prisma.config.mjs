@@ -8,6 +8,8 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: env("DATABASE_URL"),
+    // Fallback URL keeps prisma generate from crashing during first deploy.
+    // Production should still set a real DATABASE_URL in Vercel env.
+    url: process.env.DATABASE_URL || "postgresql://postgres:postgres@127.0.0.1:5432/alps3dp",
   },
 });

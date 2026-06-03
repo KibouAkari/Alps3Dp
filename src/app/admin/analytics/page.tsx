@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { AdminGuard } from "@/components/admin-guard";
 import { ArrowLeftIcon } from "@/components/icons";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminAnalyticsPage() {
   const paidOrdersRaw = await db.order.findMany({
     where: { status: "PAID" },

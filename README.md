@@ -21,8 +21,8 @@ Professional prototype for a 3D-printed products ecommerce site (blue/black desi
   - persistent cart
   - checkout + payment webhook
   - admin shipping settings
-- Prisma schema prepared for Vercel Postgres
-- Demo product catalog
+- Prisma schema for persistent Postgres storage
+- Empty initial shop data (no products/categories/orders)
 
 ## Run
 
@@ -54,6 +54,9 @@ npm run db:generate
 npm run db:migrate
 npm run db:seed
 ```
+
+After seeding, only the admin user and default shipping setting exist.
+No products, no categories, and no analytics/order data are inserted.
 
 4. Start development server
 
@@ -112,6 +115,52 @@ Use Resend (or Postmark) with transactional templates:
 4. Integrate Stripe checkout + webhook order state updates
 5. Implement password reset token table and email sender
 6. Add real click tracking and order analytics tables
+
+## Vercel Deployment
+
+1. Link project
+
+```bash
+vercel link --project alps3dp
+```
+
+2. Create or connect a Postgres database (Neon, Vercel Postgres, Supabase, Railway, etc.) and copy the connection string.
+
+3. Set production environment variables in Vercel:
+
+```bash
+vercel env add DATABASE_URL production
+vercel env add NEXT_PUBLIC_APP_URL production
+vercel env add NEXTAUTH_SECRET production
+vercel env add RESEND_API_KEY production
+vercel env add MAIL_FROM production
+vercel env add ADMIN_ORDER_EMAIL production
+vercel env add STRIPE_SECRET_KEY production
+vercel env add STRIPE_WEBHOOK_SECRET production
+vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY production
+vercel env add ADMIN_EMAIL production
+vercel env add ADMIN_PASSWORD production
+vercel env add ADMIN_NAME production
+```
+
+4. Run migrations and seed against production DB:
+
+```bash
+DATABASE_URL="<your-production-db-url>" npm run db:migrate
+DATABASE_URL="<your-production-db-url>" npm run db:seed
+```
+
+5. Deploy:
+
+```bash
+vercel deploy --prod
+```
+
+6. Configure Stripe webhook to:
+
+`https://<your-domain>/api/webhooks/payment`
+
+and use the signing secret as `STRIPE_WEBHOOK_SECRET`.
 
 ## Environment
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -29,7 +30,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/images/logo.svg" alt="Alps3Dp Logo" className="h-8 w-8" />
+          <Image src="/images/logo.svg" alt="Alps3Dp Logo" width={36} height={36} className="h-9 w-9" priority />
           <span className="text-xl font-bold tracking-tight text-slate-900">
             Alps3<span className="text-[#4AB4C4]">Dp</span>
           </span>

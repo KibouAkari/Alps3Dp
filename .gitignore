@@ -9,3 +9,4 @@ coverage
 .DS_Store
 
 .fake
+.env*.local

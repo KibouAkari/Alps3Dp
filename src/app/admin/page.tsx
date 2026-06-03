@@ -4,6 +4,8 @@ import { AdminGuard } from "@/components/admin-guard";
 import { formatChf } from "@/lib/data";
 import { db } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 const statusColors: Record<string, string> = {
   Versendet: "bg-green-100 text-green-700",
   "In Bearbeitung": "bg-amber-100 text-amber-700",
@@ -95,7 +97,7 @@ export default async function AdminHomePage() {
         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
             <h2 className="text-base font-semibold text-slate-900">Letzte Bestellungen</h2>
-            <span className="text-xs text-slate-400">Demo-Daten</span>
+            <span className="text-xs text-slate-400">Live-Daten</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
