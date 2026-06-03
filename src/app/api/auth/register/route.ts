@@ -9,7 +9,7 @@ import { createSessionForUser, AUTH_COOKIE_NAME } from "@/lib/session";
 const registerSchema = z.object({
   firstName: z.string().min(1).max(60).optional(),
   lastName: z.string().min(1).max(60).optional(),
-  salutation: z.enum(["Herr", "Frau"]).optional(),
+  salutation: z.union([z.literal("Herr"), z.literal("Frau")]).optional(),
   email: z.string().email(),
   password: z.string().min(8).max(128),
 });
