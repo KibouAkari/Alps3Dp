@@ -22,6 +22,7 @@ model User {
   sessions        UserSession[]
   cart            Cart?
   addresses       UserAddress[]
+  savedPaymentMethods SavedPaymentMethod[]
   resetTokens     PasswordResetToken[]
   verifyTokens    EmailVerificationToken[]
 }
