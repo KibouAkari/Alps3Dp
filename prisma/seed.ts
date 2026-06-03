@@ -6,19 +6,24 @@ const prisma = new PrismaClient();
 async function main() {
   const adminEmail = process.env.ADMIN_EMAIL || "admin@alps3dp.ch";
   const adminPassword = process.env.ADMIN_PASSWORD || "ChangeMe-Admin-2026!";
-  const adminName = process.env.ADMIN_NAME || "Alps3Dp Admin";
+  const adminFirstName = process.env.ADMIN_FIRST_NAME || "Alps3Dp";
+  const adminLastName = process.env.ADMIN_LAST_NAME || "Admin";
 
   await prisma.user.upsert({
     where: { email: adminEmail },
     create: {
       email: adminEmail,
-      name: adminName,
+      firstName: adminFirstName,
+      lastName: adminLastName,
+      salutation: "Herr",
       role: "ADMIN",
       emailVerifiedAt: new Date(),
       passwordHash: await bcrypt.hash(adminPassword, 12),
     },
     update: {
-      name: adminName,
+      firstName: adminFirstName,
+      lastName: adminLastName,
+      salutation: "Herr",
       role: "ADMIN",
       emailVerifiedAt: new Date(),
       passwordHash: await bcrypt.hash(adminPassword, 12),
