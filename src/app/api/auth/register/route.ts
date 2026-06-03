@@ -7,9 +7,9 @@ import { hashPassword, createOpaqueToken, hashOpaqueToken } from "@/lib/security
 import { createSessionForUser, AUTH_COOKIE_NAME } from "@/lib/session";
 
 const registerSchema = z.object({
-  firstName: z.string().min(1).max(60).optional(),
-  lastName: z.string().min(1).max(60).optional(),
-  salutation: z.union([z.literal("Herr"), z.literal("Frau")]).optional(),
+  firstName: z.string().min(0).max(60).optional().default(""),
+  lastName: z.string().min(0).max(60).optional().default(""),
+  salutation: z.string().refine(v => !v || ["Herr", "Frau"].includes(v)).optional(),
   email: z.string().email(),
   password: z.string().min(8).max(128),
 });
