@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import Image, { ImageProps } from "next/image";
 import { useState } from "react";
 
@@ -19,6 +21,8 @@ export function SafeImage({ src, fallbackSrc = "/images/placeholder-product.svg"
         {...imageRest}
         src={currentSrc}
         alt={alt}
+        loading={imageRest.loading || "lazy"}
+        decoding="async"
         onError={() => setCurrentSrc(fallbackSrc)}
         className={imageRest.className}
         style={fill ? { objectFit: "cover", position: "absolute", inset: 0, width: "100%", height: "100%" } : imageRest.style}

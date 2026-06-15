@@ -30,8 +30,8 @@ async function sendMail(to: string, subject: string, html: string) {
 export async function sendVerifyEmail(to: string, verifyUrl: string) {
   await sendMail(
     to,
-    "Bitte bestaetige deine E-Mail",
-    `<p>Willkommen bei Alps3Dp.</p><p>Bitte bestaetige deine E-Mail: <a href=\"${verifyUrl}\">E-Mail bestaetigen</a></p>`,
+    "Bitte bestätige deine E-Mail",
+    `<p>Willkommen bei Alps3Dp.</p><p>Bitte bestätige deine E-Mail: <a href=\"${verifyUrl}\">E-Mail bestätigen</a></p>`,
   );
 }
 
@@ -46,8 +46,8 @@ export async function sendLoginSuccessEmail(to: string) {
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   await sendMail(
     to,
-    "Passwort zuruecksetzen",
-    `<p>Klicke hier um dein Passwort zurueckzusetzen: <a href=\"${resetUrl}\">Passwort zuruecksetzen</a></p>`,
+    "Passwort zurücksetzen",
+    `<p>Klicke hier, um dein Passwort zurückzusetzen: <a href=\"${resetUrl}\">Passwort zurücksetzen</a></p>`,
   );
 }
 

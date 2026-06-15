@@ -41,11 +41,13 @@ cp .env.example .env.local
 Fill at least:
 - `DATABASE_URL`
 - `NEXT_PUBLIC_APP_URL`
+- `APP_URL`
 - `RESEND_API_KEY` (optional but required for real emails)
 - `MAIL_FROM`
 - `ADMIN_ORDER_EMAIL`
 - `STRIPE_SECRET_KEY` (required for card/TWINT)
 - `STRIPE_WEBHOOK_SECRET` (required for webhook validation)
+- `BLOB_READ_WRITE_TOKEN` (required for production image uploads)
 
 3. Run database setup
 
@@ -147,6 +149,13 @@ The app now supports all of these environment variable names automatically:
 
 If `DATABASE_URL` is not set, the app and seed process will fall back to the connected-storage variables above.
 
+### Domain Setup (alps3dp.ch)
+
+- Set `NEXT_PUBLIC_APP_URL=https://alps3dp.ch`
+- Set `APP_URL=https://alps3dp.ch`
+- In Resend, verify your sender domain and use `MAIL_FROM` on `@alps3dp.ch`
+- In Stripe dashboard, set allowed redirect domain and webhook endpoint to `https://alps3dp.ch/api/webhooks/payment`
+
 3. Set production environment variables in Vercel (if they are not already set by Connected Storage):
 
 ```bash
@@ -159,6 +168,8 @@ vercel env add ADMIN_ORDER_EMAIL production
 vercel env add STRIPE_SECRET_KEY production
 vercel env add STRIPE_WEBHOOK_SECRET production
 vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY production
+vercel env add APP_URL production
+vercel env add BLOB_READ_WRITE_TOKEN production
 vercel env add ADMIN_EMAIL production
 vercel env add ADMIN_PASSWORD production
 vercel env add ADMIN_NAME production
@@ -186,6 +197,14 @@ and use the signing secret as `STRIPE_WEBHOOK_SECRET`.
 ## Environment
 
 Copy `.env.example` to `.env.local` and fill all required keys.
+
+## Product Image Uploads
+
+- Admin can upload multiple product images via drag-and-drop in `/admin/products`
+- Upload flow uses `/api/uploads`
+- In production, images are stored in Vercel Blob (`BLOB_READ_WRITE_TOKEN`)
+- In local development without Blob token, files are saved under `public/uploads`
+- Product images still support external links as fallback
 
 ## Admin Bootstrap
 

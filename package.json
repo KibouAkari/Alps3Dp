@@ -16,6 +16,7 @@
   "private": true,
   "dependencies": {
     "@prisma/client": "^6.16.2",
+    "@vercel/blob": "^2.4.0",
     "bcryptjs": "^2.4.3",
     "next": "^15.5.19",
     "react": "^19.2.7",

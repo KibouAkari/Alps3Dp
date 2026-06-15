@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { getAppBaseUrl } from "@/lib/app-url";
 import { db } from "@/lib/db";
 import { sendOrderEmails } from "@/lib/mail";
 import { getStripe } from "@/lib/payments";
@@ -146,7 +147,7 @@ export async function POST(request: Request) {
   });
 
   const stripe = getStripe();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = getAppBaseUrl();
 
   if (parsed.data.paymentMethod === "INVOICE") {
     await db.$transaction([

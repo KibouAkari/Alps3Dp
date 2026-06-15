@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AddToCartButton } from "@/components/add-to-cart-button";
+import { ProductImageGallery } from "@/components/product-image-gallery";
 import { SafeImage } from "@/components/safe-image";
 import { formatChf, getDisplayPriceCents } from "@/lib/data";
 import { db } from "@/lib/db";
@@ -53,18 +54,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="space-y-8 fade-in-up">
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-        <div className="space-y-3">
-          <div className="relative h-[360px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:h-[460px]">
-            <SafeImage src={product.images[0]} alt={product.title} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
-          </div>
-          <div className="grid grid-cols-4 gap-2">
-            {product.images.map((image, index) => (
-              <div key={image} className="relative h-20 overflow-hidden rounded-lg border border-slate-200 bg-white">
-                <SafeImage src={image} alt={`${product.title} Ansicht ${index + 1}`} fill className="object-cover" sizes="120px" />
-              </div>
-            ))}
-          </div>
-        </div>
+        <ProductImageGallery images={product.images} title={product.title} />
 
         <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-xs uppercase tracking-wide text-sky-700">{product.category}</p>

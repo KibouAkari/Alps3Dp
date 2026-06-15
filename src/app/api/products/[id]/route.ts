@@ -18,7 +18,7 @@ const productSchema = z.object({
       z
         .string()
         .min(1)
-        .refine((value) => value.startsWith("data:image/") || /^https?:\/\//i.test(value), {
+        .refine((value) => value.startsWith("/") || /^https?:\/\//i.test(value), {
           message: "Ungültige Bildquelle.",
         })
     )

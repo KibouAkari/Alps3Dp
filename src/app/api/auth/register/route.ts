@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
+import { getAppBaseUrl } from "@/lib/app-url";
 import { sendVerifyEmail } from "@/lib/mail";
 import { hashPassword, createOpaqueToken, hashOpaqueToken } from "@/lib/security";
 import { createSessionForUser, AUTH_COOKIE_NAME } from "@/lib/session";
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
     },
   });
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = getAppBaseUrl();
   await sendVerifyEmail(email, `${appUrl}/api/auth/verify-email?token=${verifyToken}`);
 
   const { token, expiresAt } = await createSessionForUser(user.id);

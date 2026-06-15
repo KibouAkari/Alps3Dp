@@ -34,28 +34,13 @@ type ProductsResponse = {
   categories: Array<{ id: string; name: string; slug: string }>;
 };
 
-function fileToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result === "string") {
-        resolve(result);
-        return;
-      }
-      reject(new Error("Bild konnte nicht verarbeitet werden."));
-    };
-    reader.onerror = () => reject(new Error("Bild konnte nicht verarbeitet werden."));
-    reader.readAsDataURL(file);
-  });
-}
-
 export function AdminProductsManager() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categoryList, setCategoryList] = useState<string[]>([]);
   const [form, setForm] = useState<ProductForm>(defaultForm);
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [shippingCents, setShippingCents] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -98,21 +83,39 @@ export function AdminProductsManager() {
       return;
     }
 
-    const images = await Promise.all(
-      Array.from(files)
-        .filter((file) => file.type.startsWith("image/"))
-        .map(async (file) => fileToDataUrl(file))
-    );
-
-    if (images.length === 0) {
+    const accepted = Array.from(files).filter((file) => file.type.startsWith("image/"));
+    if (accepted.length === 0) {
       setError("Bitte nur Bilddateien hochladen.");
       return;
     }
 
-    setForm((prev) => ({
-      ...prev,
-      images: [...prev.images, ...images],
-    }));
+    const payload = new FormData();
+    accepted.forEach((file) => payload.append("files", file));
+
+    setIsUploading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/uploads", {
+        method: "POST",
+        credentials: "include",
+        body: payload,
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Upload fehlgeschlagen.");
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        images: [...prev.images, ...(data.urls || [])],
+      }));
+      setMessage(`${accepted.length} Bild(er) hochgeladen.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload fehlgeschlagen.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const saveProduct = async () => {
@@ -331,7 +334,7 @@ export function AdminProductsManager() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-800">Bilder per Drag-and-drop hier ablegen</p>
-                <p className="text-xs text-slate-500">Mehrere Bilder werden direkt in der Datenbank gespeichert.</p>
+                <p className="text-xs text-slate-500">Mehrere Bilder werden optimiert gespeichert und bleiben schnell ladbar.</p>
               </div>
               <label className="inline-flex cursor-pointer items-center rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
                 Bilddateien auswählen
@@ -347,6 +350,8 @@ export function AdminProductsManager() {
                 />
               </label>
             </div>
+
+            {isUploading && <p className="mt-3 text-xs text-sky-700">Bilder werden hochgeladen...</p>}
 
             <div className="mt-4 flex flex-wrap gap-2">
             {form.images.map((image, index) => (
@@ -370,7 +375,7 @@ export function AdminProductsManager() {
               <input
                 value={imageUrlInput}
                 onChange={(event) => setImageUrlInput(event.target.value)}
-                placeholder="Bild-URL einfügen"
+                placeholder="Bild-URL einfügen (optional)"
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
               />
               <button
