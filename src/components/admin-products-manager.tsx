@@ -34,11 +34,28 @@ type ProductsResponse = {
   categories: Array<{ id: string; name: string; slug: string }>;
 };
 
+function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        resolve(result);
+        return;
+      }
+      reject(new Error("Bild konnte nicht verarbeitet werden."));
+    };
+    reader.onerror = () => reject(new Error("Bild konnte nicht verarbeitet werden."));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function AdminProductsManager() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categoryList, setCategoryList] = useState<string[]>([]);
   const [form, setForm] = useState<ProductForm>(defaultForm);
   const [imageUrlInput, setImageUrlInput] = useState("");
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const [shippingCents, setShippingCents] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +92,28 @@ export function AdminProductsManager() {
       .catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const addFiles = async (files: FileList | File[] | null) => {
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    const images = await Promise.all(
+      Array.from(files)
+        .filter((file) => file.type.startsWith("image/"))
+        .map(async (file) => fileToDataUrl(file))
+    );
+
+    if (images.length === 0) {
+      setError("Bitte nur Bilddateien hochladen.");
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      images: [...prev.images, ...images],
+    }));
+  };
 
   const saveProduct = async () => {
     setError(null);
@@ -126,12 +165,12 @@ export function AdminProductsManager() {
 
     const data = await response.json();
     if (!response.ok) {
-      setError(data.error || "Produkt konnte nicht geloescht werden.");
+      setError(data.error || "Produkt konnte nicht gelöscht werden.");
       return;
     }
 
     await loadProducts();
-    setMessage("Produkt geloescht.");
+    setMessage("Produkt gelöscht.");
   };
 
   const saveShipping = async () => {
@@ -160,7 +199,7 @@ export function AdminProductsManager() {
       {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Shop Einstellungen</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Shop-Einstellungen</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-[200px_1fr_auto]">
           <label className="text-sm text-slate-600">
             Lieferkosten (CHF)
@@ -274,41 +313,80 @@ export function AdminProductsManager() {
 
         <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
           <p className="mb-2 text-sm font-medium text-slate-700">Produktbilder</p>
-          <div className="flex flex-wrap gap-2">
+          <div
+            className={`rounded-xl border-2 border-dashed p-4 transition ${
+              isDraggingFiles ? "border-sky-500 bg-sky-50" : "border-slate-200 bg-white"
+            }`}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsDraggingFiles(true);
+            }}
+            onDragLeave={() => setIsDraggingFiles(false)}
+            onDrop={async (event) => {
+              event.preventDefault();
+              setIsDraggingFiles(false);
+              await addFiles(event.dataTransfer.files);
+            }}
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-800">Bilder per Drag-and-drop hier ablegen</p>
+                <p className="text-xs text-slate-500">Mehrere Bilder werden direkt in der Datenbank gespeichert.</p>
+              </div>
+              <label className="inline-flex cursor-pointer items-center rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                Bilddateien auswählen
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={async (event) => {
+                    await addFiles(event.currentTarget.files);
+                    event.currentTarget.value = "";
+                  }}
+                />
+              </label>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
             {form.images.map((image, index) => (
-              <div key={`${image}-${index}`} className="relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200 bg-white">
+              <div
+                key={`${image}-${index}`}
+                className="group relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              >
                 <SafeImage src={image} alt={`Bild ${index + 1}`} fill className="object-cover" sizes="80px" />
                 <button
                   type="button"
                   onClick={() => setForm((prev) => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }))}
-                  className="absolute right-1 top-1 rounded-full bg-white/90 px-1 text-xs text-rose-600"
+                  className="absolute right-1 top-1 rounded-full bg-white/90 px-1 text-xs text-rose-600 shadow-sm transition hover:bg-white"
                 >
                   x
                 </button>
               </div>
             ))}
-          </div>
+            </div>
 
-          <div className="mt-3 flex gap-2">
-            <input
-              value={imageUrlInput}
-              onChange={(event) => setImageUrlInput(event.target.value)}
-              placeholder="Bild URL einfuegen"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                if (!imageUrlInput.trim()) {
-                  return;
-                }
-                setForm((prev) => ({ ...prev, images: [...prev.images, imageUrlInput.trim()] }));
-                setImageUrlInput("");
-              }}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
-            >
-              Hinzufuegen
-            </button>
+            <div className="mt-4 flex gap-2">
+              <input
+                value={imageUrlInput}
+                onChange={(event) => setImageUrlInput(event.target.value)}
+                placeholder="Bild-URL einfügen"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!imageUrlInput.trim()) {
+                    return;
+                  }
+                  setForm((prev) => ({ ...prev, images: [...prev.images, imageUrlInput.trim()] }));
+                  setImageUrlInput("");
+                }}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+              >
+                Hinzufügen
+              </button>
+            </div>
           </div>
         </div>
 
@@ -318,14 +396,14 @@ export function AdminProductsManager() {
             onClick={saveProduct}
             className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
           >
-            {form.id ? "Aenderungen speichern" : "Produkt speichern"}
+            {form.id ? "Änderungen speichern" : "Produkt speichern"}
           </button>
           <button
             type="button"
             onClick={() => setForm({ ...defaultForm, category: categoryList[0] || "" })}
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700"
           >
-            Zuruecksetzen
+            Zurücksetzen
           </button>
         </div>
       </section>
@@ -412,7 +490,7 @@ export function AdminProductsManager() {
                       onClick={() => deleteProduct(product.id)}
                       className="rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-600"
                     >
-                      Loeschen
+                      Löschen
                     </button>
                   </div>
                 </td>

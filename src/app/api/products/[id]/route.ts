@@ -13,7 +13,16 @@ const productSchema = z.object({
   priceCents: z.number().int().positive(),
   salePriceCents: z.number().int().nonnegative().optional().nullable(),
   stock: z.number().int().nonnegative(),
-  images: z.array(z.string().url()).min(1),
+  images: z
+    .array(
+      z
+        .string()
+        .min(1)
+        .refine((value) => value.startsWith("data:image/") || /^https?:\/\//i.test(value), {
+          message: "Ungültige Bildquelle.",
+        })
+    )
+    .min(1),
   isHidden: z.boolean().optional(),
 });
 
@@ -39,7 +48,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const body = await request.json().catch(() => null);
   const parsed = productSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Ungueltige Produktdaten." }, { status: 400 });
+    return NextResponse.json({ error: "Ungültige Produktdaten." }, { status: 400 });
   }
 
   const { id } = await params;

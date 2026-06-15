@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { ThemeToggleButton } from "@/components/theme-toggle";
 import { useMockSession } from "@/hooks/use-mock-session";
 import { formatChf } from "@/lib/money";
 
@@ -34,7 +35,7 @@ type SavedPaymentMethod = {
 type TabKey = "overview" | "profile" | "security" | "delivery" | "orders";
 
 const tabs: Array<{ key: TabKey; label: string }> = [
-  { key: "overview", label: "Uebersicht" },
+  { key: "overview", label: "Übersicht" },
   { key: "profile", label: "Profil" },
   { key: "security", label: "Sicherheit" },
   { key: "delivery", label: "Adressen & Zahlung" },
@@ -132,21 +133,22 @@ export default function AccountPage() {
         {status && <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{status}</p>}
         {error && <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
 
-        <div className="mt-5 flex flex-wrap gap-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`rounded-full px-3 py-1.5 text-sm transition ${
-                activeTab === tab.key
-                  ? "bg-sky-600 text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`rounded-full px-3 py-1.5 text-sm transition ${
+                  activeTab === tab.key ? "bg-sky-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <ThemeToggleButton label="Design wechseln" />
         </div>
       </section>
 
@@ -245,7 +247,7 @@ export default function AccountPage() {
       {activeTab === "security" && (
         <section className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm soft-pop">
-            <h2 className="text-lg font-semibold text-slate-900">E-Mail aendern</h2>
+            <h2 className="text-lg font-semibold text-slate-900">E-Mail ändern</h2>
             <div className="mt-4 space-y-3">
               <input
                 value={newEmail}
@@ -277,7 +279,7 @@ export default function AccountPage() {
                   if (!response.ok) {
                     throw new Error(data.error || "E-Mail konnte nicht aktualisiert werden.");
                   }
-                  setStatus("E-Mail geaendert. Bitte Verifizierungs-Mail bestaetigen.");
+                  setStatus("E-Mail geändert. Bitte Verifizierungs-Mail bestätigen.");
                   setEmailPassword("");
                 } catch (err) {
                   setError(err instanceof Error ? err.message : "E-Mail konnte nicht aktualisiert werden.");
@@ -290,7 +292,7 @@ export default function AccountPage() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm soft-pop">
-            <h2 className="text-lg font-semibold text-slate-900">Passwort aendern</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Passwort ändern</h2>
             <div className="mt-4 space-y-3">
               <input
                 type="password"
@@ -323,7 +325,7 @@ export default function AccountPage() {
                   if (!response.ok) {
                     throw new Error(data.error || "Passwort konnte nicht aktualisiert werden.");
                   }
-                  setStatus("Passwort erfolgreich geaendert.");
+                  setStatus("Passwort erfolgreich geändert.");
                   setCurrentPassword("");
                   setNewPassword("");
                 } catch (err) {
@@ -381,7 +383,7 @@ export default function AccountPage() {
               onClick={() => setShowNewAddressForm((prev) => !prev)}
               className="mt-4 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
             >
-              {showNewAddressForm ? "Formular schliessen" : "Neue Adresse hinzufuegen"}
+              {showNewAddressForm ? "Formular schließen" : "Neue Adresse hinzufügen"}
             </button>
 
             {showNewAddressForm && (
@@ -412,7 +414,7 @@ export default function AccountPage() {
                 <input
                   value={addressForm.street}
                   onChange={(e) => setAddressForm((p) => ({ ...p, street: e.target.value }))}
-                  placeholder="Strasse"
+                  placeholder="Straße"
                   className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
                 />
                 <input

@@ -21,7 +21,16 @@ export function hashOpaqueToken(token: string) {
 }
 
 export function makeSlug(input: string) {
-  return input
+  const normalized = input
+    .replaceAll("Ä", "Ae")
+    .replaceAll("Ö", "Oe")
+    .replaceAll("Ü", "Ue")
+    .replaceAll("ä", "ae")
+    .replaceAll("ö", "oe")
+    .replaceAll("ü", "ue")
+    .replaceAll("ß", "ss");
+
+  return normalized
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, "-")

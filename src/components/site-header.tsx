@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { CartIcon, LogoutIcon, SettingsIcon, UserIcon } from "@/components/icons";
 import { SafeImage } from "@/components/safe-image";
+import { ThemeToggleButton } from "@/components/theme-toggle";
 import { useMockSession } from "@/hooks/use-mock-session";
 
 export function SiteHeader() {
@@ -104,7 +105,7 @@ export function SiteHeader() {
                 type="button"
                 onClick={() => setIsMenuOpen((open) => !open)}
                 className="inline-flex items-center rounded-full border border-slate-200 p-0.5 transition hover:shadow"
-                aria-label="Profil-Menue öffnen"
+                aria-label="Profil-Menü öffnen"
               >
                 <SafeImage src={user.avatar} alt={user.name} width={34} height={34} className="h-8 w-8 rounded-full object-cover" />
               </button>
@@ -115,13 +116,14 @@ export function SiteHeader() {
                     <p className="text-sm font-semibold text-slate-900">{user.name}</p>
                     <p className="text-xs text-slate-500">{user.email}</p>
                   </div>
+                  <ThemeToggleButton className="mt-1 w-full justify-start" />
                   <Link
                     href="/account"
                     onClick={() => setIsMenuOpen(false)}
                     className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
                   >
                     <UserIcon />
-                    Settings
+                    Konto-Einstellungen
                   </Link>
                   {user.role === "ADMIN" && (
                     <Link
@@ -130,7 +132,7 @@ export function SiteHeader() {
                       className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
                     >
                       <SettingsIcon />
-                      Admin Zugang
+                      Admin-Zugang
                     </Link>
                   )}
                   <button
