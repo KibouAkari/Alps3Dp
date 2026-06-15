@@ -228,7 +228,7 @@ export function AdminProductsManager() {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold text-slate-900">{form.id ? "Produkt bearbeiten" : "Neues Produkt"}</h2>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">{visibleCount} sichtbare Produkte</span>
+          <span className="theme-pill rounded-full px-3 py-1 text-xs text-slate-600">{visibleCount} sichtbare Produkte</span>
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -317,9 +317,7 @@ export function AdminProductsManager() {
         <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
           <p className="mb-2 text-sm font-medium text-slate-700">Produktbilder</p>
           <div
-            className={`rounded-xl border-2 border-dashed p-4 transition ${
-              isDraggingFiles ? "border-sky-500 bg-sky-50" : "border-slate-200 bg-white"
-            }`}
+            className={`upload-zone rounded-xl p-4 transition ${isDraggingFiles ? "upload-zone-active" : ""}`}
             onDragOver={(event) => {
               event.preventDefault();
               setIsDraggingFiles(true);
@@ -336,7 +334,7 @@ export function AdminProductsManager() {
                 <p className="text-sm font-medium text-slate-800">Bilder per Drag-and-drop hier ablegen</p>
                 <p className="text-xs text-slate-500">Mehrere Bilder werden optimiert gespeichert und bleiben schnell ladbar.</p>
               </div>
-              <label className="inline-flex cursor-pointer items-center rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+              <label className="hover-lift inline-flex cursor-pointer items-center rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
                 Bilddateien auswählen
                 <input
                   type="file"
@@ -357,7 +355,7 @@ export function AdminProductsManager() {
             {form.images.map((image, index) => (
               <div
                 key={`${image}-${index}`}
-                className="group relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                className="group hover-lift relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
               >
                 <SafeImage src={image} alt={`Bild ${index + 1}`} fill className="object-cover" sizes="80px" />
                 <button
@@ -442,11 +440,7 @@ export function AdminProductsManager() {
                   {product.salePriceCents && <span className="ml-2 text-xs text-slate-400 line-through">{formatChf(product.priceCents)}</span>}
                 </td>
                 <td className="px-4 py-3">
-                  <span
-                    className={`rounded-full px-2 py-1 text-xs ${
-                      product.isHidden ? "bg-slate-100 text-slate-500" : "bg-emerald-100 text-emerald-700"
-                    }`}
-                  >
+                  <span className={`rounded-full px-2 py-1 text-xs ${product.isHidden ? "status-pill-hidden" : "status-pill-visible"}`}>
                     {product.isHidden ? "Versteckt" : "Sichtbar"}
                   </span>
                 </td>

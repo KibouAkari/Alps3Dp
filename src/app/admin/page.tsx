@@ -7,14 +7,14 @@ import { db } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 const statusColors: Record<string, string> = {
-  Versendet: "bg-green-100 text-green-700",
-  "In Bearbeitung": "bg-amber-100 text-amber-700",
-  Bezahlt: "bg-sky-100 text-sky-700",
-  PAID: "bg-sky-100 text-sky-700",
-  PENDING: "bg-amber-100 text-amber-700",
-  SHIPPED: "bg-green-100 text-green-700",
-  FAILED: "bg-rose-100 text-rose-700",
-  CANCELLED: "bg-slate-100 text-slate-600",
+  Versendet: "status-pill-visible",
+  "In Bearbeitung": "status-pill-hidden",
+  Bezahlt: "status-pill-visible",
+  PAID: "status-pill-visible",
+  PENDING: "status-pill-hidden",
+  SHIPPED: "status-pill-visible",
+  FAILED: "status-pill-hidden",
+  CANCELLED: "status-pill-hidden",
 };
 
 export default async function AdminHomePage() {
@@ -125,7 +125,7 @@ export default async function AdminHomePage() {
                     <td className="px-4 py-3 text-slate-600">{order.product}</td>
                     <td className="px-4 py-3 font-medium text-slate-900">{order.amount}</td>
                     <td className="px-4 py-3">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[order.status] ?? "bg-slate-100 text-slate-600"}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[order.status] ?? "status-pill-hidden"}`}>
                         {order.status}
                       </span>
                     </td>

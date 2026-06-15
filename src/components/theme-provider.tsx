@@ -30,6 +30,12 @@ function getPreferredTheme(): Theme {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(getPreferredTheme);
 
+  const setTheme = (nextTheme: Theme) => {
+    document.body.classList.add("theme-switching");
+    setThemeState(nextTheme);
+    window.setTimeout(() => document.body.classList.remove("theme-switching"), 320);
+  };
+
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = theme;
@@ -51,8 +57,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ThemeContextValue>(
     () => ({
       theme,
-      setTheme: setThemeState,
-      toggleTheme: () => setThemeState((current) => (current === "dark" ? "light" : "dark")),
+      setTheme,
+      toggleTheme: () => setTheme(theme === "dark" ? "light" : "dark"),
     }),
     [theme]
   );

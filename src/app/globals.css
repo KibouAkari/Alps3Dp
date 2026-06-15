@@ -6,6 +6,9 @@
   color-scheme: light;
   --bg: #f4f6f8;
   --bg-soft: #ffffff;
+  --surface: rgba(255, 255, 255, 0.9);
+  --surface-soft: rgba(248, 250, 252, 0.92);
+  --surface-border: rgba(148, 163, 184, 0.26);
   --fg: #0f172a;
   --muted: #64748b;
   --brand: #0369a1;
@@ -16,6 +19,9 @@
   color-scheme: dark;
   --bg: #050816;
   --bg-soft: #0f172a;
+  --surface: rgba(15, 23, 42, 0.86);
+  --surface-soft: rgba(15, 23, 42, 0.72);
+  --surface-border: rgba(71, 85, 105, 0.7);
   --fg: #e2e8f0;
   --muted: #94a3b8;
   --brand: #38bdf8;
@@ -29,7 +35,7 @@ body {
     radial-gradient(85rem 50rem at 100% 0%, rgba(148, 163, 184, 0.1), transparent 55%),
     var(--bg);
   min-height: 100vh;
-  transition: background-color 240ms ease, color 240ms ease;
+  transition: background-color 300ms ease, color 300ms ease;
 }
 
 :root[data-theme="dark"] body {
@@ -70,6 +76,11 @@ a {
     border-color 180ms ease,
     box-shadow 180ms ease,
     transform 180ms ease;
+}
+
+body.theme-switching,
+body.theme-switching * {
+  transition-duration: 280ms !important;
 }
 
 :root[data-theme="dark"] [class*="bg-white"] {
@@ -164,6 +175,90 @@ a {
 
 .soft-pop {
   animation: softPop 360ms ease-out both;
+}
+
+.immersive-rise {
+  animation: immersiveRise 620ms cubic-bezier(0.2, 0.85, 0.22, 1) both;
+}
+
+.hover-lift {
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.hero-shell {
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.95), rgba(240, 249, 255, 0.92), rgba(255, 255, 255, 0.95));
+  border-color: var(--surface-border);
+}
+
+:root[data-theme="dark"] .hero-shell {
+  background: linear-gradient(120deg, rgba(15, 23, 42, 0.92), rgba(8, 47, 73, 0.74), rgba(15, 23, 42, 0.92));
+}
+
+.theme-pill {
+  border: 1px solid var(--surface-border);
+  background: var(--surface-soft);
+}
+
+.upload-zone {
+  border: 1px dashed rgba(56, 189, 248, 0.38);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.86));
+}
+
+.upload-zone-active {
+  border-color: rgba(14, 165, 233, 0.8);
+  background: linear-gradient(160deg, rgba(224, 242, 254, 0.96), rgba(239, 246, 255, 0.92));
+  box-shadow: 0 12px 24px rgba(2, 132, 199, 0.16);
+}
+
+:root[data-theme="dark"] .upload-zone {
+  border-color: rgba(14, 165, 233, 0.42);
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.94), rgba(8, 47, 73, 0.45));
+}
+
+:root[data-theme="dark"] .upload-zone-active {
+  border-color: rgba(56, 189, 248, 0.82);
+  background: linear-gradient(160deg, rgba(14, 116, 144, 0.3), rgba(15, 23, 42, 0.95));
+  box-shadow: 0 14px 30px rgba(8, 47, 73, 0.5);
+}
+
+.status-pill-visible {
+  background-color: rgb(209 250 229);
+  color: rgb(6 95 70);
+}
+
+.status-pill-hidden {
+  background-color: rgb(226 232 240);
+  color: rgb(51 65 85);
+}
+
+:root[data-theme="dark"] .status-pill-visible {
+  background-color: rgba(16, 185, 129, 0.24);
+  color: rgb(167 243 208);
+}
+
+:root[data-theme="dark"] .status-pill-hidden {
+  background-color: rgba(71, 85, 105, 0.4);
+  color: rgb(203 213 225);
+}
+
+.account-overview-card {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+}
+
+@keyframes immersiveRise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes fadeInUp {

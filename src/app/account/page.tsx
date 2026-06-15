@@ -112,6 +112,10 @@ export default function AccountPage() {
 
   const defaultAddress = useMemo(() => addresses.find((entry) => entry.isDefault), [addresses]);
   const defaultPayment = useMemo(() => payments.find((entry) => entry.isDefault), [payments]);
+  const profileCompletion = useMemo(() => {
+    const checks = [Boolean(user?.firstName), Boolean(user?.lastName), Boolean(user?.username), Boolean(defaultAddress), Boolean(defaultPayment)];
+    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  }, [defaultAddress, defaultPayment, user?.firstName, user?.lastName, user?.username]);
 
   if (isLoading) {
     return <div className="h-60 animate-pulse rounded-2xl bg-slate-100" />;
@@ -153,13 +157,13 @@ export default function AccountPage() {
       </section>
 
       {activeTab === "overview" && (
-        <section className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm soft-pop">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="account-overview-card hover-lift rounded-2xl p-5 shadow-sm soft-pop">
             <p className="text-xs uppercase tracking-wide text-slate-500">Profil</p>
             <p className="mt-2 text-sm text-slate-900">{user.name}</p>
             <p className="text-sm text-slate-600">{user.email}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm soft-pop">
+          <div className="account-overview-card hover-lift rounded-2xl p-5 shadow-sm soft-pop">
             <p className="text-xs uppercase tracking-wide text-slate-500">Standardadresse</p>
             {defaultAddress ? (
               <p className="mt-2 text-sm text-slate-900">
@@ -169,7 +173,7 @@ export default function AccountPage() {
               <p className="mt-2 text-sm text-slate-600">Noch keine Adresse gespeichert.</p>
             )}
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm soft-pop">
+          <div className="account-overview-card hover-lift rounded-2xl p-5 shadow-sm soft-pop">
             <p className="text-xs uppercase tracking-wide text-slate-500">Standardzahlung</p>
             <p className="mt-2 text-sm text-slate-900">
               {defaultPayment
@@ -181,6 +185,14 @@ export default function AccountPage() {
                 : "Noch nicht gesetzt"}
             </p>
             <p className="text-sm text-slate-600">Bestellungen: {orders.length}</p>
+          </div>
+          <div className="account-overview-card hover-lift rounded-2xl p-5 shadow-sm soft-pop">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Profilstatus</p>
+            <p className="mt-2 text-2xl font-bold text-slate-900">{profileCompletion}%</p>
+            <div className="mt-3 h-2 rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-sky-600 transition-all duration-500" style={{ width: `${profileCompletion}%` }} />
+            </div>
+            <p className="mt-2 text-xs text-slate-500">Vollständiges Profil verbessert Checkout und Support.</p>
           </div>
         </section>
       )}
