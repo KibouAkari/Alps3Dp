@@ -66,6 +66,7 @@ export async function POST(request: Request) {
   const response = NextResponse.json({
     user: {
       id: user.id,
+      avatarUrl: user.avatarUrl,
       username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,

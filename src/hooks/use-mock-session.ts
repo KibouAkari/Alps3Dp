@@ -26,6 +26,7 @@ type RegisterInput = {
 type SessionApiResponse = {
   user: {
     id: string;
+    avatarUrl?: string | null;
     username?: string | null;
     firstName?: string | null;
     lastName?: string | null;
@@ -56,7 +57,7 @@ async function fetchSession(): Promise<SessionUser | null> {
     name: data.user.name,
     email: data.user.email,
     role: data.user.role,
-    avatar: DEFAULT_AVATAR,
+    avatar: data.user.avatarUrl || DEFAULT_AVATAR,
   };
 }
 
@@ -103,6 +104,7 @@ export function useMockSession() {
 
     const nextUser: SessionUser = {
       id: data.user.id,
+      avatar: data.user.avatarUrl || DEFAULT_AVATAR,
       username: data.user.username ?? null,
       firstName: data.user.firstName ?? null,
       lastName: data.user.lastName ?? null,
@@ -110,7 +112,7 @@ export function useMockSession() {
       name: data.user.name,
       email: data.user.email,
       role: data.user.role,
-      avatar: DEFAULT_AVATAR,
+      
     };
 
     window.dispatchEvent(new Event(AUTH_EVENT));
@@ -140,6 +142,7 @@ export function useMockSession() {
 
     const nextUser: SessionUser = {
       id: data.user.id,
+      avatar: data.user.avatarUrl || DEFAULT_AVATAR,
       username: data.user.username ?? null,
       firstName: data.user.firstName ?? null,
       lastName: data.user.lastName ?? null,
@@ -147,7 +150,7 @@ export function useMockSession() {
       name: data.user.name,
       email: data.user.email,
       role: data.user.role,
-      avatar: DEFAULT_AVATAR,
+      
     };
 
     window.dispatchEvent(new Event(AUTH_EVENT));
@@ -174,6 +177,7 @@ export function useMockSession() {
         lastName: partial.lastName,
         salutation: partial.salutation,
         username: partial.username,
+        avatarUrl: partial.avatar,
       }),
     });
 
@@ -191,7 +195,7 @@ export function useMockSession() {
       name: data.name,
       email: data.email,
       role: user?.role || "CUSTOMER",
-      avatar: user?.avatar || DEFAULT_AVATAR,
+      avatar: data.avatarUrl || user?.avatar || DEFAULT_AVATAR,
     };
 
     window.dispatchEvent(new Event(AUTH_EVENT));

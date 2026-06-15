@@ -3,7 +3,7 @@
 export default function ContactPage() {
   return (
     <div className="space-y-6 fade-in-up">
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r from-white via-sky-50 to-white p-6 shadow-sm sm:p-10">
+      <section className="hero-shell overflow-hidden rounded-3xl border p-6 shadow-sm sm:p-10">
         <p className="text-sm uppercase tracking-[0.2em] text-sky-700">Kontakt</p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Wir freuen uns von dir zu hören</h1>
         <p className="mt-3 max-w-xl text-slate-600">
@@ -11,9 +11,9 @@ export default function ContactPage() {
         </p>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="stagger-grid grid gap-6 lg:grid-cols-[1fr_340px]">
         {/* Contact Form */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="panel-surface rounded-2xl p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Nachricht senden</h2>
           <form className="mt-4 space-y-4" onSubmit={(e) => e.preventDefault()}>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -69,7 +69,7 @@ export default function ContactPage() {
 
         {/* Contact Info */}
         <aside className="space-y-4">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="panel-surface rounded-2xl p-5 shadow-sm">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Kontaktdaten</h2>
             <ul className="mt-3 space-y-3 text-sm text-slate-700">
               <li>
@@ -87,7 +87,7 @@ export default function ContactPage() {
             </ul>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="panel-surface rounded-2xl p-5 shadow-sm">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Häufige Fragen</h2>
             <ul className="mt-3 space-y-2 text-sm text-slate-600">
               <li className="border-b border-slate-100 pb-2">

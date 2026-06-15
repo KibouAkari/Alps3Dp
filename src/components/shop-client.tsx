@@ -149,7 +149,7 @@ export function ShopClient() {
 
   return (
     <section className="fade-in-up grid gap-6 lg:grid-cols-[260px_1fr]">
-      <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-20">
+      <aside className="panel-surface h-fit rounded-2xl p-4 shadow-sm lg:sticky lg:top-20">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-900">Filter</h2>
           {hasActiveFilters && (
@@ -266,7 +266,7 @@ export function ShopClient() {
         )}
 
         {filteredProducts.length === 0 && (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+          <div className="panel-soft rounded-xl p-6 text-center text-sm text-slate-500">
             Keine Produkte gefunden.
           </div>
         )}

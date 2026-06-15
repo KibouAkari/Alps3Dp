@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { SafeImage } from "@/components/safe-image";
 import { ThemeToggleButton } from "@/components/theme-toggle";
 import { useMockSession } from "@/hooks/use-mock-session";
 import { formatChf } from "@/lib/money";
@@ -76,6 +77,7 @@ export default function AccountPage() {
   const [newPaymentIsDefault, setNewPaymentIsDefault] = useState(false);
 
   const [saved, setSaved] = useState(false);
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -131,7 +133,7 @@ export default function AccountPage() {
 
   return (
     <div className="space-y-6 fade-in-up">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="panel-surface rounded-2xl p-6 shadow-sm">
         <h1 className="text-2xl font-bold text-slate-900">Mein Konto</h1>
         <p className="mt-1 text-sm text-slate-600">Alles ist in klare Schritte aufgeteilt, damit es einfacher bleibt.</p>
         {status && <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{status}</p>}
@@ -157,7 +159,7 @@ export default function AccountPage() {
       </section>
 
       {activeTab === "overview" && (
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="stagger-grid grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="account-overview-card hover-lift rounded-2xl p-5 shadow-sm soft-pop">
             <p className="text-xs uppercase tracking-wide text-slate-500">Profil</p>
             <p className="mt-2 text-sm text-slate-900">{user.name}</p>
@@ -198,8 +200,63 @@ export default function AccountPage() {
       )}
 
       {activeTab === "profile" && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm soft-pop">
+        <section className="panel-surface rounded-2xl p-6 shadow-sm soft-pop">
           <h2 className="text-lg font-semibold text-slate-900">Profil bearbeiten</h2>
+          <div className="mt-4 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="relative h-20 w-20 overflow-hidden rounded-full border border-slate-200 bg-white">
+              <SafeImage src={user.avatar} alt={user.name} fill className="object-cover" sizes="80px" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-slate-800">Profilbild</p>
+              <label className="inline-flex cursor-pointer items-center rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100">
+                Bild hochladen
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (event) => {
+                    const files = event.currentTarget.files;
+                    if (!files || files.length === 0) {
+                      return;
+                    }
+
+                    const payload = new FormData();
+                    payload.append("scope", "avatar");
+                    payload.append("files", files[0]);
+
+                    setIsAvatarUploading(true);
+                    setError(null);
+                    setStatus(null);
+                    try {
+                      const response = await fetch("/api/uploads", {
+                        method: "POST",
+                        credentials: "include",
+                        body: payload,
+                      });
+                      const data = await response.json();
+                      if (!response.ok) {
+                        throw new Error(data.error || "Avatar konnte nicht hochgeladen werden.");
+                      }
+
+                      const nextAvatar = data.urls?.[0];
+                      if (!nextAvatar) {
+                        throw new Error("Avatar konnte nicht gespeichert werden.");
+                      }
+
+                      await updateProfile({ avatar: nextAvatar });
+                      setStatus("Profilbild aktualisiert.");
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Avatar konnte nicht hochgeladen werden.");
+                    } finally {
+                      setIsAvatarUploading(false);
+                      event.currentTarget.value = "";
+                    }
+                  }}
+                />
+              </label>
+              {isAvatarUploading && <p className="text-xs text-sky-700">Lade Profilbild hoch...</p>}
+            </div>
+          </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <select
               value={salutation}
@@ -257,8 +314,8 @@ export default function AccountPage() {
       )}
 
       {activeTab === "security" && (
-        <section className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm soft-pop">
+        <section className="stagger-grid grid gap-4 md:grid-cols-2">
+          <div className="panel-surface rounded-2xl p-6 shadow-sm soft-pop">
             <h2 className="text-lg font-semibold text-slate-900">E-Mail ändern</h2>
             <div className="mt-4 space-y-3">
               <input
@@ -303,7 +360,7 @@ export default function AccountPage() {
             </button>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm soft-pop">
+          <div className="panel-surface rounded-2xl p-6 shadow-sm soft-pop">
             <h2 className="text-lg font-semibold text-slate-900">Passwort ändern</h2>
             <div className="mt-4 space-y-3">
               <input
@@ -353,8 +410,8 @@ export default function AccountPage() {
       )}
 
       {activeTab === "delivery" && (
-        <section className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm soft-pop">
+        <section className="stagger-grid grid gap-4 lg:grid-cols-2">
+          <div className="panel-surface rounded-2xl p-6 shadow-sm soft-pop">
             <h2 className="text-lg font-semibold text-slate-900">Gespeicherte Adressen</h2>
             <div className="mt-4 space-y-3">
               {addresses.length === 0 && <p className="text-sm text-slate-500">Noch keine Adresse gespeichert.</p>}
@@ -476,7 +533,7 @@ export default function AccountPage() {
             )}
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm soft-pop">
+          <div className="panel-surface rounded-2xl p-6 shadow-sm soft-pop">
             <h2 className="text-lg font-semibold text-slate-900">Zahlungsarten</h2>
             <p className="mt-1 text-xs text-slate-500">
               Karteninfos werden hier absichtlich nicht verarbeitet. Sicherer Standard ist Rechnung/Vorkasse.
@@ -555,7 +612,7 @@ export default function AccountPage() {
       )}
 
       {activeTab === "orders" && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm soft-pop">
+        <section className="panel-surface rounded-2xl p-6 shadow-sm soft-pop">
           <h2 className="text-lg font-semibold text-slate-900">Bestellungen</h2>
           <div className="mt-4 space-y-3">
             {orders.length === 0 && <p className="text-sm text-slate-500">Noch keine Bestellungen vorhanden.</p>}

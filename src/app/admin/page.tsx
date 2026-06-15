@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AdminGuard } from "@/components/admin-guard";
+import { AdminOpsTools } from "@/components/admin-ops-tools";
 import { formatChf } from "@/lib/data";
 import { db } from "@/lib/db";
 
@@ -69,12 +70,15 @@ export default async function AdminHomePage() {
 
   return (
     <AdminGuard>
-      <div className="space-y-6 fade-in-up">
+      <div className="stagger-grid space-y-6 fade-in-up">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
           <div className="flex gap-2">
             <Link href="/admin/products" className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 transition">
               Produkte verwalten
+            </Link>
+            <Link href="/admin/stripe" className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition">
+              Stripe & Tests
             </Link>
             <Link href="/admin/analytics" className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition">
               Monitoring
@@ -85,7 +89,7 @@ export default async function AdminHomePage() {
         {/* KPI Cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => (
-            <div key={stat.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div key={stat.label} className="panel-surface rounded-2xl p-5 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{stat.label}</p>
               <p className="mt-2 text-2xl font-bold text-slate-900">{stat.value}</p>
               <p className="mt-1 text-xs text-emerald-600">{stat.change}</p>
@@ -94,7 +98,7 @@ export default async function AdminHomePage() {
         </div>
 
         {/* Recent Orders */}
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section className="panel-surface rounded-2xl shadow-sm">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
             <h2 className="text-base font-semibold text-slate-900">Letzte Bestellungen</h2>
             <span className="text-xs text-slate-400">Live-Daten</span>
@@ -138,7 +142,7 @@ export default async function AdminHomePage() {
 
         {/* Quick Links + System Notes */}
         <div className="grid gap-4 md:grid-cols-2">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="panel-surface rounded-2xl p-5 shadow-sm">
             <h2 className="text-base font-semibold text-slate-900">Schnellzugriff</h2>
             <ul className="mt-3 space-y-2">
               <li>
@@ -159,7 +163,7 @@ export default async function AdminHomePage() {
             </ul>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="panel-surface rounded-2xl p-5 shadow-sm">
             <h2 className="text-base font-semibold text-slate-900">System</h2>
             <ul className="mt-3 space-y-2 text-sm text-slate-600">
               <li className="flex items-start gap-2"><span className="mt-0.5 text-emerald-500">●</span> DB, Auth, Warenkorb und Checkout sind live an Prisma angebunden</li>
@@ -168,6 +172,8 @@ export default async function AdminHomePage() {
             </ul>
           </section>
         </div>
+
+        <AdminOpsTools />
       </div>
     </AdminGuard>
   );

@@ -16,18 +16,27 @@ function getCookieToken(request: Request) {
 
 export async function POST(request: Request) {
   const user = await getSessionUserFromToken(getCookieToken(request));
-  if (!user || user.role !== "ADMIN") {
+  if (!user) {
     return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
   }
 
   const formData = await request.formData();
+  const scope = String(formData.get("scope") || "product");
   const files = formData.getAll("files").filter((entry): entry is File => entry instanceof File);
 
   if (files.length === 0) {
     return NextResponse.json({ error: "Keine Dateien erhalten." }, { status: 400 });
   }
 
-  if (files.length > 12) {
+  if (scope === "product" && user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
+  }
+
+  if (scope === "avatar" && files.length > 1) {
+    return NextResponse.json({ error: "Für Avatar nur eine Datei erlaubt." }, { status: 400 });
+  }
+
+  if (scope === "product" && files.length > 12) {
     return NextResponse.json({ error: "Maximal 12 Bilder pro Upload." }, { status: 400 });
   }
 
@@ -38,8 +47,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `Datei '${file.name}' ist kein Bild.` }, { status: 400 });
     }
 
-    if (file.size > 8 * 1024 * 1024) {
-      return NextResponse.json({ error: `Datei '${file.name}' ist groesser als 8MB.` }, { status: 400 });
+    const maxBytes = scope === "avatar" ? 3 * 1024 * 1024 : 8 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      return NextResponse.json({ error: `Datei '${file.name}' ist zu groß (max. ${scope === "avatar" ? "3" : "8"}MB).` }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());

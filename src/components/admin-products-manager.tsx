@@ -201,7 +201,7 @@ export function AdminProductsManager() {
       {message && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p>}
       {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="panel-surface rounded-2xl p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900">Shop-Einstellungen</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-[200px_1fr_auto]">
           <label className="text-sm text-slate-600">
@@ -225,7 +225,7 @@ export function AdminProductsManager() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="panel-surface rounded-2xl p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold text-slate-900">{form.id ? "Produkt bearbeiten" : "Neues Produkt"}</h2>
           <span className="theme-pill rounded-full px-3 py-1 text-xs text-slate-600">{visibleCount} sichtbare Produkte</span>
@@ -411,7 +411,7 @@ export function AdminProductsManager() {
         </div>
       </section>
 
-      <section className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="panel-surface overflow-x-auto rounded-2xl shadow-sm">
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 text-left text-slate-500">
             <tr>

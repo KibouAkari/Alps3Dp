@@ -9,6 +9,13 @@ const updateProfileSchema = z.object({
   lastName: z.string().min(1).max(60).optional(),
   salutation: z.enum(["Herr", "Frau"]).optional(),
   username: z.string().min(3).max(32).regex(/^[a-zA-Z0-9_.-]+$/).optional(),
+  avatarUrl: z
+    .string()
+    .min(1)
+    .refine((value) => value.startsWith("/") || /^https?:\/\//i.test(value), {
+      message: "Ungültige Avatar-URL.",
+    })
+    .optional(),
 });
 
 function getCookieToken(request: Request) {
@@ -35,6 +42,7 @@ export async function GET(request: Request) {
       lastName: true,
       salutation: true,
       username: true,
+      avatarUrl: true,
       email: true,
       emailVerifiedAt: true,
       addresses: {
@@ -91,6 +99,7 @@ export async function GET(request: Request) {
       lastName: fullUser.lastName,
       salutation: fullUser.salutation,
       username: fullUser.username,
+      avatarUrl: fullUser.avatarUrl,
       email: fullUser.email,
       emailVerified: Boolean(fullUser.emailVerifiedAt),
       addresses: fullUser.addresses,
@@ -140,12 +149,14 @@ export async function PATCH(request: Request) {
       lastName: parsed.data.lastName ?? undefined,
       salutation: parsed.data.salutation ?? undefined,
       username: parsed.data.username ? parsed.data.username.trim().toLowerCase() : undefined,
+      avatarUrl: parsed.data.avatarUrl ?? undefined,
     },
   });
 
   return NextResponse.json({
     id: updatedUser.id,
     username: updatedUser.username,
+    avatarUrl: updatedUser.avatarUrl,
     firstName: updatedUser.firstName,
     lastName: updatedUser.lastName,
     salutation: updatedUser.salutation,

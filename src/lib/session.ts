@@ -8,6 +8,7 @@ const SESSION_TTL_DAYS = 30;
 
 export type SessionUser = {
   id: string;
+  avatarUrl: string | null;
   username: string | null;
   firstName: string | null;
   lastName: string | null;
@@ -56,6 +57,7 @@ export async function getSessionUserFromToken(rawToken?: string | null): Promise
 
   return {
     id: session.user.id,
+    avatarUrl: session.user.avatarUrl,
     username: session.user.username,
     firstName: session.user.firstName,
     lastName: session.user.lastName,
