@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { sendOrderEmails } from "@/lib/mail";
 
 const schema = z.object({
-  action: z.enum(["simulate-order-and-email"]),
+  action: z.enum(["simulate-order-and-email", "reset-dashboard-data"]),
   email: z.string().email().optional(),
 });
 
@@ -87,6 +87,22 @@ export async function POST(request: Request) {
       success: true,
       orderId: order.id,
       message: "Testbestellung erstellt und E-Mail-Flow ausgelöst.",
+    });
+  }
+
+  if (parsed.data.action === "reset-dashboard-data") {
+    const [deletedOrders, deletedCartItems, resetClicks] = await db.$transaction([
+      db.order.deleteMany({}),
+      db.cartItem.deleteMany({}),
+      db.product.updateMany({ data: { clicks: 0 } }),
+    ]);
+
+    return NextResponse.json({
+      success: true,
+      message: "Dashboard-Testdaten wurden zurückgesetzt.",
+      deletedOrders: deletedOrders.count,
+      deletedCartItems: deletedCartItems.count,
+      resetProductClicks: resetClicks.count,
     });
   }
 

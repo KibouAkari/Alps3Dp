@@ -16,7 +16,14 @@ export function ProductImageGallery({ images, title }: ProductImageGalleryProps)
   return (
     <div className="space-y-3">
       <div className="relative h-[360px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:h-[460px]">
-        <SafeImage src={currentImage} alt={title} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+        <SafeImage
+          src={currentImage}
+          alt={title}
+          fill
+          loading="eager"
+          className="object-cover"
+          sizes="(max-width: 1024px) 100vw, 50vw"
+        />
       </div>
       <div className="grid grid-cols-4 gap-2">
         {images.map((image, index) => {

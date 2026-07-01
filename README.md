@@ -98,6 +98,12 @@ Use Resend (or Postmark) with transactional templates:
 - Customer email: payment confirmation + order summary
 - Later: add invoice PDF generation and attach invoice number
 
+Current behavior:
+
+- New account creation sends verification email and welcome email
+- First login for existing accounts (without prior session) sends welcome email
+- Subsequent logins send login-success notification email
+
 ## Production Security Checklist
 
 - Use hashed passwords (bcrypt/argon2), never plain text
@@ -160,6 +166,11 @@ Remaining recommended hardening:
 - Confirm robots and sitemap are live:
   - `/robots.txt`
   - `/sitemap.xml`
+
+5. Optional dashboard cleanup
+
+- In Admin Bereich unter Stripe & Tests kannst du Dashboard-Testdaten zurücksetzen
+- Dabei werden Bestellungen und Warenkorb-Testdaten gelöscht und Produkt-Klickzähler auf 0 gesetzt
 
 ## Performance Notes
 

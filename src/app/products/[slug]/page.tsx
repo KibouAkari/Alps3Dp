@@ -7,8 +7,28 @@ import { SafeImage } from "@/components/safe-image";
 import { formatChf, getDisplayPriceCents } from "@/lib/data";
 import { db } from "@/lib/db";
 import { mapProduct } from "@/lib/product-mapper";
-import type { ProductWithRelations } from "@/lib/product-mapper";
-import type { Product } from "@/lib/types";
+
+export const revalidate = 120;
+
+type RecommendationRow = {
+  id: string;
+  slug: string;
+  title: string;
+  priceCents: number;
+  salePriceCents: number | null;
+  categoryId: string | null;
+  images: Array<{ url: string; sortOrder: number }>;
+};
+
+type ProductCardEntry = {
+  id: string;
+  slug: string;
+  title: string;
+  priceCents: number;
+  salePriceCents?: number;
+  categoryId: string | null;
+  image: string;
+};
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -26,29 +46,49 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     notFound();
   }
 
-  const relatedDb = await db.product.findMany({
-    where: {
-      isHidden: false,
-      id: { not: product.id },
-      categoryId: dbProduct?.categoryId || undefined,
-    },
-    include: { images: true, category: true },
-    take: 4,
-    orderBy: { createdAt: "desc" },
-  });
-
-  const moreDb = await db.product.findMany({
+  const recommendationPool = await db.product.findMany({
     where: {
       isHidden: false,
       id: { not: product.id },
     },
-    include: { images: true, category: true },
-    take: 6,
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      priceCents: true,
+      salePriceCents: true,
+      categoryId: true,
+      images: {
+        select: {
+          url: true,
+          sortOrder: true,
+        },
+      },
+    },
+    take: 24,
     orderBy: { createdAt: "desc" },
   });
 
-  const related: Product[] = relatedDb.map((entry: ProductWithRelations) => mapProduct(entry));
-  const moreProducts: Product[] = moreDb.map((entry: ProductWithRelations) => mapProduct(entry));
+  const cardProducts: ProductCardEntry[] = recommendationPool.map((entry: RecommendationRow) => ({
+    id: entry.id,
+    slug: entry.slug,
+    title: entry.title,
+    priceCents: entry.priceCents,
+    salePriceCents: entry.salePriceCents ?? undefined,
+    categoryId: entry.categoryId,
+    image:
+      entry.images
+        .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
+        .map((image: { url: string }) => image.url)[0] || "/images/placeholder-product.svg",
+  }));
+
+  const related = cardProducts
+    .filter((entry: ProductCardEntry) => Boolean(dbProduct?.categoryId) && entry.categoryId === dbProduct?.categoryId)
+    .slice(0, 4);
+
+  const relatedIds = new Set(related.map((entry: ProductCardEntry) => entry.id));
+  const moreProducts = cardProducts.filter((entry: ProductCardEntry) => !relatedIds.has(entry.id)).slice(0, 6);
+
   const hasSale = Boolean(product.salePriceCents && product.salePriceCents < product.priceCents);
 
   return (
@@ -84,13 +124,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-slate-900">Ähnliche Produkte</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {related.map((entry: Product) => (
+            {related.map((entry: ProductCardEntry) => (
               <Link key={entry.id} href={`/products/${entry.slug}`} className="rounded-xl border border-slate-200 p-3 transition hover:-translate-y-0.5 hover:shadow">
                 <div className="relative h-28 overflow-hidden rounded-md">
-                  <SafeImage src={entry.images[0]} alt={entry.title} fill className="object-cover" sizes="220px" />
+                  <SafeImage src={entry.image} alt={entry.title} fill className="object-cover" sizes="220px" />
                 </div>
                 <p className="mt-2 line-clamp-1 text-sm font-medium text-slate-900">{entry.title}</p>
-                <p className="text-sm text-slate-600">{formatChf(getDisplayPriceCents(entry))}</p>
+                <p className="text-sm text-slate-600">{formatChf(entry.salePriceCents ?? entry.priceCents)}</p>
               </Link>
             ))}
           </div>
@@ -101,14 +141,14 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-slate-900">Weitere Produkte</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {moreProducts.map((entry: Product) => (
+            {moreProducts.map((entry: ProductCardEntry) => (
               <Link key={entry.id} href={`/products/${entry.slug}`} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 transition hover:bg-slate-50">
                 <div className="relative h-16 w-16 overflow-hidden rounded-md border border-slate-200">
-                  <SafeImage src={entry.images[0]} alt={entry.title} fill className="object-cover" sizes="64px" />
+                  <SafeImage src={entry.image} alt={entry.title} fill className="object-cover" sizes="64px" />
                 </div>
                 <div>
                   <p className="line-clamp-1 text-sm font-medium text-slate-900">{entry.title}</p>
-                  <p className="text-xs text-slate-600">{formatChf(getDisplayPriceCents(entry))}</p>
+                  <p className="text-xs text-slate-600">{formatChf(entry.salePriceCents ?? entry.priceCents)}</p>
                 </div>
               </Link>
             ))}

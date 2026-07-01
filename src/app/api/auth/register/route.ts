@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { getAppBaseUrl } from "@/lib/app-url";
-import { sendVerifyEmail } from "@/lib/mail";
+import { sendVerifyEmail, sendWelcomeEmail } from "@/lib/mail";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { hashPassword, createOpaqueToken, hashOpaqueToken } from "@/lib/security";
 import { createSessionForUser, AUTH_COOKIE_NAME } from "@/lib/session";
@@ -77,7 +77,22 @@ export async function POST(request: Request) {
   });
 
   const appUrl = getAppBaseUrl();
-  await sendVerifyEmail(email, `${appUrl}/api/auth/verify-email?token=${verifyToken}`);
+  const displayName =
+    [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+    user.username ||
+    user.email.split("@")[0] ||
+    "bei Alps3Dp";
+
+  const mailResults = await Promise.allSettled([
+    sendVerifyEmail(email, `${appUrl}/api/auth/verify-email?token=${verifyToken}`),
+    sendWelcomeEmail({ to: email, name: displayName }),
+  ]);
+
+  for (const result of mailResults) {
+    if (result.status === "rejected") {
+      console.error("[auth:register:mail]", result.reason);
+    }
+  }
 
   const { token, expiresAt } = await createSessionForUser(user.id);
 
