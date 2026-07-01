@@ -32,13 +32,26 @@ export async function POST(request: Request) {
     const orderId = session.metadata?.orderId || session.client_reference_id;
 
     if (orderId) {
-      const order = await db.order.update({
-        where: { id: orderId },
+      const updateResult = await db.order.updateMany({
+        where: {
+          id: orderId,
+          status: {
+            in: ["PENDING", "FAILED"],
+          },
+        },
         data: {
           status: "PAID",
           paidAt: new Date(),
           paymentReference: session.id,
         },
+      });
+
+      if (updateResult.count === 0) {
+        return NextResponse.json({ received: true, deduplicated: true });
+      }
+
+      const order = await db.order.findUnique({
+        where: { id: orderId },
         include: {
           items: {
             include: {
@@ -47,6 +60,10 @@ export async function POST(request: Request) {
           },
         },
       });
+
+      if (!order) {
+        return NextResponse.json({ received: true, deduplicated: true });
+      }
 
       const cart = await db.cart.findUnique({ where: { userId: order.userId } });
       if (cart) {
@@ -63,6 +80,18 @@ export async function POST(request: Request) {
           quantity: item.quantity,
           unitCents: item.unitCents,
         })),
+      });
+    }
+  }
+
+  if (event.type === "checkout.session.expired") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const orderId = session.metadata?.orderId || session.client_reference_id;
+
+    if (orderId) {
+      await db.order.updateMany({
+        where: { id: orderId, status: "PENDING" },
+        data: { status: "FAILED" },
       });
     }
   }

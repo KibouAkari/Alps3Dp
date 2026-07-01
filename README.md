@@ -109,6 +109,19 @@ Use Resend (or Postmark) with transactional templates:
 - Rate-limit login/reset endpoints
 - Add audit logs for admin product changes
 
+Implemented in this repo:
+
+- Rate limits for `/api/auth/login`, `/api/auth/register`, `/api/password/forgot`, `/api/password/reset`, `/api/checkout`
+- Global security headers (CSP, frame protection, MIME sniffing protection, permissions policy)
+- Stripe webhook idempotency guard to avoid duplicate payment completion side effects
+- Prisma-backed queries only (no raw SQL string interpolation used in API routes)
+
+Remaining recommended hardening:
+
+- Add distributed rate limiting (Redis/Upstash) for stronger multi-instance protection
+- Add WAF rules at the edge (Vercel Firewall or Cloudflare)
+- Add monitoring alerts for repeated failed logins and checkout spikes
+
 ## Next Integration Steps
 
 1. Add Prisma Client and migrate schema to Vercel Postgres
@@ -117,6 +130,42 @@ Use Resend (or Postmark) with transactional templates:
 4. Integrate Stripe checkout + webhook order state updates
 5. Implement password reset token table and email sender
 6. Add real click tracking and order analytics tables
+
+## Domain + Stripe + Email Go-Live Runbook
+
+1. Verify production domain variables
+
+- `NEXT_PUBLIC_APP_URL=https://alps3dp.ch`
+- `APP_URL=https://alps3dp.ch`
+
+2. Configure Stripe
+
+- Add `STRIPE_SECRET_KEY`
+- Add `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- Add `STRIPE_WEBHOOK_SECRET`
+- Configure webhook endpoint: `https://alps3dp.ch/api/webhooks/payment`
+- Enable required payment methods in Stripe Dashboard (cards, TWINT if available in region)
+
+3. Configure transactional mail
+
+- Add `RESEND_API_KEY`
+- Set verified sender in `MAIL_FROM` (for example `Alps3Dp <noreply@alps3dp.ch>`)
+- Set `ADMIN_ORDER_EMAIL` for order notifications
+
+4. Validate before launch
+
+- Create a test order from checkout with Stripe test card
+- Confirm webhook marks order as paid exactly once
+- Confirm customer and admin order emails are delivered
+- Confirm robots and sitemap are live:
+  - `/robots.txt`
+  - `/sitemap.xml`
+
+## Performance Notes
+
+- Homepage products are server-seeded to reduce first-load client waterfall
+- Product API route uses revalidation for efficient cache behavior on list reads
+- Images are configured for optimized Next.js delivery with remote allowlist
 
 ## Vercel Deployment
 

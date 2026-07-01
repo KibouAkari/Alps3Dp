@@ -1,5 +1,14 @@
 import { Resend } from "resend";
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function getResendClient() {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -28,10 +37,11 @@ async function sendMail(to: string, subject: string, html: string) {
 }
 
 export async function sendVerifyEmail(to: string, verifyUrl: string) {
+  const safeUrl = escapeHtml(verifyUrl);
   await sendMail(
     to,
     "Bitte bestätige deine E-Mail",
-    `<p>Willkommen bei Alps3Dp.</p><p>Bitte bestätige deine E-Mail: <a href=\"${verifyUrl}\">E-Mail bestätigen</a></p>`,
+    `<p>Willkommen bei Alps3Dp.</p><p>Bitte bestätige deine E-Mail: <a href=\"${safeUrl}\">E-Mail bestätigen</a></p>`,
   );
 }
 
@@ -44,10 +54,11 @@ export async function sendLoginSuccessEmail(to: string) {
 }
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
+  const safeUrl = escapeHtml(resetUrl);
   await sendMail(
     to,
     "Passwort zurücksetzen",
-    `<p>Klicke hier, um dein Passwort zurückzusetzen: <a href=\"${resetUrl}\">Passwort zurücksetzen</a></p>`,
+    `<p>Klicke hier, um dein Passwort zurückzusetzen: <a href=\"${safeUrl}\">Passwort zurücksetzen</a></p>`,
   );
 }
 
@@ -60,19 +71,24 @@ export async function sendOrderEmails(params: {
 }) {
   const owner = process.env.ADMIN_ORDER_EMAIL;
   const lineItemsHtml = params.lines
-    .map((line) => `<li>${line.quantity}x ${line.title} - CHF ${(line.unitCents * line.quantity / 100).toFixed(2)}</li>`)
+    .map(
+      (line) =>
+        `<li>${line.quantity}x ${escapeHtml(line.title)} - CHF ${(line.unitCents * line.quantity / 100).toFixed(2)}</li>`,
+    )
     .join("");
+  const safeCustomerName = escapeHtml(params.customerName);
+  const safeOrderId = escapeHtml(params.orderId);
 
   await sendMail(
     params.customerEmail,
     "Bestellung erfolgreich",
-    `<p>Danke ${params.customerName}, deine Bestellung ${params.orderId} war erfolgreich.</p><ul>${lineItemsHtml}</ul><p>Total: CHF ${(params.totalCents / 100).toFixed(2)}</p>`,
+    `<p>Danke ${safeCustomerName}, deine Bestellung ${safeOrderId} war erfolgreich.</p><ul>${lineItemsHtml}</ul><p>Total: CHF ${(params.totalCents / 100).toFixed(2)}</p>`,
   );
 
   if (owner) {
     await sendMail(
       owner,
-      `Neue Bestellung ${params.orderId}`,
+      `Neue Bestellung ${safeOrderId}`,
       `<p>Bitte Bestellung bearbeiten und versenden.</p><ul>${lineItemsHtml}</ul><p>Einnahmen: CHF ${(params.totalCents / 100).toFixed(2)}</p>`,
     );
   }

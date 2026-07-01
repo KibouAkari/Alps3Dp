@@ -5,6 +5,7 @@ import { getAppBaseUrl } from "@/lib/app-url";
 import { db } from "@/lib/db";
 import { sendOrderEmails } from "@/lib/mail";
 import { getStripe } from "@/lib/payments";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 import { getShippingCents } from "@/lib/site-settings";
 
@@ -33,9 +34,42 @@ function getCookieToken(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const ipRateLimit = checkRateLimit({
+    namespace: "checkout-ip",
+    identifier: ip,
+    limit: 12,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (ipRateLimit.limited) {
+    return NextResponse.json(
+      { error: "Zu viele Checkout-Versuche. Bitte kurz warten." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(ipRateLimit.retryAfterSeconds) },
+      },
+    );
+  }
+
   const sessionUser = await getSessionUserFromToken(getCookieToken(request));
   if (!sessionUser) {
     return NextResponse.json({ error: "Bitte zuerst einloggen." }, { status: 401 });
+  }
+
+  const userRateLimit = checkRateLimit({
+    namespace: "checkout-user",
+    identifier: sessionUser.id,
+    limit: 8,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (userRateLimit.limited) {
+    return NextResponse.json(
+      { error: "Zu viele Checkout-Versuche. Bitte kurz warten." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(userRateLimit.retryAfterSeconds) },
+      },
+    );
   }
 
   const body = await request.json().catch(() => null);

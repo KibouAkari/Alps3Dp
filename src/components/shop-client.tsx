@@ -13,6 +13,11 @@ type ProductsResponse = {
   categories: Array<{ id: string; name: string; slug: string }>;
 };
 
+type ShopClientProps = {
+  initialProducts?: Product[];
+  initialCategories?: string[];
+};
+
 function ChevronIcon({ open }: { open: boolean }) {
   return (
     <svg
@@ -45,10 +50,10 @@ function FilterGroup({ title, children, defaultOpen = true }: { title: string; c
   );
 }
 
-export function ShopClient() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+export function ShopClient({ initialProducts = [], initialCategories = [] }: ShopClientProps) {
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [categories, setCategories] = useState<string[]>(initialCategories);
+  const [loading, setLoading] = useState(initialProducts.length === 0);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [query, setQuery] = useState("");
@@ -58,6 +63,10 @@ export function ShopClient() {
   const [onlySale, setOnlySale] = useState(false);
 
   useEffect(() => {
+    if (initialProducts.length > 0) {
+      return;
+    }
+
     fetch("/api/products")
       .then(async (response) => {
         const data = (await response.json()) as ProductsResponse;
@@ -69,7 +78,7 @@ export function ShopClient() {
       })
       .catch((error) => setLoadError(error instanceof Error ? error.message : "Produkte konnten nicht geladen werden."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [initialProducts.length]);
 
   const availableCategories = useMemo(() => ["All", ...categories], [categories]);
 
