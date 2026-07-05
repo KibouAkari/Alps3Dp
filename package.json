@@ -19,6 +19,7 @@
     "@vercel/blob": "^2.4.0",
     "bcryptjs": "^2.4.3",
     "next": "^15.5.19",
+    "nodemailer": "^9.0.3",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "resend": "^6.1.2",
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.9.1",
+    "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.2.16",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.5.0",

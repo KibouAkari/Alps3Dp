@@ -1,4 +1,18 @@
+import nodemailer from "nodemailer";
 import { Resend } from "resend";
+
+type MailPayload = {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+};
+
+type MailSender = {
+  sendMail: (payload: MailPayload) => Promise<void>;
+};
+
+let cachedMailSender: MailSender | null | undefined;
 
 function escapeHtml(value: string) {
   return value
@@ -18,17 +32,71 @@ function getResendClient() {
 }
 
 function getMailFrom() {
-  return process.env.MAIL_FROM || "info_alpk@apls3dp.ch";
+  return process.env.MAIL_FROM || process.env.SMTP_USER || "Alps3Dp <noreply@alps3dp.ch>";
+}
+
+function parseBoolean(value: string | undefined, fallback: boolean) {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
+}
+
+function getMailSender() {
+  if (cachedMailSender !== undefined) {
+    return cachedMailSender;
+  }
+
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPassword = process.env.SMTP_PASSWORD;
+
+  if (smtpHost && smtpUser && smtpPassword) {
+    const smtpPort = Number(process.env.SMTP_PORT || 465);
+    const smtpSecure = parseBoolean(process.env.SMTP_SECURE, smtpPort === 465);
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      auth: {
+        user: smtpUser,
+        pass: smtpPassword,
+      },
+    });
+
+    cachedMailSender = {
+      sendMail: async (payload) => {
+        await transporter.sendMail(payload);
+      },
+    };
+
+    return cachedMailSender;
+  }
+
+  const resendClient = getResendClient();
+  if (resendClient) {
+    cachedMailSender = {
+      sendMail: async (payload) => {
+        await resendClient.emails.send(payload);
+      },
+    };
+
+    return cachedMailSender;
+  }
+
+  cachedMailSender = null;
+  return cachedMailSender;
 }
 
 async function sendMail(to: string, subject: string, html: string) {
-  const client = getResendClient();
-  if (!client) {
+  const sender = getMailSender();
+  if (!sender) {
     console.log("[mail:disabled]", { to, subject });
     return;
   }
 
-  await client.emails.send({
+  await sender.sendMail({
     from: getMailFrom(),
     to,
     subject,

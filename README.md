@@ -139,26 +139,32 @@ Remaining recommended hardening:
 
 ## Domain + Stripe + Email Go-Live Runbook
 
-1. Verify production domain variables
+1. Copy the env template
+
+- Copy [.env.local.example](.env.local.example) to `.env.local`
+- Fill in the Stripe and mail values before deploying
+
+2. Verify production domain variables
 
 - `NEXT_PUBLIC_APP_URL=https://alps3dp.ch`
 - `APP_URL=https://alps3dp.ch`
 
-2. Configure Stripe
+3. Configure Stripe
 
-- Add `STRIPE_SECRET_KEY`
-- Add `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-- Add `STRIPE_WEBHOOK_SECRET`
-- Configure webhook endpoint: `https://alps3dp.ch/api/webhooks/payment`
-- Enable required payment methods in Stripe Dashboard (cards, TWINT if available in region)
+- Get `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` in Stripe Dashboard -> Developers -> API keys
+- Create the webhook in Stripe Dashboard -> Developers -> Webhooks and copy the `STRIPE_WEBHOOK_SECRET`
+- Use `https://alps3dp.ch/api/webhooks/payment` as webhook endpoint
+- Enable the payment methods you need in Stripe Dashboard (cards, TWINT if available in your region)
 
-3. Configure transactional mail
+4. Configure transactional mail
 
-- Add `RESEND_API_KEY`
-- Set verified sender in `MAIL_FROM` (for example `Alps3Dp <noreply@alps3dp.ch>`)
+- For IONOS, create one mailbox in the IONOS control panel first; a domain alone is not enough for sending mail
+- Open the mailbox server settings in IONOS and copy `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`
+- Set `MAIL_FROM` to the verified mailbox address, for example `Alps3Dp <noreply@alps3dp.ch>`
 - Set `ADMIN_ORDER_EMAIL` for order notifications
+- If you prefer a mail provider instead of IONOS SMTP, set `RESEND_API_KEY` and use a verified sender there instead
 
-4. Validate before launch
+5. Validate before launch
 
 - Create a test order from checkout with Stripe test card
 - Confirm webhook marks order as paid exactly once
@@ -213,7 +219,8 @@ If `DATABASE_URL` is not set, the app and seed process will fall back to the con
 
 - Set `NEXT_PUBLIC_APP_URL=https://alps3dp.ch`
 - Set `APP_URL=https://alps3dp.ch`
-- In Resend, verify your sender domain and use `MAIL_FROM` on `@alps3dp.ch`
+- If you use IONOS mail, create the mailbox first and then use the SMTP settings from IONOS Mail
+- If you use Resend instead, verify the sender domain there and keep `MAIL_FROM` on `@alps3dp.ch`
 - In Stripe dashboard, set allowed redirect domain and webhook endpoint to `https://alps3dp.ch/api/webhooks/payment`
 
 3. Set production environment variables in Vercel (if they are not already set by Connected Storage):
@@ -223,6 +230,11 @@ vercel env add DATABASE_URL production
 vercel env add NEXT_PUBLIC_APP_URL production
 vercel env add NEXTAUTH_SECRET production
 vercel env add RESEND_API_KEY production
+vercel env add SMTP_HOST production
+vercel env add SMTP_PORT production
+vercel env add SMTP_SECURE production
+vercel env add SMTP_USER production
+vercel env add SMTP_PASSWORD production
 vercel env add MAIL_FROM production
 vercel env add ADMIN_ORDER_EMAIL production
 vercel env add STRIPE_SECRET_KEY production
