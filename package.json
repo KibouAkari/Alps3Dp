@@ -1,6 +1,8 @@
 {
   "name": "alp-3d-shop",
   "version": "1.0.0",
+  "description": "Professional Next.js ecommerce prototype for 3D-printed products.",
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
