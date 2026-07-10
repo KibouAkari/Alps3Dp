@@ -115,7 +115,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <AddToCartButton productId={product.id} />
           </div>
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-            Versandhinweis: Platzhaltertext fuer Lieferzeit, Rueckgabe und Materialinformationen.
+            Versandhinweis: Platzhaltertext für Lieferzeit, Rückgabe und Materialinformationen.
           </div>
         </div>
       </div>

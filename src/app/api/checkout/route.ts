@@ -75,7 +75,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const parsed = checkoutSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Bitte alle Pflichtfelder korrekt ausfuellen." }, { status: 400 });
+    return NextResponse.json({ error: "Bitte alle Pflichtfelder korrekt ausfüllen." }, { status: 400 });
   }
 
   // Resolve address
@@ -208,7 +208,7 @@ export async function POST(request: Request) {
       success: true,
       orderId: order.id,
       mode: "invoice",
-      message: "Bestellung erfasst. Du erhaeltst die Zahlungsinfos per E-Mail.",
+      message: "Bestellung erfasst. Du erhältst die Zahlungsinfos per E-Mail.",
     });
   }
 
@@ -216,7 +216,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Karten/TWINT sind aktuell nicht verfuegbar. Bitte 'Rechnung / Vorkasse' waehlen.",
+          "Karten/TWINT sind aktuell nicht verfügbar. Bitte 'Rechnung / Vorkasse' wählen.",
       },
       { status: 400 }
     );
@@ -270,7 +270,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Zahlung konnte nicht gestartet werden. Bitte Stripe-Schluessel in Vercel pruefen.",
+          "Zahlung konnte nicht gestartet werden. Bitte Stripe-Schlüssel in Vercel prüfen.",
       },
       { status: 502 }
     );

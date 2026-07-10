@@ -30,7 +30,7 @@ export function AddToCartButton({ productId }: AddToCartButtonProps) {
               setMessage(data.error || "Konnte nicht in den Warenkorb gelegt werden.");
               return;
             }
-            setMessage("Zum Warenkorb hinzugefuegt.");
+            setMessage("Zum Warenkorb hinzugefügt.");
             window.dispatchEvent(new Event("cart:updated"));
           } finally {
             setLoading(false);

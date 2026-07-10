@@ -30,7 +30,7 @@ export async function storeProductImage(fileName: string, data: Buffer) {
   }
 
   if (process.env.NODE_ENV === "production") {
-    throw new Error("BLOB_READ_WRITE_TOKEN fehlt. Bitte Vercel Blob fuer Uploads konfigurieren.");
+    throw new Error("BLOB_READ_WRITE_TOKEN fehlt. Bitte Vercel Blob für Uploads konfigurieren.");
   }
 
   const uploadDir = path.join(process.cwd(), "public", "uploads");

@@ -37,7 +37,7 @@ export default function RegisterPage() {
               email,
               password,
             });
-            setStatus("Registrierung erfolgreich. Bitte bestaetige deine E-Mail.");
+            setStatus("Registrierung erfolgreich. Bitte bestätige deine E-Mail.");
             router.push("/account");
           } catch (err) {
             setError(err instanceof Error ? err.message : "Registrierung fehlgeschlagen.");

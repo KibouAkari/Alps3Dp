@@ -30,7 +30,7 @@ export default function ResetPasswordPage() {
           }
 
           if (password !== confirm) {
-            setError("Passwoerter stimmen nicht ueberein.");
+            setError("Passwörter stimmen nicht überein.");
             return;
           }
 
