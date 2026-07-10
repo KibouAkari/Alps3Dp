@@ -1,16 +1,20 @@
 # Alp3D Shop
 
-![Alp3D Shop Logo](public/images/logo.svg)
+<p align="center"><img src="public/images/logo.svg" alt="Alp3D Shop Logo" width="72"></p>
 
-Alp3D Shop is an ecommerce website for 3D-printed products, designed to feel simple for customers and practical for operators. The project brings together storefront browsing, account management, checkout, payments, and order communication in one coherent flow.
+Alp3D Shop is an ecommerce website for 3D-printed products, designed to feel straightforward for customers and practical for operators. It combines product browsing, account management, checkout, payments, and order communication in one coherent flow.
 
-The main goal of this repository is to provide a clean foundation for a real online shop. It is not only a UI prototype. It includes server routes, database models, payment integration, and transactional email handling, so the full order lifecycle can be tested and operated end to end.
+The main goal of this repository is to provide a clean foundation for a real online shop. It is more than a UI prototype: it includes server routes, database models, payment integration, and transactional email handling, so the full order lifecycle can be tested and operated end to end.
 
-## What Alp3D Shop Does
+## At A Glance
 
-A customer can discover products, open detail pages, add items to the cart, and complete checkout with invoice or Stripe-based payment methods. After checkout, order records are persisted in the database and payment confirmation is processed through Stripe webhooks. Email notifications are then sent to both customer and admin, so communication does not depend on manual follow-up.
-
-On the operations side, Alp3D Shop provides an admin area for product management and shop controls. This includes internal tools for Stripe visibility and controlled test operations.
+| Area | What It Covers |
+| --- | --- |
+| Storefront | Product browsing, filters, detail pages, and cart actions |
+| Checkout | Invoice flow plus Stripe card and TWINT payment options |
+| Orders | Persistent order records, Stripe webhook confirmation, and email follow-up |
+| Admin | Product management, Stripe visibility, and controlled test utilities |
+| Stack | Next.js, React, TypeScript, Prisma, PostgreSQL, Stripe, Tailwind |
 
 ## Built With
 
@@ -18,13 +22,7 @@ Alp3D Shop uses Next.js 15 with the App Router, React 19, and TypeScript. Data i
 
 ## How The System Is Structured
 
-The codebase is organized around clear responsibilities.
-
-`src/app` contains pages and API routes.
-`src/components` contains reusable UI building blocks.
-`src/lib` contains business logic, security helpers, and integration code.
-`prisma` contains schema and seed scripts.
-`public` contains static assets, including the Alp3D Shop logo.
+The codebase is organized around clear responsibilities. `src/app` contains pages and API routes, `src/components` contains reusable UI building blocks, `src/lib` contains business logic and integration code, `prisma` contains schema and seed scripts, and `public` contains static assets, including the Alp3D Shop logo. In practice, this keeps the storefront, checkout, payments, and admin tooling separated without making the project hard to understand.
 
 ## Local Setup
 
