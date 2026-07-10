@@ -1,6 +1,6 @@
 # Code of Conduct
 
-<p align="center"><img src="public/images/logo.svg" alt="Alp3D Shop Logo" width="72"></p>
+<p align="center"><img src="public/images/logo.png" alt="Alp3D Shop Logo" width="72"></p>
 
 Alp3D Shop is built by people with different backgrounds, roles, and levels of experience. We expect all collaboration to be respectful, constructive, and professional.
 

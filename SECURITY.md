@@ -1,6 +1,6 @@
 # Security Policy for Alp3D Shop
 
-<p align="center"><img src="public/images/logo.svg" alt="Alp3D Shop Logo" width="72"></p>
+<p align="center"><img src="public/images/logo.png" alt="Alp3D Shop Logo" width="72"></p>
 
 Security is a core requirement for Alp3D Shop because the platform handles user accounts, order data, payment flows, and transactional communication.
 

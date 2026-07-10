@@ -1,6 +1,6 @@
 # Alp3D Shop
 
-<p align="center"><img src="public/images/logo.svg" alt="Alp3D Shop Logo" width="72"></p>
+<p align="center"><img src="public/images/logo.png" alt="Alp3D Shop Logo" width="72"></p>
 
 Alp3D Shop is an ecommerce website for 3D-printed products, designed to feel straightforward for customers and practical for operators. It combines product browsing, account management, checkout, payments, and order communication in one coherent flow.
 

@@ -1,6 +1,6 @@
 # Changelog
 
-<p align="center"><img src="public/images/logo.svg" alt="Alp3D Shop Logo" width="72"></p>
+<p align="center"><img src="public/images/logo.png" alt="Alp3D Shop Logo" width="72"></p>
 
 All notable changes to Alp3D Shop are documented in this file.
 
