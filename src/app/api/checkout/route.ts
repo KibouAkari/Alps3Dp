@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { sendOrderEmails } from "@/lib/mail";
 import { getStripe } from "@/lib/payments";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
+import { getSessionTokenFromRequest, getSessionUserFromToken } from "@/lib/session";
 import { getShippingCents } from "@/lib/site-settings";
 
 const checkoutSchema = z.object({
@@ -23,15 +23,6 @@ const checkoutSchema = z.object({
   paymentMethod: z.enum(["INVOICE", "CARD", "TWINT"]),
   savedPaymentMethodId: z.string().optional(),
 });
-
-function getCookieToken(request: Request) {
-  return request.headers
-    .get("cookie")
-    ?.split(";")
-    .map((entry) => entry.trim())
-    .find((entry) => entry.startsWith(`${AUTH_COOKIE_NAME}=`))
-    ?.split("=")[1];
-}
 
 export async function POST(request: Request) {
   const ip = getClientIp(request);
@@ -51,9 +42,21 @@ export async function POST(request: Request) {
     );
   }
 
-  const sessionUser = await getSessionUserFromToken(getCookieToken(request));
+  const sessionUser = await getSessionUserFromToken(getSessionTokenFromRequest(request));
   if (!sessionUser) {
     return NextResponse.json({ error: "Bitte zuerst einloggen." }, { status: 401 });
+  }
+
+  const account = await db.user.findUnique({
+    where: { id: sessionUser.id },
+    select: { email: true, emailVerifiedAt: true },
+  });
+
+  if (!account?.email || !account.emailVerifiedAt) {
+    return NextResponse.json(
+      { error: "Bitte bestätige zuerst deine E-Mail-Adresse." },
+      { status: 403 },
+    );
   }
 
   const userRateLimit = checkRateLimit({
@@ -76,6 +79,13 @@ export async function POST(request: Request) {
   const parsed = checkoutSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Bitte alle Pflichtfelder korrekt ausfüllen." }, { status: 400 });
+  }
+
+  if (parsed.data.email.trim().toLowerCase() !== account.email.trim().toLowerCase()) {
+    return NextResponse.json(
+      { error: "Bitte nutze deine bestätigte Konto-E-Mail für den Checkout." },
+      { status: 400 },
+    );
   }
 
   // Resolve address
@@ -156,7 +166,7 @@ export async function POST(request: Request) {
       paymentProvider: parsed.data.paymentMethod === "INVOICE" ? "manual" : "stripe",
       paymentMethod: parsed.data.paymentMethod,
       savedPaymentMethodId: parsed.data.savedPaymentMethodId || null,
-      customerEmail: parsed.data.email,
+      customerEmail: account.email,
       customerName: `${addressData.firstName} ${addressData.lastName}`,
       shippingAddress1: addressData.address1,
       shippingAddress2: addressData.address2 || null,

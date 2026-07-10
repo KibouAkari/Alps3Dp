@@ -1,31 +1,13 @@
 # Code of Conduct
 
-## Our Commitment
+![Alp3D Shop Logo](public/images/logo.svg)
 
-We are committed to providing a respectful, inclusive, and professional environment for everyone contributing to this project.
+Alp3D Shop is built by people with different backgrounds, roles, and levels of experience. We expect all collaboration to be respectful, constructive, and professional.
 
-## Expected Behavior
+In practical terms, this means discussing ideas without personal attacks, giving feedback in good faith, and keeping conversations focused on improving the product. It also means avoiding discriminatory language, harassment, intimidation, or any behavior that makes participation unsafe for others.
 
-- Be respectful and constructive in communication
-- Assume positive intent and focus on facts
-- Accept feedback professionally
-- Keep discussions relevant to the project
+Maintainers are responsible for enforcing this code of conduct and may remove comments, reject contributions, or restrict participation when behavior violates these expectations.
 
-## Unacceptable Behavior
+If you experience or witness unacceptable behavior in issues, pull requests, discussions, or related project spaces, contact the maintainers privately so the situation can be reviewed and handled appropriately.
 
-- Harassment, insults, or personal attacks
-- Discrimination of any kind
-- Deliberate intimidation or disruption
-- Sharing private information without consent
-
-## Enforcement
-
-Project maintainers are responsible for clarifying and enforcing this code of conduct. They may remove, edit, or reject contributions and comments that violate these standards.
-
-## Reporting
-
-If you experience or witness unacceptable behavior, contact the repository maintainers privately.
-
-## Scope
-
-This code of conduct applies to all project spaces, including issues, pull requests, discussions, and other community channels.
+By participating in Alp3D Shop, you agree to follow this code of conduct.

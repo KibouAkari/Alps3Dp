@@ -60,6 +60,12 @@ export function AdminOpsTools() {
   };
 
   const resetDashboardData = async () => {
+    const confirmation = window.prompt("Zur Bestätigung bitte RESET eingeben:", "");
+    if (confirmation !== "RESET") {
+      setError("Reset abgebrochen. Die Bestätigung war nicht korrekt.");
+      return;
+    }
+
     setStatus(null);
     setError(null);
     const response = await fetch("/api/admin/ops", {
@@ -68,6 +74,7 @@ export function AdminOpsTools() {
       credentials: "include",
       body: JSON.stringify({
         action: "reset-dashboard-data",
+        confirmation,
       }),
     });
     const data = await response.json();

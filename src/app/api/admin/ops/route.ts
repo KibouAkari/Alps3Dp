@@ -4,16 +4,34 @@ import { z } from "zod";
 import { requireAdminFromRequest } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
 import { sendOrderEmails } from "@/lib/mail";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const schema = z.object({
   action: z.enum(["simulate-order-and-email", "reset-dashboard-data"]),
   email: z.string().email().optional(),
+  confirmation: z.string().optional(),
 });
 
 export async function POST(request: Request) {
   const admin = await requireAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
+  }
+
+  const rateLimit = checkRateLimit({
+    namespace: "admin-ops",
+    identifier: `${admin.id}:${getClientIp(request)}`,
+    limit: 30,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (rateLimit.limited) {
+    return NextResponse.json(
+      { error: "Zu viele Admin-Operationen. Bitte kurz warten." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      },
+    );
   }
 
   const body = await request.json().catch(() => null);
@@ -91,6 +109,15 @@ export async function POST(request: Request) {
   }
 
   if (parsed.data.action === "reset-dashboard-data") {
+    if (parsed.data.confirmation !== "RESET") {
+      return NextResponse.json(
+        {
+          error: "Diese Aktion ist destruktiv. Bitte Bestätigung 'RESET' mitsenden.",
+        },
+        { status: 400 },
+      );
+    }
+
     const [deletedOrders, deletedCartItems, resetClicks] = await db.$transaction([
       db.order.deleteMany({}),
       db.cartItem.deleteMany({}),

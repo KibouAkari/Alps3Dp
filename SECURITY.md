@@ -1,25 +1,13 @@
-# Security Policy
+# Security Policy for Alp3D Shop
 
-## Supported Versions
+![Alp3D Shop Logo](public/images/logo.svg)
 
-This repository currently supports only the latest version on the default branch.
+Security is a core requirement for Alp3D Shop because the platform handles user accounts, order data, payment flows, and transactional communication.
 
-## Reporting a Vulnerability
+If you discover a vulnerability, please report it privately to the repository maintainer and do not open a public issue. A helpful report includes a clear summary, reproduction steps, expected impact, and any mitigation ideas you already identified. We will acknowledge receipt, validate the report, and coordinate a responsible fix process.
 
-Please do not open public issues for security vulnerabilities.
+The repository supports the latest state of the default branch. Security fixes are applied there first.
 
-Report security concerns via private contact to the repository owner and include:
+Please treat all secrets as sensitive at all times. Files such as `.env.local` must never be committed. Use placeholders in `.env.example`, and keep production secrets only in your deployment platform secret manager. If any credential may have been exposed, rotate it immediately and treat the event as a security incident.
 
-- A short description of the issue
-- Reproduction steps
-- Potential impact
-- Suggested mitigation (if available)
-
-You will receive an acknowledgment as soon as possible. We will validate, triage, and coordinate a fix before public disclosure.
-
-## Secrets and Credentials
-
-- Never commit `.env.local` or production credentials
-- Use placeholder values in `.env.example`
-- Store production secrets only in your deployment platform secret manager
-- Rotate credentials immediately if accidental exposure is suspected
+For production deployments of Alp3D Shop, ensure that Stripe webhook secrets, database credentials, and authentication secrets are configured outside of source control. Use `PRODUCTION_CHECKLIST.md` as part of your release process.

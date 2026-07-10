@@ -32,6 +32,33 @@ export async function POST(request: Request) {
     const orderId = session.metadata?.orderId || session.client_reference_id;
 
     if (orderId) {
+      if (session.payment_status !== "paid") {
+        return NextResponse.json({ received: true, ignored: "payment-not-paid" });
+      }
+
+      const existingOrder = await db.order.findUnique({
+        where: { id: orderId },
+        select: { id: true, totalCents: true, customerEmail: true },
+      });
+
+      if (!existingOrder) {
+        return NextResponse.json({ received: true, ignored: "order-not-found" });
+      }
+
+      if (session.currency !== "chf") {
+        return NextResponse.json({ received: true, ignored: "currency-mismatch" });
+      }
+
+      if (typeof session.amount_total === "number" && session.amount_total !== existingOrder.totalCents) {
+        return NextResponse.json({ received: true, ignored: "amount-mismatch" });
+      }
+
+      const checkoutEmail = session.customer_details?.email?.trim().toLowerCase();
+      const expectedEmail = existingOrder.customerEmail.trim().toLowerCase();
+      if (checkoutEmail && checkoutEmail !== expectedEmail) {
+        return NextResponse.json({ received: true, ignored: "email-mismatch" });
+      }
+
       const updateResult = await db.order.updateMany({
         where: {
           id: orderId,

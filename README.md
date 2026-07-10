@@ -1,158 +1,61 @@
 # Alp3D Shop
 
-Alp3D Shop is a production-oriented ecommerce project for 3D-printed products.
-It is built to cover the full customer flow: product discovery, cart, checkout, payment, account management, and operational admin tooling.
+![Alp3D Shop Logo](public/images/logo.svg)
 
-## Purpose
+Alp3D Shop is an ecommerce website for 3D-printed products, designed to feel simple for customers and practical for operators. The project brings together storefront browsing, account management, checkout, payments, and order communication in one coherent flow.
 
-The goal of this repository is to provide a clean and extensible foundation for a modern online shop:
+The main goal of this repository is to provide a clean foundation for a real online shop. It is not only a UI prototype. It includes server routes, database models, payment integration, and transactional email handling, so the full order lifecycle can be tested and operated end to end.
 
-- Clear separation between UI, API routes, and business logic
-- Practical payment and email flows for real order handling
-- Safe defaults for authentication, rate limiting, and server-side validation
-- Deployment-ready setup for Vercel + Postgres + Stripe
+## What Alp3D Shop Does
 
-## What The Website Can Do
+A customer can discover products, open detail pages, add items to the cart, and complete checkout with invoice or Stripe-based payment methods. After checkout, order records are persisted in the database and payment confirmation is processed through Stripe webhooks. Email notifications are then sent to both customer and admin, so communication does not depend on manual follow-up.
 
-### Storefront
+On the operations side, Alp3D Shop provides an admin area for product management and shop controls. This includes internal tools for Stripe visibility and controlled test operations.
 
-- Browse products with categories and filters
-- Open product detail pages with image gallery
-- Add products to cart and proceed to checkout
+## Built With
 
-### Customer Account
+Alp3D Shop uses Next.js 15 with the App Router, React 19, and TypeScript. Data is managed with Prisma and PostgreSQL. Payments are handled through Stripe Checkout and webhook events. Transactional emails are sent via SMTP or Resend, depending on your environment. Styling is implemented with Tailwind CSS, and deployment is prepared for Vercel.
 
-- Register, login, logout, and password reset flows
-- Basic account area for customer data
-- Saved shipping addresses and saved payment method references
+## How The System Is Structured
 
-### Checkout And Orders
+The codebase is organized around clear responsibilities.
 
-- Create orders from cart items
-- Support invoice/prepayment flow
-- Support Stripe card/TWINT checkout flow
-- Persist order status and line items in the database
-- Mark paid orders via Stripe webhook events
-
-### Operational Features
-
-- Admin routes and tools for product management
-- Shipping configuration support
-- Stripe status overview endpoint
-- Order email notifications for customer and admin
-
-## Tech Stack
-
-- Next.js 15 (App Router)
-- React 19 + TypeScript
-- Prisma ORM
-- PostgreSQL
-- Stripe (Checkout + Webhooks)
-- Resend or SMTP (transactional emails)
-- Tailwind CSS
-- Vercel deployment
-
-## Project Structure
-
-- `src/app` - pages and API routes
-- `src/components` - reusable UI components
-- `src/lib` - business logic and integrations
-- `prisma` - schema and seed scripts
-- `public` - static files
+`src/app` contains pages and API routes.
+`src/components` contains reusable UI building blocks.
+`src/lib` contains business logic, security helpers, and integration code.
+`prisma` contains schema and seed scripts.
+`public` contains static assets, including the Alp3D Shop logo.
 
 ## Local Setup
 
-1. Install dependencies
+To run Alp3D Shop locally, install dependencies with `npm install`, then create your local environment file by copying `.env.example` to `.env.local`.
 
-```bash
-npm install
-```
+After that, prepare the database with `npm run db:generate`, `npm run db:migrate`, and `npm run db:seed`. Once setup is complete, start the app with `npm run dev`.
 
-2. Create local environment file
+The app will be available at `http://localhost:3000`.
 
-```bash
-cp .env.example .env.local
-```
+## Payment And Email Flow
 
-3. Configure required variables in `.env.local`
+Checkout sessions are created server-side in `src/app/api/checkout/route.ts`. Payment completion is accepted only after Stripe webhook verification in `src/app/api/webhooks/payment/route.ts`. Order status changes and confirmation emails are triggered from this verified flow.
 
-- `DATABASE_URL`
-- `NEXTAUTH_SECRET`
-- `NEXT_PUBLIC_APP_URL`
-- `APP_URL`
-- `STRIPE_SECRET_KEY`
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-- `STRIPE_WEBHOOK_SECRET`
+Email delivery is handled in `src/lib/mail.ts`. If SMTP credentials are present, SMTP is used. If not, Resend can be used through `RESEND_API_KEY`.
 
-4. Prepare database
+## Production Readiness
 
-```bash
-npm run db:generate
-npm run db:migrate
-npm run db:seed
-```
+Alp3D Shop includes rate limiting, input validation, role checks for admin routes, and Stripe webhook signature verification. Recent hardening work also added stricter checkout email validation, stronger webhook checks for amount and payment status, and safer upload file validation based on binary signatures.
 
-5. Start development server
+For production rollout, secrets must stay in Vercel environment settings and never be committed to Git. Database migrations should be run intentionally, and deployment builds should not silently seed production data.
 
-```bash
-npm run dev
-```
-
-## Payments And Email Flow
-
-### Stripe
-
-- Checkout sessions are created server-side in `/api/checkout`
-- Successful payment is confirmed through `/api/webhooks/payment`
-- Orders are marked as paid only after verified webhook processing
-
-### Email
-
-- Transactional email is sent through SMTP (if configured) or Resend
-- Customer receives order confirmation
-- Admin receives new order notification (when `ADMIN_ORDER_EMAIL` is set)
-
-## Production Readiness Notes
-
-This repository includes core production building blocks, but deployment quality depends on infrastructure setup and operations discipline.
-
-Already in place:
-
-- Server-side schema validation
-- Session-aware checkout
-- Rate limiting on sensitive endpoints
-- Stripe webhook signature verification
-- Idempotent payment completion handling
-- Security headers middleware
-
-Before go-live:
-
-- Store all secrets in Vercel environment settings only
-- Rotate credentials if any token was ever exposed
-- Configure Stripe webhook endpoint in live mode
-- Verify mail sender domain and delivery
-- Run migration strategy intentionally (do not auto-seed production during build)
-- Perform end-to-end test order in Stripe test mode and live mode
-
-See [PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md) for a practical release checklist.
+A practical release checklist is available in `PRODUCTION_CHECKLIST.md`.
 
 ## Scripts
 
-- `npm run dev` - start local development
-- `npm run build` - create production build
-- `npm run start` - run production server
-- `npm run typecheck` - run TypeScript checks
-- `npm run db:generate` - generate Prisma client
-- `npm run db:migrate` - apply Prisma migrations
-- `npm run db:seed` - seed initial data
+The most relevant scripts are `npm run dev`, `npm run build`, `npm run start`, `npm run typecheck`, `npm run db:generate`, `npm run db:migrate`, and `npm run db:seed`.
 
-## Repository Standards
+## Repository Documents
 
-- Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
-- Security policy: [SECURITY.md](SECURITY.md)
-- Code of conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
-- License: [LICENSE](LICENSE)
+Project behavior and collaboration standards are documented in `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, and `CHANGELOG.md`.
 
 ## License
 
-MIT License.
+Alp3D Shop is released under the MIT License. See `LICENSE` for details.
