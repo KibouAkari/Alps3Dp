@@ -247,8 +247,8 @@ export async function POST(request: Request) {
       payment_method_types: paymentMethodTypes,
       client_reference_id: order.id,
       metadata: { orderId: order.id, userId: orderUserId! },
-      success_url: `${appUrl}/checkout?success=1&order=${order.id}`,
-      cancel_url: `${appUrl}/checkout?canceled=1`,
+      success_url: `${appUrl}/success?order=${order.id}`,
+      cancel_url: `${appUrl}/failed?order=${order.id}`,
       line_items: [
         ...order.items.map((item) => ({
           quantity: item.quantity,

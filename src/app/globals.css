@@ -177,6 +177,82 @@ body.theme-switching * {
   animation: softPop 360ms ease-out both;
 }
 
+.payment-result {
+  position: relative;
+  width: min(100%, 42rem);
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.9);
+  padding: clamp(2rem, 6vw, 4.5rem) 1.5rem;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.1);
+  animation: resultRise 520ms cubic-bezier(0.2, 0.85, 0.22, 1) both;
+}
+
+.payment-result-success {
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.payment-result-failed {
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.payment-result-mark {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  height: 6rem;
+  width: 6rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  color: white;
+  animation: resultMark 700ms 180ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.payment-result-success .payment-result-mark {
+  background: #10b981;
+  box-shadow: 0 0 0 12px rgba(16, 185, 129, 0.12), 0 14px 30px rgba(16, 185, 129, 0.28);
+}
+
+.payment-result-failed .payment-result-mark {
+  background: #f59e0b;
+  box-shadow: 0 0 0 12px rgba(245, 158, 11, 0.12), 0 14px 30px rgba(245, 158, 11, 0.24);
+}
+
+.payment-check,
+.payment-cross {
+  display: block;
+  font-size: 3.25rem;
+  line-height: 1;
+  animation: resultGlyph 420ms 420ms ease-out both;
+}
+
+@keyframes resultRise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes resultMark {
+  from { opacity: 0; transform: scale(0.45) rotate(-12deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes resultGlyph {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .payment-result,
+  .payment-result-mark,
+  .payment-check,
+  .payment-cross {
+    animation: none;
+  }
+}
+
 .immersive-rise {
   animation: immersiveRise 620ms cubic-bezier(0.2, 0.85, 0.22, 1) both;
 }

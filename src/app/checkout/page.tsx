@@ -1,6 +1,5 @@
 ﻿"use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { formatChf } from "@/lib/data";
@@ -46,7 +45,6 @@ export default function CheckoutPage() {
   const [isGuest, setIsGuest] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
-  const [paymentResult, setPaymentResult] = useState<"success" | "canceled" | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -57,17 +55,6 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<"CARD" | "TWINT">("CARD");
 
   useEffect(() => {
-    const query = new URLSearchParams(window.location.search);
-    if (query.get("success") === "1") {
-      setPaymentResult("success");
-      clearGuestCart();
-      return;
-    }
-    if (query.get("canceled") === "1") {
-      setPaymentResult("canceled");
-      return;
-    }
-
     fetch("/api/settings/shipping", { credentials: "include" })
       .then(async (r) => {
         const d = await r.json();
@@ -154,23 +141,7 @@ export default function CheckoutPage() {
             Du bestellst als Gast. <a href="/auth/login" className="text-sky-600 hover:underline">Einloggen</a> für Bestellhistorie & gespeicherte Adressen.
           </p>
         )}
-        {paymentResult === "success" && (
-          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-2xl font-bold text-white">✓</div>
-            <h2 className="mt-4 text-xl font-bold text-emerald-900">Zahlung erfolgreich</h2>
-            <p className="mt-2 text-sm text-emerald-800">Vielen Dank für deine Bestellung. Eine Bestätigung wird an deine E-Mail-Adresse gesendet.</p>
-            <Link href="/" className="mt-5 inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Zur Startseite</Link>
-          </div>
-        )}
-        {paymentResult === "canceled" && (
-          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-500 text-2xl font-bold text-white">!</div>
-            <h2 className="mt-4 text-xl font-bold text-amber-900">Zahlung abgebrochen</h2>
-            <p className="mt-2 text-sm text-amber-800">Die Zahlung wurde nicht abgeschlossen. Deine Bestellung kann erneut versucht werden.</p>
-            <Link href="/checkout" className="mt-5 inline-flex rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">Erneut versuchen</Link>
-          </div>
-        )}
-        {!paymentResult && status && <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{status}</p>}
+        {status && <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{status}</p>}
         {error && <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
         <form
           className="mt-5 grid gap-3 sm:grid-cols-2"
