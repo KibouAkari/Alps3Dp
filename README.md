@@ -1,216 +1,59 @@
-# Alp3D Shop Prototype
+# Alp3D Shop
 
-Professional prototype for a 3D-printed products ecommerce site (blue/black design) with shop browsing, filters, auth UI flows, checkout UI, and admin dashboard + monitoring.
+<p align="center"><img src="public/images/logo.png" alt="Alp3D Shop Logo" width="72"></p>
 
-## Included
+Alp3D Shop is an ecommerce website for 3D-printed products, designed to feel straightforward for customers and practical for operators. It combines product browsing, account management, checkout, payments, and order communication in one coherent flow.
 
-- Next.js App Router + TypeScript + Tailwind
-- Shop home with search, category filter, and price range filter
-- Product detail page
-- Auth UI pages: login, register, forgot password, reset password
-- Account and cart pages
-- Checkout UI with payment method selection
-- Admin pages:
-  - Dashboard summary
-  - Product management form and table
-  - Monitoring/analytics overview (revenue, purchases, clicks, top products)
-- Real API routes for:
-  - products CRUD (admin)
-  - auth (register, login, logout, session, verify email)
-  - forgot/reset password token flow
-  - persistent cart
-  - checkout + payment webhook
-  - admin shipping settings
-- Prisma schema for persistent Postgres storage
-- Empty initial shop data (no products/categories/orders)
+The main goal of this repository is to provide a clean foundation for a real online shop. It is more than a UI prototype: it includes server routes, database models, payment integration, and transactional email handling, so the full order lifecycle can be tested and operated end to end.
 
-## Run
+## At A Glance
 
-1. Install dependencies
+| Area | What It Covers |
+| --- | --- |
+| Storefront | Product browsing, filters, detail pages, and cart actions |
+| Checkout | Invoice flow plus Stripe card and TWINT payment options |
+| Orders | Persistent order records, Stripe webhook confirmation, and email follow-up |
+| Admin | Product management, Stripe visibility, and controlled test utilities |
+| Stack | Next.js, React, TypeScript, Prisma, PostgreSQL, Stripe, Tailwind |
 
-```bash
-npm install
-```
+## Built With
 
-2. Configure environment
+Alp3D Shop uses Next.js 15 with the App Router, React 19, and TypeScript. Data is managed with Prisma and PostgreSQL. Payments are handled through Stripe Checkout and webhook events. Transactional emails are sent via SMTP or Resend, depending on your environment. Styling is implemented with Tailwind CSS, and deployment is prepared for Vercel.
 
-```bash
-cp .env.example .env.local
-```
+## How The System Is Structured
 
-Fill at least:
-- `DATABASE_URL`
-- `NEXT_PUBLIC_APP_URL`
-- `APP_URL`
-- `RESEND_API_KEY` (optional but required for real emails)
-- `MAIL_FROM`
-- `ADMIN_ORDER_EMAIL`
-- `STRIPE_SECRET_KEY` (required for card/TWINT)
-- `STRIPE_WEBHOOK_SECRET` (required for webhook validation)
-- `BLOB_READ_WRITE_TOKEN` (required for production image uploads)
+The codebase is organized around clear responsibilities. `src/app` contains pages and API routes, `src/components` contains reusable UI building blocks, `src/lib` contains business logic and integration code, `prisma` contains schema and seed scripts, and `public` contains static assets, including the Alp3D Shop logo. In practice, this keeps the storefront, checkout, payments, and admin tooling separated without making the project hard to understand.
 
-3. Run database setup
+## Local Setup
 
-```bash
-npm run db:generate
-npm run db:migrate
-npm run db:seed
-```
+To run Alp3D Shop locally, install dependencies with `npm install`, then create your local environment file by copying `.env.example` to `.env.local`.
 
-After seeding, only the admin user and default shipping setting exist.
-No products, no categories, and no analytics/order data are inserted.
+After that, prepare the database with `npm run db:generate`, `npm run db:migrate`, and `npm run db:seed`. Once setup is complete, start the app with `npm run dev`.
 
-4. Start development server
+The app will be available at `http://localhost:3000`.
 
-```bash
-npm run dev
-```
+## Payment And Email Flow
 
-5. Open http://localhost:3000
+Checkout sessions are created server-side in `src/app/api/checkout/route.ts`. Payment completion is accepted only after Stripe webhook verification in `src/app/api/webhooks/payment/route.ts`. Order status changes and confirmation emails are triggered from this verified flow.
 
-## Key Routes
+Email delivery is handled in `src/lib/mail.ts`. If SMTP credentials are present, SMTP is used. If not, Resend can be used through `RESEND_API_KEY`.
 
-- `/` shop overview
-- `/products/[slug]` product detail
-- `/auth/login`, `/auth/register`, `/auth/forgot-password`, `/auth/reset-password`
-- `/account`
-- `/cart`
-- `/checkout`
-- `/admin`, `/admin/products`, `/admin/analytics`
+## Production Readiness
 
-## Payment Recommendation (TWINT vs Credit Card)
+Alp3D Shop includes rate limiting, input validation, role checks for admin routes, and Stripe webhook signature verification. Recent hardening work also added stricter checkout email validation, stronger webhook checks for amount and payment status, and safer upload file validation based on binary signatures.
 
-For the easiest secure production setup: use Stripe as the primary payment layer.
+For production rollout, secrets must stay in Vercel environment settings and never be committed to Git. Database migrations should be run intentionally, and deployment builds should not silently seed production data.
 
-- Why: fast integration, strong fraud/security tooling, webhook reliability, great docs
-- TWINT: implemented through Stripe payment methods. Stripe account capability/region must allow TWINT.
-- Minimum production flow:
-  - create checkout session or payment intent
-  - verify webhook signature
-  - only mark orders as paid after verified webhook event
-  - send emails after payment confirmation
+A practical release checklist is available in `PRODUCTION_CHECKLIST.md`.
 
-## Email Flow Recommendation
+## Scripts
 
-Use Resend (or Postmark) with transactional templates:
+The most relevant scripts are `npm run dev`, `npm run build`, `npm run start`, `npm run typecheck`, `npm run db:generate`, `npm run db:migrate`, and `npm run db:seed`.
 
-- Admin email: order summary with customer, items, amounts, shipping address
-- Customer email: payment confirmation + order summary
-- Later: add invoice PDF generation and attach invoice number
+## Repository Documents
 
-## Production Security Checklist
+Project behavior and collaboration standards are documented in `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, and `CHANGELOG.md`.
 
-- Use hashed passwords (bcrypt/argon2), never plain text
-- Add role-based authorization for admin routes and APIs
-- Validate all inputs server-side with schema validation (zod)
-- Protect against CSRF/session hijacking and enforce secure cookies
-- Enforce webhook signature verification
-- Use parameterized ORM queries (Prisma) to avoid SQL injection
-- Rate-limit login/reset endpoints
-- Add audit logs for admin product changes
+## License
 
-## Next Integration Steps
-
-1. Add Prisma Client and migrate schema to Vercel Postgres
-2. Integrate NextAuth (credentials + optional OAuth)
-3. Replace demo data with DB-backed queries and mutations
-4. Integrate Stripe checkout + webhook order state updates
-5. Implement password reset token table and email sender
-6. Add real click tracking and order analytics tables
-
-## Vercel Deployment
-
-### Auto Deploy via GitHub
-
-This project is connected to GitHub and Vercel. You do not need to deploy manually.
-
-- Commit your changes
-- Push to your connected branch (for example `main`)
-- Vercel will build and deploy automatically
-
-1. Link project
-
-```bash
-vercel link --project alps3dp
-```
-
-2. If you use Vercel Connected Storage (Prisma Postgres), install/connect it in Vercel.
-
-The app now supports all of these environment variable names automatically:
-
-- `DATABASE_URL`
-- `Alps3Dp_DATABASE_URL`
-- `Alps3Dp_PRISMA_DATABASE_URL`
-- `Alps3Dp_POSTGRES_URL`
-- `PRISMA_DATABASE_URL`
-- `POSTGRES_PRISMA_URL`
-- `POSTGRES_URL`
-- `POSTGRES_URL_NON_POOLING`
-
-If `DATABASE_URL` is not set, the app and seed process will fall back to the connected-storage variables above.
-
-### Domain Setup (alps3dp.ch)
-
-- Set `NEXT_PUBLIC_APP_URL=https://alps3dp.ch`
-- Set `APP_URL=https://alps3dp.ch`
-- In Resend, verify your sender domain and use `MAIL_FROM` on `@alps3dp.ch`
-- In Stripe dashboard, set allowed redirect domain and webhook endpoint to `https://alps3dp.ch/api/webhooks/payment`
-
-3. Set production environment variables in Vercel (if they are not already set by Connected Storage):
-
-```bash
-vercel env add DATABASE_URL production
-vercel env add NEXT_PUBLIC_APP_URL production
-vercel env add NEXTAUTH_SECRET production
-vercel env add RESEND_API_KEY production
-vercel env add MAIL_FROM production
-vercel env add ADMIN_ORDER_EMAIL production
-vercel env add STRIPE_SECRET_KEY production
-vercel env add STRIPE_WEBHOOK_SECRET production
-vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY production
-vercel env add APP_URL production
-vercel env add BLOB_READ_WRITE_TOKEN production
-vercel env add ADMIN_EMAIL production
-vercel env add ADMIN_PASSWORD production
-vercel env add ADMIN_NAME production
-```
-
-4. Run migrations and seed against production DB:
-
-```bash
-DATABASE_URL="<your-production-db-url>" npm run db:migrate
-DATABASE_URL="<your-production-db-url>" npm run db:seed
-```
-
-5. Deploy:
-
-```bash
-vercel deploy --prod
-```
-
-6. Configure Stripe webhook to:
-
-`https://<your-domain>/api/webhooks/payment`
-
-and use the signing secret as `STRIPE_WEBHOOK_SECRET`.
-
-## Environment
-
-Copy `.env.example` to `.env.local` and fill all required keys.
-
-## Product Image Uploads
-
-- Admin can upload multiple product images via drag-and-drop in `/admin/products`
-- Upload flow uses `/api/uploads`
-- In production, images are stored in Vercel Blob (`BLOB_READ_WRITE_TOKEN`)
-- In local development without Blob token, files are saved under `public/uploads`
-- Product images still support external links as fallback
-
-## Admin Bootstrap
-
-An admin account is created by `npm run db:seed`.
-
-- Email: value from `ADMIN_EMAIL` (default `admin@alps3dp.ch`)
-- Password: value from `ADMIN_PASSWORD` (default `ChangeMe-Admin-2026!`)
-
-Change these values before production use.
+Alp3D Shop is released under the MIT License. See `LICENSE` for details.

@@ -3,7 +3,8 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { getAppBaseUrl } from "@/lib/app-url";
-import { sendVerifyEmail } from "@/lib/mail";
+import { sendVerifyEmail, sendWelcomeEmail } from "@/lib/mail";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { hashPassword, createOpaqueToken, hashOpaqueToken } from "@/lib/security";
 import { createSessionForUser, AUTH_COOKIE_NAME } from "@/lib/session";
 
@@ -17,6 +18,23 @@ const registerSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const rateLimit = checkRateLimit({
+    namespace: "auth-register-ip",
+    identifier: ip,
+    limit: 6,
+    windowMs: 30 * 60 * 1000,
+  });
+  if (rateLimit.limited) {
+    return NextResponse.json(
+      { error: "Zu viele Registrierungen. Bitte spaeter erneut versuchen." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      },
+    );
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = registerSchema.safeParse(body);
 
@@ -59,7 +77,22 @@ export async function POST(request: Request) {
   });
 
   const appUrl = getAppBaseUrl();
-  await sendVerifyEmail(email, `${appUrl}/api/auth/verify-email?token=${verifyToken}`);
+  const displayName =
+    [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+    user.username ||
+    user.email.split("@")[0] ||
+    "bei Alps3Dp";
+
+  const mailResults = await Promise.allSettled([
+    sendVerifyEmail(email, `${appUrl}/api/auth/verify-email?token=${verifyToken}`),
+    sendWelcomeEmail({ to: email, name: displayName }),
+  ]);
+
+  for (const result of mailResults) {
+    if (result.status === "rejected") {
+      console.error("[auth:register:mail]", result.reason);
+    }
+  }
 
   const { token, expiresAt } = await createSessionForUser(user.id);
 

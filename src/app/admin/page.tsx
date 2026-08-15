@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 
 import { AdminGuard } from "@/components/admin-guard";
 import { AdminOpsTools } from "@/components/admin-ops-tools";
@@ -77,7 +78,7 @@ export default async function AdminHomePage() {
             <Link href="/admin/products" className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 transition">
               Produkte verwalten
             </Link>
-            <Link href="/admin/stripe" className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition">
+            <Link href={"/admin/stripe" as Route} className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition">
               Stripe & Tests
             </Link>
             <Link href="/admin/analytics" className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition">

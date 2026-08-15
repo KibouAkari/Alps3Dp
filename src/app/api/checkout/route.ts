@@ -5,7 +5,8 @@ import { getAppBaseUrl } from "@/lib/app-url";
 import { db } from "@/lib/db";
 import { sendOrderEmails } from "@/lib/mail";
 import { getStripe } from "@/lib/payments";
-import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { getSessionTokenFromRequest, getSessionUserFromToken } from "@/lib/session";
 import { getShippingCents } from "@/lib/site-settings";
 
 const checkoutSchema = z.object({
@@ -23,25 +24,68 @@ const checkoutSchema = z.object({
   savedPaymentMethodId: z.string().optional(),
 });
 
-function getCookieToken(request: Request) {
-  return request.headers
-    .get("cookie")
-    ?.split(";")
-    .map((entry) => entry.trim())
-    .find((entry) => entry.startsWith(`${AUTH_COOKIE_NAME}=`))
-    ?.split("=")[1];
-}
-
 export async function POST(request: Request) {
-  const sessionUser = await getSessionUserFromToken(getCookieToken(request));
+  const ip = getClientIp(request);
+  const ipRateLimit = checkRateLimit({
+    namespace: "checkout-ip",
+    identifier: ip,
+    limit: 12,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (ipRateLimit.limited) {
+    return NextResponse.json(
+      { error: "Zu viele Checkout-Versuche. Bitte kurz warten." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(ipRateLimit.retryAfterSeconds) },
+      },
+    );
+  }
+
+  const sessionUser = await getSessionUserFromToken(getSessionTokenFromRequest(request));
   if (!sessionUser) {
     return NextResponse.json({ error: "Bitte zuerst einloggen." }, { status: 401 });
+  }
+
+  const account = await db.user.findUnique({
+    where: { id: sessionUser.id },
+    select: { email: true, emailVerifiedAt: true },
+  });
+
+  if (!account?.email || !account.emailVerifiedAt) {
+    return NextResponse.json(
+      { error: "Bitte bestätige zuerst deine E-Mail-Adresse." },
+      { status: 403 },
+    );
+  }
+
+  const userRateLimit = checkRateLimit({
+    namespace: "checkout-user",
+    identifier: sessionUser.id,
+    limit: 8,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (userRateLimit.limited) {
+    return NextResponse.json(
+      { error: "Zu viele Checkout-Versuche. Bitte kurz warten." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(userRateLimit.retryAfterSeconds) },
+      },
+    );
   }
 
   const body = await request.json().catch(() => null);
   const parsed = checkoutSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Bitte alle Pflichtfelder korrekt ausfuellen." }, { status: 400 });
+    return NextResponse.json({ error: "Bitte alle Pflichtfelder korrekt ausfüllen." }, { status: 400 });
+  }
+
+  if (parsed.data.email.trim().toLowerCase() !== account.email.trim().toLowerCase()) {
+    return NextResponse.json(
+      { error: "Bitte nutze deine bestätigte Konto-E-Mail für den Checkout." },
+      { status: 400 },
+    );
   }
 
   // Resolve address
@@ -122,7 +166,7 @@ export async function POST(request: Request) {
       paymentProvider: parsed.data.paymentMethod === "INVOICE" ? "manual" : "stripe",
       paymentMethod: parsed.data.paymentMethod,
       savedPaymentMethodId: parsed.data.savedPaymentMethodId || null,
-      customerEmail: parsed.data.email,
+      customerEmail: account.email,
       customerName: `${addressData.firstName} ${addressData.lastName}`,
       shippingAddress1: addressData.address1,
       shippingAddress2: addressData.address2 || null,
@@ -174,7 +218,7 @@ export async function POST(request: Request) {
       success: true,
       orderId: order.id,
       mode: "invoice",
-      message: "Bestellung erfasst. Du erhaeltst die Zahlungsinfos per E-Mail.",
+      message: "Bestellung erfasst. Du erhältst die Zahlungsinfos per E-Mail.",
     });
   }
 
@@ -182,7 +226,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Karten/TWINT sind aktuell nicht verfuegbar. Bitte 'Rechnung / Vorkasse' waehlen.",
+          "Karten/TWINT sind aktuell nicht verfügbar. Bitte 'Rechnung / Vorkasse' wählen.",
       },
       { status: 400 }
     );
@@ -236,7 +280,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Zahlung konnte nicht gestartet werden. Bitte Stripe-Schluessel in Vercel pruefen.",
+          "Zahlung konnte nicht gestartet werden. Bitte Stripe-Schlüssel in Vercel prüfen.",
       },
       { status: 502 }
     );

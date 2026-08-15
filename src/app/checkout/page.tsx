@@ -122,7 +122,7 @@ export default function CheckoutPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-bold text-slate-900">Checkout</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Empfohlen: Rechnung/Vorkasse (kostenlos). Karte und TWINT bleiben optional verfuegbar.
+          Empfohlen: Rechnung/Vorkasse (kostenlos). Karte und TWINT bleiben optional verfügbar.
         </p>
         {status && <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{status}</p>}
         {error && <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
@@ -231,7 +231,7 @@ export default function CheckoutPage() {
           <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ort" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
           <label className="sm:col-span-2 flex items-center gap-2 text-sm text-slate-700">
             <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />
-            Adresse fuer naechste Bestellung speichern
+            Adresse für nächste Bestellung speichern
           </label>
 
           {savedMethods.length > 0 && (
@@ -274,7 +274,7 @@ export default function CheckoutPage() {
           </select>
           <label className="sm:col-span-2 flex items-center gap-2 text-sm text-slate-700">
             <input type="checkbox" checked={saveMethod} onChange={(e) => setSaveMethod(e.target.checked)} />
-              Zahlungsart fuer naechste Bestellung speichern
+              Zahlungsart für nächste Bestellung speichern
           </label>
           <button type="submit" className="sm:col-span-2 rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white transition hover:bg-sky-700">
               Bestellung abschliessen
@@ -283,7 +283,7 @@ export default function CheckoutPage() {
       </section>
 
       <aside className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Bestelluebersicht</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Bestellübersicht</h2>
         <div className="mt-4 space-y-2 text-sm text-slate-600">
           {rows.map((row) => (
             <div key={row.productId} className="flex justify-between">

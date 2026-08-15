@@ -55,7 +55,16 @@ export async function GET(request: Request) {
     select: { id: true, name: true, slug: true },
   });
 
-  return NextResponse.json({ products: products.map(mapProduct), categories });
+  return NextResponse.json(
+    { products: products.map(mapProduct), categories },
+    {
+      headers: {
+        "Cache-Control": includeHidden
+          ? "private, no-store"
+          : "public, s-maxage=60, stale-while-revalidate=300",
+      },
+    },
+  );
 }
 
 export async function POST(request: Request) {

@@ -1,10 +1,12 @@
 {
   "name": "alp-3d-shop",
   "version": "1.0.0",
+  "description": "Professional Next.js ecommerce prototype for 3D-printed products.",
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "vercel-build": "prisma generate && prisma db push && prisma db seed && next build",
+    "vercel-build": "npm run build",
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "next lint",
@@ -19,6 +21,7 @@
     "@vercel/blob": "^2.4.0",
     "bcryptjs": "^2.4.3",
     "next": "^15.5.19",
+    "nodemailer": "^9.0.3",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "resend": "^6.1.2",
@@ -27,6 +30,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.9.1",
+    "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.2.16",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.5.0",

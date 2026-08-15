@@ -34,6 +34,44 @@ export async function createSessionForUser(userId: string) {
   return { token, expiresAt };
 }
 
+export function getSessionTokenFromRequest(request: Request): string | null {
+  const cookieHeader = request.headers.get("cookie");
+  if (!cookieHeader) {
+    return null;
+  }
+
+  const entries = cookieHeader.split(";");
+  for (const rawEntry of entries) {
+    const entry = rawEntry.trim();
+    if (!entry) {
+      continue;
+    }
+
+    const separatorIndex = entry.indexOf("=");
+    if (separatorIndex <= 0) {
+      continue;
+    }
+
+    const key = entry.slice(0, separatorIndex).trim();
+    if (key !== AUTH_COOKIE_NAME) {
+      continue;
+    }
+
+    const rawValue = entry.slice(separatorIndex + 1).trim();
+    if (!rawValue) {
+      return null;
+    }
+
+    try {
+      return decodeURIComponent(rawValue);
+    } catch {
+      return rawValue;
+    }
+  }
+
+  return null;
+}
+
 export async function getSessionUserFromToken(rawToken?: string | null): Promise<SessionUser | null> {
   if (!rawToken) {
     return null;

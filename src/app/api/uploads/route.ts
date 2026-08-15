@@ -1,21 +1,47 @@
 import { NextResponse } from "next/server";
 
 import { storeProductImage } from "@/lib/image-storage";
-import { AUTH_COOKIE_NAME, getSessionUserFromToken } from "@/lib/session";
+import { getSessionTokenFromRequest, getSessionUserFromToken } from "@/lib/session";
 
 export const runtime = "nodejs";
 
-function getCookieToken(request: Request) {
-  return request.headers
-    .get("cookie")
-    ?.split(";")
-    .map((entry) => entry.trim())
-    .find((entry) => entry.startsWith(`${AUTH_COOKIE_NAME}=`))
-    ?.split("=")[1];
+function isAllowedImageBuffer(buffer: Buffer) {
+  if (buffer.length < 12) {
+    return false;
+  }
+
+  const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  const isPng =
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47 &&
+    buffer[4] === 0x0d &&
+    buffer[5] === 0x0a &&
+    buffer[6] === 0x1a &&
+    buffer[7] === 0x0a;
+  const isWebp =
+    buffer[0] === 0x52 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x46 &&
+    buffer[8] === 0x57 &&
+    buffer[9] === 0x45 &&
+    buffer[10] === 0x42 &&
+    buffer[11] === 0x50;
+  const isGif =
+    buffer[0] === 0x47 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x38 &&
+    (buffer[4] === 0x37 || buffer[4] === 0x39) &&
+    buffer[5] === 0x61;
+
+  return isJpeg || isPng || isWebp || isGif;
 }
 
 export async function POST(request: Request) {
-  const user = await getSessionUserFromToken(getCookieToken(request));
+  const user = await getSessionUserFromToken(getSessionTokenFromRequest(request));
   if (!user) {
     return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
   }
@@ -43,16 +69,19 @@ export async function POST(request: Request) {
   const uploadedUrls: string[] = [];
 
   for (const file of files) {
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: `Datei '${file.name}' ist kein Bild.` }, { status: 400 });
-    }
-
     const maxBytes = scope === "avatar" ? 3 * 1024 * 1024 : 8 * 1024 * 1024;
     if (file.size > maxBytes) {
       return NextResponse.json({ error: `Datei '${file.name}' ist zu groß (max. ${scope === "avatar" ? "3" : "8"}MB).` }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+    if (!isAllowedImageBuffer(buffer)) {
+      return NextResponse.json(
+        { error: `Datei '${file.name}' ist kein unterstütztes Bildformat.` },
+        { status: 400 },
+      );
+    }
+
     const url = await storeProductImage(file.name, buffer);
     uploadedUrls.push(url);
   }

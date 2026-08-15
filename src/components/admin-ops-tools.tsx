@@ -6,6 +6,21 @@ type StripeOverview = {
   configured: boolean;
   dashboardUrl: string;
   message?: string;
+  publishableKeyConfigured?: boolean;
+  webhookSecretConfigured?: boolean;
+  mode?: "live" | "test";
+  account?: {
+    id: string;
+    country: string | null;
+    defaultCurrency: string | null;
+    chargesEnabled: boolean;
+    payoutsEnabled: boolean;
+  };
+  paymentSummary?: {
+    pendingOrders: number;
+    paidOrders: number;
+    latestPaidAt: string | null;
+  };
   sessions?: Array<{
     id: string;
     created: number;
@@ -42,6 +57,35 @@ export function AdminOpsTools() {
       return;
     }
     setStatus(`Test erfolgreich: ${data.orderId}`);
+  };
+
+  const resetDashboardData = async () => {
+    const confirmation = window.prompt("Zur Bestätigung bitte RESET eingeben:", "");
+    if (confirmation !== "RESET") {
+      setError("Reset abgebrochen. Die Bestätigung war nicht korrekt.");
+      return;
+    }
+
+    setStatus(null);
+    setError(null);
+    const response = await fetch("/api/admin/ops", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        action: "reset-dashboard-data",
+        confirmation,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setError(data.error || "Reset konnte nicht ausgeführt werden.");
+      return;
+    }
+    setStatus(
+      `Reset abgeschlossen: ${data.deletedOrders || 0} Bestellungen gelöscht, ${data.resetProductClicks || 0} Produkt-Klickzähler zurückgesetzt.`,
+    );
+    await loadStripe();
   };
 
   const loadStripe = async () => {
@@ -91,6 +135,13 @@ export function AdminOpsTools() {
           >
             Test ausführen
           </button>
+          <button
+            type="button"
+            onClick={resetDashboardData}
+            className="mt-2 rounded-lg border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
+          >
+            Dashboard-Daten zurücksetzen
+          </button>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -100,6 +151,19 @@ export function AdminOpsTools() {
           {!loadingStripe && stripe && (
             <div className="mt-3 space-y-2 text-xs text-slate-600">
               <p>{stripe.configured ? "Stripe konfiguriert" : "Stripe noch nicht konfiguriert"}</p>
+              <p>Publishable Key: {stripe.publishableKeyConfigured ? "gesetzt" : "fehlt"}</p>
+              <p>Webhook Secret: {stripe.webhookSecretConfigured ? "gesetzt" : "fehlt"}</p>
+              {stripe.mode && <p>Modus: {stripe.mode.toUpperCase()}</p>}
+              {stripe.account && (
+                <p>
+                  Account {stripe.account.id.slice(0, 10)} · {stripe.account.country || "-"} · {stripe.account.defaultCurrency?.toUpperCase() || "-"}
+                </p>
+              )}
+              {stripe.paymentSummary && (
+                <p>
+                  DB Zahlungen: {stripe.paymentSummary.paidOrders} bezahlt / {stripe.paymentSummary.pendingOrders} offen
+                </p>
+              )}
               {stripe.message && <p>{stripe.message}</p>}
               <a href={stripe.dashboardUrl} target="_blank" rel="noreferrer" className="inline-flex text-sky-700 hover:underline">
                 Stripe Dashboard öffnen

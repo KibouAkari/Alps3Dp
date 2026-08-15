@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { hashPassword, hashOpaqueToken } from "@/lib/security";
 
 const resetSchema = z.object({
@@ -10,6 +11,23 @@ const resetSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const rateLimit = checkRateLimit({
+    namespace: "auth-reset-ip",
+    identifier: ip,
+    limit: 8,
+    windowMs: 30 * 60 * 1000,
+  });
+  if (rateLimit.limited) {
+    return NextResponse.json(
+      { error: "Zu viele Anfragen. Bitte spaeter erneut versuchen." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      },
+    );
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = resetSchema.safeParse(body);
 
