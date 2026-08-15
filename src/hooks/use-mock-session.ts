@@ -97,22 +97,28 @@ export function useMockSession() {
       }),
     });
 
-    const data = await response.json();
+    let data: Record<string, unknown> = {};
+    try {
+      data = await response.json();
+    } catch {
+      // ignore JSON parse error
+    }
     if (!response.ok) {
-      throw new Error(data.error || "Login fehlgeschlagen.");
+      throw new Error(
+        (data.error as string | undefined) || "Benutzername oder Passwort inkorrekt.",
+      );
     }
 
     const nextUser: SessionUser = {
-      id: data.user.id,
-      avatar: data.user.avatarUrl || DEFAULT_AVATAR,
-      username: data.user.username ?? null,
-      firstName: data.user.firstName ?? null,
-      lastName: data.user.lastName ?? null,
-      salutation: data.user.salutation ?? null,
-      name: data.user.name,
-      email: data.user.email,
-      role: data.user.role,
-      
+      id: (data.user as Record<string, unknown>).id as string,
+      avatar: ((data.user as Record<string, unknown>).avatarUrl as string | undefined) || DEFAULT_AVATAR,
+      username: ((data.user as Record<string, unknown>).username as string | null | undefined) ?? null,
+      firstName: ((data.user as Record<string, unknown>).firstName as string | null | undefined) ?? null,
+      lastName: ((data.user as Record<string, unknown>).lastName as string | null | undefined) ?? null,
+      salutation: ((data.user as Record<string, unknown>).salutation as string | null | undefined) ?? null,
+      name: (data.user as Record<string, unknown>).name as string,
+      email: (data.user as Record<string, unknown>).email as string,
+      role: (data.user as Record<string, unknown>).role as UserRole,
     };
 
     window.dispatchEvent(new Event(AUTH_EVENT));

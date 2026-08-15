@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { addToGuestCart } from "@/lib/guest-cart";
+
 type AddToCartButtonProps = {
   productId: string;
 };
@@ -25,6 +27,12 @@ export function AddToCartButton({ productId }: AddToCartButtonProps) {
               credentials: "include",
               body: JSON.stringify({ productId, quantity: 1 }),
             });
+            if (response.status === 401) {
+              // Not logged in – store in guest cart (localStorage)
+              addToGuestCart(productId, 1);
+              setMessage("Zum Warenkorb hinzugefügt.");
+              return;
+            }
             const data = await response.json();
             if (!response.ok) {
               setMessage(data.error || "Konnte nicht in den Warenkorb gelegt werden.");

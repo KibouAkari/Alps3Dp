@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { formatChf } from "@/lib/data";
+import { getGuestCart, clearGuestCart, type GuestCartItem } from "@/lib/guest-cart";
 
 type CartRow = {
   productId: string;
@@ -18,6 +19,7 @@ type CartRow = {
 
 export default function CartPage() {
   const [rows, setRows] = useState<CartRow[]>([]);
+  const [isGuest, setIsGuest] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadCart = async () => {
@@ -26,8 +28,62 @@ export default function CartPage() {
     if (!response.ok) {
       throw new Error(data.error || "Warenkorb konnte nicht geladen werden.");
     }
-    setRows(data.items || []);
+
+    const dbItems: CartRow[] = data.items || [];
+
+    if (dbItems.length > 0) {
+      setIsGuest(false);
+      setRows(dbItems);
+      window.dispatchEvent(new Event("cart:updated"));
+      return;
+    }
+
+    // Not logged in or empty DB cart – check localStorage guest cart
+    const guestItems = getGuestCart();
+    if (guestItems.length === 0) {
+      setIsGuest(true);
+      setRows([]);
+      window.dispatchEvent(new Event("cart:updated"));
+      return;
+    }
+
+    // Fetch product details for guest items
+    const productsResponse = await fetch("/api/products");
+    const productsData = await productsResponse.json();
+    const allProducts: CartRow["product"][] = productsData.products || [];
+
+    const resolved: CartRow[] = guestItems
+      .map((item: GuestCartItem) => {
+        const product = allProducts.find((p) => p.id === item.productId);
+        if (!product) return null;
+        return { productId: item.productId, quantity: item.quantity, product };
+      })
+      .filter((row): row is CartRow => row !== null);
+
+    setIsGuest(true);
+    setRows(resolved);
     window.dispatchEvent(new Event("cart:updated"));
+  };
+
+  const updateGuestQuantity = (productId: string, newQty: number) => {
+    const items = getGuestCart();
+    const updated = items
+      .map((item) => (item.productId === productId ? { ...item, quantity: newQty } : item))
+      .filter((item) => item.quantity > 0);
+    localStorage.setItem("alps3dp.guest-cart", JSON.stringify(updated));
+    window.dispatchEvent(new Event("cart:updated"));
+    setRows((prev) =>
+      prev
+        .map((row) => (row.productId === productId ? { ...row, quantity: newQty } : row))
+        .filter((row) => row.quantity > 0),
+    );
+  };
+
+  const removeGuestItem = (productId: string) => {
+    const items = getGuestCart().filter((item) => item.productId !== productId);
+    localStorage.setItem("alps3dp.guest-cart", JSON.stringify(items));
+    window.dispatchEvent(new Event("cart:updated"));
+    setRows((prev) => prev.filter((row) => row.productId !== productId));
   };
 
   useEffect(() => {
@@ -62,13 +118,17 @@ export default function CartPage() {
               <button
                 type="button"
                 onClick={async () => {
-                  await fetch(`/api/cart/items/${row.productId}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({ quantity: Math.max(1, row.quantity - 1) }),
-                  });
-                  await loadCart();
+                  if (isGuest) {
+                    updateGuestQuantity(row.productId, Math.max(1, row.quantity - 1));
+                  } else {
+                    await fetch(`/api/cart/items/${row.productId}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      credentials: "include",
+                      body: JSON.stringify({ quantity: Math.max(1, row.quantity - 1) }),
+                    });
+                    await loadCart();
+                  }
                 }}
                 className="rounded border border-slate-300 px-2 py-1 text-xs"
               >
@@ -77,13 +137,17 @@ export default function CartPage() {
               <button
                 type="button"
                 onClick={async () => {
-                  await fetch(`/api/cart/items/${row.productId}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({ quantity: row.quantity + 1 }),
-                  });
-                  await loadCart();
+                  if (isGuest) {
+                    updateGuestQuantity(row.productId, row.quantity + 1);
+                  } else {
+                    await fetch(`/api/cart/items/${row.productId}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      credentials: "include",
+                      body: JSON.stringify({ quantity: row.quantity + 1 }),
+                    });
+                    await loadCart();
+                  }
                 }}
                 className="rounded border border-slate-300 px-2 py-1 text-xs"
               >
@@ -92,11 +156,15 @@ export default function CartPage() {
               <button
                 type="button"
                 onClick={async () => {
-                  await fetch(`/api/cart/items/${row.productId}`, {
-                    method: "DELETE",
-                    credentials: "include",
-                  });
-                  await loadCart();
+                  if (isGuest) {
+                    removeGuestItem(row.productId);
+                  } else {
+                    await fetch(`/api/cart/items/${row.productId}`, {
+                      method: "DELETE",
+                      credentials: "include",
+                    });
+                    await loadCart();
+                  }
                 }}
                 className="rounded border border-rose-200 px-2 py-1 text-xs text-rose-600"
               >
@@ -106,13 +174,17 @@ export default function CartPage() {
           </div>
         ))}
       </div>
-      <div className="flex flex-wrap items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p className="text-slate-600">Subtotal</p>
-        <p className="text-xl font-bold text-slate-900">{formatChf(subtotal)}</p>
-      </div>
-      <Link href="/checkout" className="inline-block rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white transition hover:bg-sky-700">
-        Weiter zum Checkout
-      </Link>
+      {rows.length > 0 && (
+        <>
+          <div className="flex flex-wrap items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-slate-600">Subtotal</p>
+            <p className="text-xl font-bold text-slate-900">{formatChf(subtotal)}</p>
+          </div>
+          <Link href="/checkout" className="inline-block rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white transition hover:bg-sky-700">
+            Weiter zum Checkout
+          </Link>
+        </>
+      )}
     </div>
   );
 }
