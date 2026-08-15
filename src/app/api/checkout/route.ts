@@ -233,16 +233,15 @@ export async function POST(request: Request) {
   const appUrl = getAppBaseUrl();
 
   if (parsed.data.paymentMethod === "INVOICE") {
-    const ops: Parameters<typeof db.$transaction>[0] = [
-      db.order.update({
+    await db.$transaction(async (transaction) => {
+      await transaction.order.update({
         where: { id: order.id },
         data: { paymentReference: `invoice-${order.id}` },
-      }),
-    ];
-    if (!isGuest && cartDbId) {
-      ops.push(db.cartItem.deleteMany({ where: { cartId: cartDbId } }));
-    }
-    await db.$transaction(ops);
+      });
+      if (!isGuest && cartDbId) {
+        await transaction.cartItem.deleteMany({ where: { cartId: cartDbId } });
+      }
+    });
 
     await sendOrderEmails({
       customerEmail: order.customerEmail,

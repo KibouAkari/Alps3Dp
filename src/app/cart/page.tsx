@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { formatChf } from "@/lib/data";
-import { getGuestCart, clearGuestCart, type GuestCartItem } from "@/lib/guest-cart";
+import { getGuestCart, type GuestCartItem } from "@/lib/guest-cart";
 
 type CartRow = {
   productId: string;

@@ -9,6 +9,7 @@ type CartRow = {
   productId: string;
   quantity: number;
   product: {
+    id: string;
     title: string;
     priceCents: number;
     salePriceCents?: number | null;
@@ -74,7 +75,7 @@ export default function CheckoutPage() {
             const allProducts: CartRow["product"][] = productsData.products || [];
             const resolved: CartRow[] = guestItems
               .map((item: GuestCartItem) => {
-                const product = allProducts.find((p: CartRow["product"] & { id: string }) => p.id === item.productId);
+                const product = allProducts.find((p) => p.id === item.productId);
                 if (!product) return null;
                 return { productId: item.productId, quantity: item.quantity, product };
               })
