@@ -38,7 +38,11 @@ function getCookieToken(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const includeHidden = new URL(request.url).searchParams.get("includeHidden") === "1";
+  const requestedIncludeHidden = new URL(request.url).searchParams.get("includeHidden") === "1";
+  const requestingUser = requestedIncludeHidden
+    ? await getSessionUserFromToken(getCookieToken(request))
+    : null;
+  const includeHidden = requestedIncludeHidden && requestingUser?.role === "ADMIN";
 
   const products = await db.product.findMany({
     where: includeHidden ? undefined : { isHidden: false },
