@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { formatChf } from "@/lib/data";
@@ -28,7 +29,7 @@ type SavedAddress = {
 
 type SavedPaymentMethod = {
   id: string;
-  type: "card" | "twint" | "invoice";
+  type: "card" | "twint";
   last4: string | null;
   isDefault: boolean;
 };
@@ -45,6 +46,7 @@ export default function CheckoutPage() {
   const [isGuest, setIsGuest] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [paymentResult, setPaymentResult] = useState<"success" | "canceled" | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -52,9 +54,20 @@ export default function CheckoutPage() {
   const [address1, setAddress1] = useState("");
   const [zip, setZip] = useState("");
   const [city, setCity] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"INVOICE" | "CARD" | "TWINT">("INVOICE");
+  const [paymentMethod, setPaymentMethod] = useState<"CARD" | "TWINT">("CARD");
 
   useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    if (query.get("success") === "1") {
+      setPaymentResult("success");
+      clearGuestCart();
+      return;
+    }
+    if (query.get("canceled") === "1") {
+      setPaymentResult("canceled");
+      return;
+    }
+
     fetch("/api/settings/shipping", { credentials: "include" })
       .then(async (r) => {
         const d = await r.json();
@@ -105,7 +118,7 @@ export default function CheckoutPage() {
         if (defaultMethod) {
           setSelectedMethodId(defaultMethod.id);
           setPaymentMethod(
-            defaultMethod.type === "twint" ? "TWINT" : defaultMethod.type === "invoice" ? "INVOICE" : "CARD",
+            defaultMethod.type === "twint" ? "TWINT" : "CARD",
           );
         }
         if (data.profile?.email) {
@@ -135,15 +148,29 @@ export default function CheckoutPage() {
     <div className="grid gap-6 fade-in-up lg:grid-cols-[1.2fr_1fr]">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-bold text-slate-900">Checkout</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Empfohlen: Rechnung/Vorkasse (kostenlos). Karte und TWINT bleiben optional verfügbar.
-        </p>
+        <p className="mt-2 text-sm text-slate-600">Sichere Zahlung mit Kreditkarte oder TWINT.</p>
         {isGuest && (
           <p className="mt-2 text-xs text-slate-500">
             Du bestellst als Gast. <a href="/auth/login" className="text-sky-600 hover:underline">Einloggen</a> für Bestellhistorie & gespeicherte Adressen.
           </p>
         )}
-        {status && <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{status}</p>}
+        {paymentResult === "success" && (
+          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-2xl font-bold text-white">✓</div>
+            <h2 className="mt-4 text-xl font-bold text-emerald-900">Zahlung erfolgreich</h2>
+            <p className="mt-2 text-sm text-emerald-800">Vielen Dank für deine Bestellung. Eine Bestätigung wird an deine E-Mail-Adresse gesendet.</p>
+            <Link href="/" className="mt-5 inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Zur Startseite</Link>
+          </div>
+        )}
+        {paymentResult === "canceled" && (
+          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-500 text-2xl font-bold text-white">!</div>
+            <h2 className="mt-4 text-xl font-bold text-amber-900">Zahlung abgebrochen</h2>
+            <p className="mt-2 text-sm text-amber-800">Die Zahlung wurde nicht abgeschlossen. Deine Bestellung kann erneut versucht werden.</p>
+            <Link href="/checkout" className="mt-5 inline-flex rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">Erneut versuchen</Link>
+          </div>
+        )}
+        {!paymentResult && status && <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{status}</p>}
         {error && <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
         <form
           className="mt-5 grid gap-3 sm:grid-cols-2"
@@ -206,7 +233,7 @@ export default function CheckoutPage() {
                     headers: { "Content-Type": "application/json" },
                     credentials: "include",
                     body: JSON.stringify({
-                      type: paymentMethod === "TWINT" ? "twint" : paymentMethod === "INVOICE" ? "invoice" : "card",
+                      type: paymentMethod === "TWINT" ? "twint" : "card",
                       isDefault: savedMethods.length === 0,
                     }),
                   });
@@ -269,7 +296,7 @@ export default function CheckoutPage() {
                 const method = savedMethods.find((entry) => entry.id === id);
                 if (!method) return;
                 setPaymentMethod(
-                  method.type === "twint" ? "TWINT" : method.type === "invoice" ? "INVOICE" : "CARD",
+                  method.type === "twint" ? "TWINT" : "CARD",
                 );
               }}
               className="sm:col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
@@ -277,7 +304,7 @@ export default function CheckoutPage() {
               <option value="">Neue Zahlungsart verwenden</option>
               {savedMethods.map((method) => (
                 <option key={method.id} value={method.id}>
-                  {method.type === "twint" ? "TWINT" : method.type === "invoice" ? "Rechnung/Vorkasse" : "Karte"}
+                  {method.type === "twint" ? "TWINT" : "Kreditkarte"}
                   {method.last4 ? ` ****${method.last4}` : ""}
                 </option>
               ))}
@@ -286,12 +313,11 @@ export default function CheckoutPage() {
 
           <select
             value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value as "INVOICE" | "CARD" | "TWINT")}
+            onChange={(e) => setPaymentMethod(e.target.value as "CARD" | "TWINT")}
             className="sm:col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
           >
-            <option value="INVOICE">Rechnung / Vorkasse (kostenlos)</option>
-            <option value="CARD">Bankkarte (optional via Stripe)</option>
-            <option value="TWINT">TWINT (optional via Stripe)</option>
+            <option value="CARD">Kreditkarte</option>
+            <option value="TWINT">TWINT</option>
           </select>
           {!isGuest && (
             <label className="sm:col-span-2 flex items-center gap-2 text-sm text-slate-700">

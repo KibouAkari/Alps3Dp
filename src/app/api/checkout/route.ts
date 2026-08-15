@@ -3,8 +3,7 @@ import { z } from "zod";
 
 import { getAppBaseUrl } from "@/lib/app-url";
 import { db } from "@/lib/db";
-import { sendOrderEmails } from "@/lib/mail";
-import { getStripe } from "@/lib/payments";
+import { getStripe, getStripeConfigurationError } from "@/lib/payments";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { hashPassword, createOpaqueToken } from "@/lib/security";
 import { getSessionTokenFromRequest, getSessionUserFromToken } from "@/lib/session";
@@ -26,7 +25,7 @@ const checkoutSchema = z.object({
   city: z.string().min(2).optional(),
   country: z.string().min(2).max(2).default("CH").optional(),
   email: z.string().email(),
-  paymentMethod: z.enum(["INVOICE", "CARD", "TWINT"]),
+  paymentMethod: z.enum(["CARD", "TWINT"]),
   savedPaymentMethodId: z.string().optional(),
 });
 
@@ -208,7 +207,7 @@ export async function POST(request: Request) {
       subtotalCents,
       shippingCents,
       totalCents,
-      paymentProvider: parsed.data.paymentMethod === "INVOICE" ? "manual" : "stripe",
+      paymentProvider: "stripe",
       paymentMethod: parsed.data.paymentMethod,
       savedPaymentMethodId: !isGuest ? (parsed.data.savedPaymentMethodId || null) : null,
       customerEmail: parsed.data.email,
@@ -231,44 +230,13 @@ export async function POST(request: Request) {
 
   const appUrl = getAppBaseUrl();
 
-  if (parsed.data.paymentMethod === "INVOICE") {
-    await db.$transaction(async (transaction) => {
-      await transaction.order.update({
-        where: { id: order.id },
-        data: { paymentReference: `invoice-${order.id}` },
-      });
-      if (!isGuest && cartDbId) {
-        await transaction.cartItem.deleteMany({ where: { cartId: cartDbId } });
-      }
-    });
-
-    await sendOrderEmails({
-      customerEmail: order.customerEmail,
-      customerName: order.customerName,
-      orderId: order.id,
-      totalCents: order.totalCents,
-      lines: order.items.map((item) => ({
-        title: item.product.title,
-        quantity: item.quantity,
-        unitCents: item.unitCents,
-      })),
-    });
-
-    return NextResponse.json({
-      success: true,
-      orderId: order.id,
-      mode: "invoice",
-      message: "Bestellung erfasst. Du erhältst die Zahlungsinfos per E-Mail.",
-    });
-  }
-
   const paymentMethodTypes: Array<"card" | "twint"> = parsed.data.paymentMethod === "TWINT" ? ["twint"] : ["card"];
 
   try {
     const stripe = getStripe();
     if (!stripe) {
       return NextResponse.json(
-        { error: "Stripe ist nicht konfiguriert. In Vercel muss STRIPE_SECRET_KEY gesetzt und danach neu deployed werden." },
+        { error: `Stripe ist nicht korrekt konfiguriert: ${getStripeConfigurationError()}` },
         { status: 503 },
       );
     }
