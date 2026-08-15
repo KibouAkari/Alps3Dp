@@ -24,7 +24,7 @@ function escapeHtml(value: string) {
 }
 
 function getResendClient() {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
     return null;
   }
@@ -32,7 +32,7 @@ function getResendClient() {
 }
 
 function getMailFrom() {
-  return process.env.MAIL_FROM || process.env.SMTP_USER || "Alps3Dp <noreply@alps3dp.ch>";
+  return process.env.MAIL_FROM?.trim() || process.env.SMTP_USER?.trim() || "Alps3Dp <noreply@alps3dp.ch>";
 }
 
 function parseBoolean(value: string | undefined, fallback: boolean) {
@@ -92,7 +92,11 @@ function getMailSender() {
 async function sendMail(to: string, subject: string, html: string) {
   const sender = getMailSender();
   if (!sender) {
-    console.log("[mail:disabled]", { to, subject });
+    const message = "Mail-Versand ist nicht konfiguriert. RESEND_API_KEY oder SMTP-Zugangsdaten fehlen.";
+    console.error("[mail:disabled]", { to, subject, message });
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(message);
+    }
     return;
   }
 

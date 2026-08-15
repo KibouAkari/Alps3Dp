@@ -245,6 +245,7 @@ export async function POST(request: Request) {
       mode: "payment",
       currency: "chf",
       payment_method_types: paymentMethodTypes,
+      customer_email: order.customerEmail,
       client_reference_id: order.id,
       metadata: { orderId: order.id, userId: orderUserId! },
       success_url: `${appUrl}/success?order=${order.id}`,
