@@ -131,6 +131,31 @@ export default function CheckoutPage() {
 
   const totalCents = subtotalCents + shippingCents;
 
+  const reduceQuantity = async (row: CartRow) => {
+    if (isGuest) {
+      const items = getGuestCart()
+        .map((item) => item.productId === row.productId ? { ...item, quantity: item.quantity - 1 } : item)
+        .filter((item) => item.quantity > 0);
+      localStorage.setItem("alps3dp.guest-cart", JSON.stringify(items));
+      setRows((current) => current
+        .map((item) => item.productId === row.productId ? { ...item, quantity: item.quantity - 1 } : item)
+        .filter((item) => item.quantity > 0));
+      window.dispatchEvent(new Event("cart:updated"));
+      return;
+    }
+
+    await fetch(`/api/cart/items/${row.productId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ quantity: row.quantity - 1 }),
+    });
+    const response = await fetch("/api/cart", { credentials: "include", cache: "no-store" });
+    const data = await response.json();
+    setRows(data.items || []);
+    window.dispatchEvent(new Event("cart:updated"));
+  };
+
   return (
     <div className="grid gap-6 fade-in-up lg:grid-cols-[1.2fr_1fr]">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -296,7 +321,7 @@ export default function CheckoutPage() {
               Zahlungsart für nächste Bestellung speichern
             </label>
           )}
-          <button type="submit" className="sm:col-span-2 rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white transition hover:bg-sky-700">
+          <button type="submit" className="checkout-submit-button sm:col-span-2 rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white transition hover:bg-sky-700">
             Bestellung abschliessen
           </button>
         </form>
@@ -306,11 +331,21 @@ export default function CheckoutPage() {
         <h2 className="text-lg font-semibold text-slate-900">Bestellübersicht</h2>
         <div className="mt-4 space-y-2 text-sm text-slate-600">
           {rows.map((row) => (
-            <div key={row.productId} className="flex justify-between">
-              <span>
-                {row.quantity}x {row.product.title}
+            <div key={row.productId} className="flex items-center gap-3 border-b border-slate-100 pb-3">
+              <button
+                type="button"
+                onClick={() => void reduceQuantity(row)}
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-300 text-base leading-none text-slate-500 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
+                aria-label={`${row.product.title} einmal entfernen`}
+                title="Ein Stück entfernen"
+              >
+                ×
+              </button>
+              <span className="min-w-0 flex-1 truncate">
+                <span className="font-medium text-slate-800">{row.product.title}</span>
+                <span className="ml-2 text-xs text-slate-500">Menge {row.quantity}</span>
               </span>
-              <span>{formatChf((row.product.salePriceCents ?? row.product.priceCents) * row.quantity)}</span>
+              <span className="shrink-0 font-medium text-slate-800">{formatChf((row.product.salePriceCents ?? row.product.priceCents) * row.quantity)}</span>
             </div>
           ))}
           <div className="flex justify-between border-t border-slate-200 pt-2">

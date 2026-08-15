@@ -8,6 +8,7 @@ import { CartIcon, LogoutIcon, SettingsIcon, UserIcon } from "@/components/icons
 import { SafeImage } from "@/components/safe-image";
 import { ThemeToggleButton } from "@/components/theme-toggle";
 import { useMockSession } from "@/hooks/use-mock-session";
+import { getGuestCart } from "@/lib/guest-cart";
 
 export function SiteHeader() {
   const { user, isLoading, signOut } = useMockSession();
@@ -25,9 +26,9 @@ export function SiteHeader() {
         if (!active || !response.ok) {
           return;
         }
-        const nextCount = Array.isArray(data.items)
+        const nextCount = Array.isArray(data.items) && data.items.length > 0
           ? data.items.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0)
-          : 0;
+          : getGuestCart().reduce((sum, item) => sum + item.quantity, 0);
         setCartCount(nextCount);
       } catch {
         if (active) {
@@ -93,7 +94,7 @@ export function SiteHeader() {
             <CartIcon />
             <span className="hidden sm:inline">Warenkorb</span>
             {cartCount > 0 && (
-              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-sky-600 px-1 text-[11px] font-semibold text-white soft-pop">
+              <span key={cartCount} className="cart-count-bump absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-sky-600 px-1 text-[11px] font-semibold text-white">
                 {cartCount > 99 ? "99+" : cartCount}
               </span>
             )}

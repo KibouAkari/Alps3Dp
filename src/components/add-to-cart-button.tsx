@@ -48,7 +48,7 @@ export function AddToCartButton({ productId }: AddToCartButtonProps) {
       >
         {loading ? "Bitte warten..." : "In Warenkorb"}
       </button>
-      {message && <p className="text-xs text-slate-600">{message}</p>}
+      {message && <p className="cart-added-message text-xs font-medium text-emerald-700">{message}</p>}
     </div>
   );
 }
