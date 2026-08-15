@@ -45,6 +45,7 @@ export default function CheckoutPage() {
   const [isGuest, setIsGuest] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -172,38 +173,41 @@ export default function CheckoutPage() {
           className="mt-5 grid gap-3 sm:grid-cols-2"
           onSubmit={async (event) => {
             event.preventDefault();
+            if (isSubmitting) return;
+            setIsSubmitting(true);
             setStatus(null);
             setError(null);
 
-            const payload: Record<string, unknown> = {
-              addressId: selectedAddressId || undefined,
-              savedPaymentMethodId: selectedMethodId || undefined,
-              firstName,
-              lastName,
-              email,
-              address1,
-              zip,
-              city,
-              country: "CH",
-              paymentMethod,
-            };
+            try {
+              const payload: Record<string, unknown> = {
+                addressId: selectedAddressId || undefined,
+                savedPaymentMethodId: selectedMethodId || undefined,
+                firstName,
+                lastName,
+                email,
+                address1,
+                zip,
+                city,
+                country: "CH",
+                paymentMethod,
+              };
 
-            if (isGuest) {
-              payload.guestItems = getGuestCart();
-            }
+              if (isGuest) {
+                payload.guestItems = getGuestCart();
+              }
 
-            const response = await fetch("/api/checkout", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: JSON.stringify(payload),
-            });
+              const response = await fetch("/api/checkout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(payload),
+              });
 
-            const data = await response.json();
-            if (!response.ok) {
-              setError(data.error || "Checkout fehlgeschlagen.");
-              return;
-            }
+              const data = await response.json();
+              if (!response.ok) {
+                setError(data.error || "Checkout fehlgeschlagen.");
+                return;
+              }
 
             if (data.checkoutUrl) {
               if (!isGuest) {
@@ -240,8 +244,13 @@ export default function CheckoutPage() {
               return;
             }
 
-            if (isGuest) clearGuestCart();
-            setStatus("Bestellung erfolgreich gespeichert.");
+              if (isGuest) clearGuestCart();
+              setStatus("Bestellung erfolgreich gespeichert.");
+            } catch {
+              setError("Checkout konnte nicht gestartet werden. Bitte versuche es erneut.");
+            } finally {
+              setIsSubmitting(false);
+            }
           }}
         >
           {savedAddresses.length > 0 && (
@@ -321,8 +330,10 @@ export default function CheckoutPage() {
               Zahlungsart für nächste Bestellung speichern
             </label>
           )}
-          <button type="submit" className="checkout-submit-button sm:col-span-2 rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white transition hover:bg-sky-700">
-            Bestellung abschliessen
+          <button type="submit" disabled={isSubmitting} className="checkout-submit-button sm:col-span-2 rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white transition hover:bg-sky-700 disabled:cursor-wait disabled:opacity-80">
+            <span className={isSubmitting ? "checkout-button-label checkout-button-label-loading" : "checkout-button-label"}>
+              {isSubmitting ? "Zahlung wird vorbereitet..." : "Bestellung abschliessen"}
+            </span>
           </button>
         </form>
       </section>

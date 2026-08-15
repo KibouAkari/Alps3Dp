@@ -27,7 +27,7 @@ export function PaymentResult({ variant }: PaymentResultProps) {
         <p className="mt-7 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
           Alps3Dp Bestellung
         </p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight !text-slate-900 sm:text-4xl">
+        <h1 className="payment-result-title mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
           {isSuccess ? "Zahlung erfolgreich" : "Zahlung nicht abgeschlossen"}
         </h1>
         <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-slate-600">
