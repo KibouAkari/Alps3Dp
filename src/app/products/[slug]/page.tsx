@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AddToCartButton } from "@/components/add-to-cart-button";
+import { BuyNowButton } from "@/components/buy-now-button";
 import { ProductImageGallery } from "@/components/product-image-gallery";
 import { SafeImage } from "@/components/safe-image";
 import { formatChf, getDisplayPriceCents } from "@/lib/data";
@@ -109,9 +110,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <p className="text-sm text-slate-500">Lager: {product.stock} Stk.</p>
           </div>
           <div className="grid gap-3 pt-4 sm:grid-cols-2">
-            <Link href="/checkout" className="inline-flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700">
-              Jetzt kaufen
-            </Link>
+            <BuyNowButton productId={product.id} />
             <AddToCartButton productId={product.id} />
           </div>
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">

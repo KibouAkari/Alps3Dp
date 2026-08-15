@@ -229,7 +229,6 @@ export async function POST(request: Request) {
     include: { items: { include: { product: true } } },
   });
 
-  const stripe = getStripe();
   const appUrl = getAppBaseUrl();
 
   if (parsed.data.paymentMethod === "INVOICE") {
@@ -263,16 +262,17 @@ export async function POST(request: Request) {
     });
   }
 
-  if (!stripe) {
-    return NextResponse.json(
-      { error: "Karten/TWINT sind aktuell nicht verfügbar. Bitte 'Rechnung / Vorkasse' wählen." },
-      { status: 400 },
-    );
-  }
-
   const paymentMethodTypes: Array<"card" | "twint"> = parsed.data.paymentMethod === "TWINT" ? ["twint"] : ["card"];
 
   try {
+    const stripe = getStripe();
+    if (!stripe) {
+      return NextResponse.json(
+        { error: "Stripe ist nicht konfiguriert. In Vercel muss STRIPE_SECRET_KEY gesetzt und danach neu deployed werden." },
+        { status: 503 },
+      );
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       currency: "chf",
@@ -305,8 +305,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ checkoutUrl: session.url, orderId: order.id });
   } catch (error) {
     console.error("[checkout:stripe]", error);
+    const stripeMessage = error instanceof Error ? error.message : "Unbekannter Stripe-Fehler";
     return NextResponse.json(
-      { error: "Zahlung konnte nicht gestartet werden. Bitte Stripe-Schlüssel in Vercel prüfen." },
+      {
+        error: `Zahlung konnte nicht gestartet werden: ${stripeMessage}`,
+        code: "STRIPE_CHECKOUT_FAILED",
+      },
       { status: 502 },
     );
   }
