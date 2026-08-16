@@ -12,6 +12,8 @@ Checkout now supports guest orders end to end: anonymous shoppers get a browser-
 
 The codebase also received a documentation pass: business-critical modules (payments, checkout, the Stripe webhook, auth, sessions, rate limiting) gained explanatory comments, and confirmed-unused legacy code was removed, including the early demo-data placeholders in `src/lib/data.ts`, an unused integration-roadmap file, and dead helper functions in the client session hook's supporting module.
 
+A follow-up pass the same day fixed a real bug and closed a security gap. Drag-and-drop image uploads in the admin product form could silently reject valid images: the browser-side filter only trusted `File.type`, which some Windows/browser combinations leave empty for dropped (as opposed to picked) files, so it now also falls back to checking the file extension. The cart page could briefly show a signed-in user's stale local guest-cart items if their server-side cart was empty, because it inferred guest status from an ambiguous empty-list response; it now checks the real session state first, matching how checkout already behaved. The account password- and email-change endpoints had no rate limiting despite verifying the current password, so both now enforce per-account limits, and changing the password now signs out every other active session. The storefront home page now uses time-based revalidation instead of querying the database on every request.
+
 ## 2026-07-10
 
 This update focused on production readiness, documentation quality, and security hardening.

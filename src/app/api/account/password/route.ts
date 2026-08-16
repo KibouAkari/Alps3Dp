@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
-import { hashPassword, verifyPassword } from "@/lib/security";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { hashPassword, hashOpaqueToken, verifyPassword } from "@/lib/security";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
 // Self-service password change while already signed in; requires re-entering
@@ -25,6 +26,22 @@ export async function PATCH(request: Request) {
   const sessionUser = await getSessionUserFromToken(getCookieToken(request));
   if (!sessionUser) {
     return NextResponse.json({ error: "Nicht eingeloggt." }, { status: 401 });
+  }
+
+  // A stolen session cookie shouldn't be enough to brute-force the current
+  // password, so this is rate-limited per account in addition to per IP.
+  const ip = getClientIp(request);
+  const rateLimit = checkRateLimit({
+    namespace: "account-password",
+    identifier: `${ip}:${sessionUser.id}`,
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (rateLimit.limited) {
+    return NextResponse.json(
+      { error: "Zu viele Versuche. Bitte spaeter erneut versuchen." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
+    );
   }
 
   const body = await request.json().catch(() => null);
@@ -51,6 +68,16 @@ export async function PATCH(request: Request) {
     where: { id: user.id },
     data: {
       passwordHash: await hashPassword(parsed.data.newPassword),
+    },
+  });
+
+  // Keep the current session alive but sign the account out everywhere else,
+  // in case the old password had leaked and another session is compromised.
+  const currentToken = getCookieToken(request);
+  await db.userSession.deleteMany({
+    where: {
+      userId: user.id,
+      ...(currentToken ? { tokenHash: { not: hashOpaqueToken(currentToken) } } : {}),
     },
   });
 

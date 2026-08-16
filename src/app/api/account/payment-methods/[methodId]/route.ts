@@ -4,6 +4,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Update/delete a single saved payment method reference; every handler
+// re-checks ownership before mutating anything.
 function getCookieToken(request: Request) {
   return request.headers
     .get("cookie")

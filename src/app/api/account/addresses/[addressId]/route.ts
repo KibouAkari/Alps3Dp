@@ -4,6 +4,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Update/delete a single saved address; every handler re-checks ownership
+// (address.userId === current user) before mutating anything.
 function getCookieToken(request: Request) {
   return request.headers
     .get("cookie")

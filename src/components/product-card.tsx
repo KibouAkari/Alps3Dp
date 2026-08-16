@@ -4,6 +4,7 @@ import { SafeImage } from "@/components/safe-image";
 import { formatChf, getDisplayPriceCents } from "@/lib/data";
 import type { Product } from "@/lib/types";
 
+// Storefront grid tile: image, title, and price with sale-price styling.
 type ProductCardProps = {
   product: Product;
 };

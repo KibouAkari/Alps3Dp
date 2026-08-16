@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { AdminGuard } from "@/components/admin-guard";
 import { ArrowLeftIcon } from "@/components/icons";
 
+// Revenue and product-performance summary computed on the fly from paid
+// orders; always rendered fresh (force-dynamic) since it's an admin-only report.
 export const dynamic = "force-dynamic";
 
 export default async function AdminAnalyticsPage() {

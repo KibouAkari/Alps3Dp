@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getAppBaseUrl } from "@/lib/app-url";
 import { db } from "@/lib/db";
 import { sendVerifyEmail } from "@/lib/mail";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { createOpaqueToken, hashOpaqueToken, verifyPassword } from "@/lib/security";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
@@ -27,6 +28,20 @@ export async function PATCH(request: Request) {
   const sessionUser = await getSessionUserFromToken(getCookieToken(request));
   if (!sessionUser) {
     return NextResponse.json({ error: "Nicht eingeloggt." }, { status: 401 });
+  }
+
+  const ip = getClientIp(request);
+  const rateLimit = checkRateLimit({
+    namespace: "account-email",
+    identifier: `${ip}:${sessionUser.id}`,
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (rateLimit.limited) {
+    return NextResponse.json(
+      { error: "Zu viele Versuche. Bitte spaeter erneut versuchen." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
+    );
   }
 
   const body = await request.json().catch(() => null);
