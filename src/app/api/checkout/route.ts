@@ -81,18 +81,19 @@ export async function POST(request: Request) {
   }
 
   // For logged-in users, check email verification
-  if (!isGuest) {
-    const account = await db.user.findUnique({
-      where: { id: sessionUser!.id },
-      select: { emailVerifiedAt: true },
-    });
-    if (!account?.emailVerifiedAt) {
-      return NextResponse.json(
-        { error: "Bitte bestätige zuerst deine E-Mail-Adresse." },
-        { status: 403 },
-      );
-    }
-  }
+  // TEMPORARILY DISABLED: mail delivery isn't configured yet, re-enable once it is.
+  // if (!isGuest) {
+  //   const account = await db.user.findUnique({
+  //     where: { id: sessionUser!.id },
+  //     select: { emailVerifiedAt: true },
+  //   });
+  //   if (!account?.emailVerifiedAt) {
+  //     return NextResponse.json(
+  //       { error: "Bitte bestätige zuerst deine E-Mail-Adresse." },
+  //       { status: 403 },
+  //     );
+  //   }
+  // }
 
   // Resolve address
   let addressData = { firstName: "", lastName: "", address1: "", address2: "", zip: "", city: "", country: "CH" };

@@ -6,6 +6,8 @@ All notable changes to Alp3D Shop are documented in this file.
 
 ## 2026-08-16
 
+**Temporary:** the checkout's "please verify your email" requirement for signed-in customers is commented out in `src/app/api/checkout/route.ts` until mail delivery is configured, so checkout can be tested end to end without SMTP/Resend set up. Re-enable it once email is live.
+
 This update focused on checkout completeness, code clarity, and removing dead code.
 
 Checkout now supports guest orders end to end: anonymous shoppers get a browser-side cart, can check out with any email address, and are no longer required to match a signed-in account's email. The invoice/manual payment option was removed in favor of Stripe card and TWINT only, and Stripe now redirects shoppers to dedicated, animated `/success` and `/failed` pages instead of back into the checkout form. Stripe configuration errors (for example, a publishable key pasted into the secret key field) are now detected and reported with an actionable message. Password resets now invalidate all existing sessions for the account, and transactional mail delivery fails loudly in production instead of silently no-op'ing when no provider is configured.
