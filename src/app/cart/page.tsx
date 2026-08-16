@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { formatChf } from "@/lib/data";
-import { getGuestCart, type GuestCartItem } from "@/lib/guest-cart";
+import { getGuestCart, GUEST_CART_STORAGE_KEY, type GuestCartItem } from "@/lib/guest-cart";
 
 type CartRow = {
   productId: string;
@@ -25,45 +25,48 @@ export default function CartPage() {
   const [error, setError] = useState<string | null>(null);
 
   const loadCart = async () => {
+    // Check real auth state first: /api/cart returns an empty list both for
+    // guests and for signed-in users with an empty server cart, so we can't
+    // tell those apart from that response alone.
+    const sessionResponse = await fetch("/api/auth/session", { credentials: "include", cache: "no-store" });
+    const sessionData = await sessionResponse.json();
+    const signedIn = Boolean(sessionData.user);
+
+    if (!signedIn) {
+      const guestItems = getGuestCart();
+      if (guestItems.length === 0) {
+        setIsGuest(true);
+        setRows([]);
+        window.dispatchEvent(new Event("cart:updated"));
+        return;
+      }
+
+      const productsResponse = await fetch("/api/products");
+      const productsData = await productsResponse.json();
+      const allProducts: CartRow["product"][] = productsData.products || [];
+
+      const resolved: CartRow[] = guestItems
+        .map((item: GuestCartItem) => {
+          const product = allProducts.find((p) => p.id === item.productId);
+          if (!product) return null;
+          return { productId: item.productId, quantity: item.quantity, product };
+        })
+        .filter((row): row is CartRow => row !== null);
+
+      setIsGuest(true);
+      setRows(resolved);
+      window.dispatchEvent(new Event("cart:updated"));
+      return;
+    }
+
     const response = await fetch("/api/cart", { credentials: "include" });
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "Warenkorb konnte nicht geladen werden.");
     }
 
-    const dbItems: CartRow[] = data.items || [];
-
-    if (dbItems.length > 0) {
-      setIsGuest(false);
-      setRows(dbItems);
-      window.dispatchEvent(new Event("cart:updated"));
-      return;
-    }
-
-    // Not logged in or empty DB cart – check localStorage guest cart
-    const guestItems = getGuestCart();
-    if (guestItems.length === 0) {
-      setIsGuest(true);
-      setRows([]);
-      window.dispatchEvent(new Event("cart:updated"));
-      return;
-    }
-
-    // Fetch product details for guest items
-    const productsResponse = await fetch("/api/products");
-    const productsData = await productsResponse.json();
-    const allProducts: CartRow["product"][] = productsData.products || [];
-
-    const resolved: CartRow[] = guestItems
-      .map((item: GuestCartItem) => {
-        const product = allProducts.find((p) => p.id === item.productId);
-        if (!product) return null;
-        return { productId: item.productId, quantity: item.quantity, product };
-      })
-      .filter((row): row is CartRow => row !== null);
-
-    setIsGuest(true);
-    setRows(resolved);
+    setIsGuest(false);
+    setRows(data.items || []);
     window.dispatchEvent(new Event("cart:updated"));
   };
 
@@ -72,7 +75,7 @@ export default function CartPage() {
     const updated = items
       .map((item) => (item.productId === productId ? { ...item, quantity: newQty } : item))
       .filter((item) => item.quantity > 0);
-    localStorage.setItem("alps3dp.guest-cart", JSON.stringify(updated));
+    localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new Event("cart:updated"));
     setRows((prev) =>
       prev
@@ -83,7 +86,7 @@ export default function CartPage() {
 
   const removeGuestItem = (productId: string) => {
     const items = getGuestCart().filter((item) => item.productId !== productId);
-    localStorage.setItem("alps3dp.guest-cart", JSON.stringify(items));
+    localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(items));
     window.dispatchEvent(new Event("cart:updated"));
     setRows((prev) => prev.filter((row) => row.productId !== productId));
   };

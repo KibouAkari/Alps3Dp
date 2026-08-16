@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { formatChf } from "@/lib/data";
-import { getGuestCart, clearGuestCart, type GuestCartItem } from "@/lib/guest-cart";
+import { getGuestCart, clearGuestCart, GUEST_CART_STORAGE_KEY, type GuestCartItem } from "@/lib/guest-cart";
 
 type CartRow = {
   productId: string;
@@ -71,7 +71,7 @@ export default function CheckoutPage() {
     fetch("/api/account", { credentials: "include" })
       .then(async (response) => {
         if (!response.ok) {
-          // Not logged in â€“ load guest cart from localStorage
+          // Not logged in - load guest cart from localStorage
           setIsGuest(true);
           const guestItems = getGuestCart();
           if (guestItems.length > 0) {
@@ -141,7 +141,7 @@ export default function CheckoutPage() {
       const items = getGuestCart()
         .map((item) => item.productId === row.productId ? { ...item, quantity: item.quantity - 1 } : item)
         .filter((item) => item.quantity > 0);
-      localStorage.setItem("alps3dp.guest-cart", JSON.stringify(items));
+      localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(items));
       setRows((current) => current
         .map((item) => item.productId === row.productId ? { ...item, quantity: item.quantity - 1 } : item)
         .filter((item) => item.quantity > 0));

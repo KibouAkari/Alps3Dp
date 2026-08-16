@@ -5,7 +5,8 @@ export type GuestCartItem = {
   quantity: number;
 };
 
-const STORAGE_KEY = "alps3dp.guest-cart";
+export const GUEST_CART_STORAGE_KEY = "alps3dp.guest-cart";
+const STORAGE_KEY = GUEST_CART_STORAGE_KEY;
 
 export function getGuestCart(): GuestCartItem[] {
   if (typeof window === "undefined") return [];

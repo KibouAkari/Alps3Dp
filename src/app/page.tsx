@@ -6,6 +6,10 @@ import { ShopClient } from "@/components/shop-client";
 import { db } from "@/lib/db";
 import { mapProduct } from "@/lib/product-mapper";
 
+// Cache the storefront and revalidate it in the background instead of
+// hitting the database on every single request.
+export const revalidate = 60;
+
 export default async function HomePage() {
   let initialProducts: ReturnType<typeof mapProduct>[] = [];
   let initialCategories: string[] = [];

@@ -85,7 +85,12 @@ export function AdminProductsManager() {
       return;
     }
 
-    const accepted = Array.from(files).filter((file) => file.type.startsWith("image/"));
+    // Drag-and-drop (unlike the file picker) doesn't always populate
+    // File.type on Windows, so also accept by extension; the server
+    // re-validates the actual bytes regardless (see /api/uploads).
+    const accepted = Array.from(files).filter(
+      (file) => file.type.startsWith("image/") || /\.(jpe?g|png|gif|webp|avif|bmp)$/i.test(file.name),
+    );
     if (accepted.length === 0) {
       setError("Bitte nur Bilddateien hochladen.");
       return;
