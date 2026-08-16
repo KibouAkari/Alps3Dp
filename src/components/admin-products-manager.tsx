@@ -2,7 +2,7 @@
 
 // Admin CRUD screen for the product catalog: create, edit, hide, and delete
 // products, including image upload and category assignment.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { SafeImage } from "@/components/safe-image";
 import { formatChf, getDisplayPriceCents } from "@/lib/data";
@@ -57,6 +57,16 @@ export function AdminProductsManager() {
   const [shippingCents, setShippingCents] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const feedbackRef = useRef<HTMLDivElement | null>(null);
+
+  // Actions taken far down the page (e.g. deleting a row in the product
+  // table) otherwise leave the result banner off-screen above the fold,
+  // which looks like nothing happened.
+  useEffect(() => {
+    if (message || error) {
+      feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [message, error]);
 
   const visibleCount = useMemo(() => products.filter((item) => !item.isHidden).length, [products]);
 
@@ -221,8 +231,8 @@ export function AdminProductsManager() {
     <div className="space-y-6 fade-in-up">
       <h1 className="text-3xl font-bold tracking-tight text-slate-900">Produkte verwalten</h1>
 
-      {message && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p>}
-      {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
+      {message && <p ref={feedbackRef} className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p>}
+      {error && <p ref={feedbackRef} className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
 
       <section className="panel-surface rounded-2xl p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900">Shop-Einstellungen</h2>
