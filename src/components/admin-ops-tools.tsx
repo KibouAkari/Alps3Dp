@@ -1,5 +1,7 @@
 "use client";
 
+// Admin dashboard widget: surfaces Stripe configuration status and lets
+// admins trigger safe test/reset utilities backed by /api/admin/ops.
 import { useState } from "react";
 
 type StripeOverview = {

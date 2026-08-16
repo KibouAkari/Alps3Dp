@@ -1,3 +1,5 @@
+// Client-side cart storage for shoppers who are not signed in. Mirrors the shape
+// of the database-backed cart so checkout can accept either source interchangeably.
 export type GuestCartItem = {
   productId: string;
   quantity: number;

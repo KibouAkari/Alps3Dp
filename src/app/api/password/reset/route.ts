@@ -5,6 +5,9 @@ import { db } from "@/lib/db";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { hashPassword, hashOpaqueToken } from "@/lib/security";
 
+// Completes the reset-password flow started by /api/password/forgot. The
+// token is single-use and expires, and every existing session for the user
+// is invalidated once the password changes (see below).
 const resetSchema = z.object({
   token: z.string().min(20),
   password: z.string().min(8).max(128),
@@ -57,6 +60,9 @@ export async function POST(request: Request) {
       where: { id: tokenRecord.id },
       data: { usedAt: new Date() },
     }),
+    // Invalidate every existing session so a leaked/old cookie stops working
+    // once the password has been reset.
+    db.userSession.deleteMany({ where: { userId: tokenRecord.userId } }),
   ]);
 
   return NextResponse.json({ success: true });

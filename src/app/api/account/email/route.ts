@@ -7,6 +7,8 @@ import { sendVerifyEmail } from "@/lib/mail";
 import { createOpaqueToken, hashOpaqueToken, verifyPassword } from "@/lib/security";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Changing the email requires the current password and re-verification of
+// the new address before it becomes the account's email of record.
 const updateEmailSchema = z.object({
   newEmail: z.string().email(),
   currentPassword: z.string().min(1),

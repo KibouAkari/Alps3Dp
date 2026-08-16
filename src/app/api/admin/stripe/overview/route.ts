@@ -4,6 +4,8 @@ import { requireAdminFromRequest } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
 import { getStripe } from "@/lib/payments";
 
+// Read-only dashboard summary for admins: whether Stripe is configured, plus
+// a quick snapshot of recent orders. No secrets are ever included in the response.
 export async function GET(request: Request) {
   const admin = await requireAdminFromRequest(request);
   if (!admin) {

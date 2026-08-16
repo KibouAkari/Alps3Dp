@@ -1,5 +1,7 @@
 "use client";
 
+// Cart page: shows the server-backed cart for signed-in users or the
+// localStorage guest cart otherwise, with inline quantity/removal controls.
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 

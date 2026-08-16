@@ -1,3 +1,5 @@
+// Password hashing and opaque-token utilities shared by auth, sessions, and
+// email verification/reset flows.
 import crypto from "node:crypto";
 
 import bcrypt from "bcryptjs";

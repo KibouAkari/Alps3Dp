@@ -1,3 +1,4 @@
+// Shared domain types used across the storefront, cart, and checkout.
 export type Category = string;
 
 export type Product = {

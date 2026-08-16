@@ -1,3 +1,5 @@
+// Admin landing page: order/revenue snapshot plus shortcuts into the
+// products, analytics, and Stripe admin screens. Access is gated by AdminGuard.
 import Link from "next/link";
 import type { Route } from "next";
 

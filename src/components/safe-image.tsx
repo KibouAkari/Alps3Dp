@@ -2,6 +2,8 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+// Wraps next/image but falls back to a plain <img> for data: URLs and other
+// sources next/image can't optimize, and swaps in a placeholder on load errors.
 import Image, { ImageProps } from "next/image";
 import { useState } from "react";
 

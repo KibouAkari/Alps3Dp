@@ -1,3 +1,7 @@
+// Storefront home page: fetches the initial product/category list on the
+// server for fast first paint, then hands off to ShopClient for interactive
+// filtering. Falls back to an empty catalog if the database is unreachable
+// so the page still renders instead of crashing.
 import { ShopClient } from "@/components/shop-client";
 import { db } from "@/lib/db";
 import { mapProduct } from "@/lib/product-mapper";

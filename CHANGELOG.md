@@ -4,6 +4,14 @@
 
 All notable changes to Alp3D Shop are documented in this file.
 
+## 2026-08-16
+
+This update focused on checkout completeness, code clarity, and removing dead code.
+
+Checkout now supports guest orders end to end: anonymous shoppers get a browser-side cart, can check out with any email address, and are no longer required to match a signed-in account's email. The invoice/manual payment option was removed in favor of Stripe card and TWINT only, and Stripe now redirects shoppers to dedicated, animated `/success` and `/failed` pages instead of back into the checkout form. Stripe configuration errors (for example, a publishable key pasted into the secret key field) are now detected and reported with an actionable message. Password resets now invalidate all existing sessions for the account, and transactional mail delivery fails loudly in production instead of silently no-op'ing when no provider is configured.
+
+The codebase also received a documentation pass: business-critical modules (payments, checkout, the Stripe webhook, auth, sessions, rate limiting) gained explanatory comments, and confirmed-unused legacy code was removed, including the early demo-data placeholders in `src/lib/data.ts`, an unused integration-roadmap file, and dead helper functions in the client session hook's supporting module.
+
 ## 2026-07-10
 
 This update focused on production readiness, documentation quality, and security hardening.

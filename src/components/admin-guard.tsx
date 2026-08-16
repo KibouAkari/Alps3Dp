@@ -4,6 +4,10 @@ import Link from "next/link";
 
 import { useMockSession } from "@/hooks/use-mock-session";
 
+// Client-side gate for admin pages: shows a loading skeleton while the
+// session resolves, then either the page content or a sign-in prompt.
+// This is a UX convenience only — the actual authorization boundary is
+// enforced server-side by requireAdminFromRequest on each admin API route.
 type AdminGuardProps = {
   children: React.ReactNode;
 };

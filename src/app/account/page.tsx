@@ -1,5 +1,7 @@
 "use client";
 
+// Customer account dashboard: profile, saved addresses/payment methods,
+// and order history, all driven by /api/account and /api/account/*.
 import { useEffect, useMemo, useState } from "react";
 
 import { SafeImage } from "@/components/safe-image";

@@ -11,7 +11,7 @@ The main goal of this repository is to provide a clean foundation for a real onl
 | Area | What It Covers |
 | --- | --- |
 | Storefront | Product browsing, filters, detail pages, and cart actions |
-| Checkout | Invoice flow plus Stripe card and TWINT payment options |
+| Checkout | Guest and account checkout with Stripe card and TWINT payment |
 | Orders | Persistent order records, Stripe webhook confirmation, and email follow-up |
 | Admin | Product management, Stripe visibility, and controlled test utilities |
 | Stack | Next.js, React, TypeScript, Prisma, PostgreSQL, Stripe, Tailwind |
@@ -34,9 +34,11 @@ The app will be available at `http://localhost:3000`.
 
 ## Payment And Email Flow
 
-Checkout sessions are created server-side in `src/app/api/checkout/route.ts`. Payment completion is accepted only after Stripe webhook verification in `src/app/api/webhooks/payment/route.ts`. Order status changes and confirmation emails are triggered from this verified flow.
+Checkout is available to signed-in customers and to anonymous guests: guests keep their cart in the browser (`src/lib/guest-cart.ts`) and provide shipping details directly at checkout, while signed-in customers can reuse saved addresses and payment methods. Payment is accepted via Stripe Checkout (card or TWINT); there is no manual invoice option.
 
-Email delivery is handled in `src/lib/mail.ts`. If SMTP credentials are present, SMTP is used. If not, Resend can be used through `RESEND_API_KEY`.
+Checkout sessions are created server-side in `src/app/api/checkout/route.ts`. Payment completion is accepted only after Stripe webhook verification in `src/app/api/webhooks/payment/route.ts`, which cross-checks the paid amount, currency, and customer email before marking an order as paid. Stripe redirects the shopper to a dedicated `/success` or `/failed` page rather than back into the checkout form.
+
+Email delivery is handled in `src/lib/mail.ts`. If SMTP credentials are present, SMTP is used. If not, Resend can be used through `RESEND_API_KEY`. In production, a missing mail configuration raises an error instead of silently dropping the message.
 
 ## Production Readiness
 

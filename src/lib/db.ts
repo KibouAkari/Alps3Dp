@@ -1,3 +1,6 @@
+// Shared Prisma client. Falls back through the various connection-string env var
+// names that different Vercel Postgres/Prisma integrations expose, and reuses a
+// single client instance in development to survive Next.js hot reloads.
 import { PrismaClient } from "@prisma/client";
 
 function resolveDatabaseUrl() {
@@ -24,6 +27,8 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
+// Reuse the client across hot reloads in dev; Next.js would otherwise create a
+// new PrismaClient (and new connection pool) on every file change.
 export const db =
   global.prisma ||
   new PrismaClient({

@@ -1,5 +1,7 @@
 "use client";
 
+// Sticky top navigation: branding, primary links, cart badge (live item
+// count for both signed-in and guest carts), and the account/admin menu.
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";

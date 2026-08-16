@@ -4,6 +4,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// CRUD for the signed-in user's saved shipping addresses, offered as
+// shortcuts during checkout.
 function getCookieToken(request: Request) {
   return request.headers
     .get("cookie")

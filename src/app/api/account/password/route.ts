@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/security";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Self-service password change while already signed in; requires re-entering
+// the current password even though a valid session cookie is present.
 const updatePasswordSchema = z.object({
   currentPassword: z.string().min(1),
   newPassword: z.string().min(8).max(128),

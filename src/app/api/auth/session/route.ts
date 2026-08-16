@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Lets client components ask "who am I?" without exposing the session token
+// itself; the cookie stays httpOnly and is only read server-side here.
 function getCookieToken(request: Request) {
   return request.headers
     .get("cookie")

@@ -4,6 +4,9 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Database-backed cart for signed-in users. Anonymous shoppers use the
+// browser-only cart in src/lib/guest-cart.ts instead — GET simply returns an
+// empty list when there's no session, so callers can treat both the same way.
 const updateCartSchema = z.object({
   items: z.array(
     z.object({

@@ -1,5 +1,7 @@
 "use client";
 
+// Client-side hook wrapping the cookie-based session API (/api/auth/*).
+// Despite the name, this talks to real server sessions — nothing here is mocked.
 import { useCallback, useEffect, useState } from "react";
 
 import {

@@ -8,6 +8,9 @@ import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { hashPassword, createOpaqueToken, hashOpaqueToken } from "@/lib/security";
 import { createSessionForUser, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Creates the account, sends the verification email, and signs the user in
+// immediately so they can browse right away — email verification is only
+// required later, at checkout.
 const registerSchema = z.object({
   firstName: z.string().min(0).max(60).optional().default(""),
   lastName: z.string().min(0).max(60).optional().default(""),

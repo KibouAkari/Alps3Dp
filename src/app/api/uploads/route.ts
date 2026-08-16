@@ -5,6 +5,8 @@ import { getSessionTokenFromRequest, getSessionUserFromToken } from "@/lib/sessi
 
 export const runtime = "nodejs";
 
+// Verifies the actual file bytes (magic numbers) rather than trusting the
+// client-supplied MIME type, which is easy to spoof.
 function isAllowedImageBuffer(buffer: Buffer) {
   if (buffer.length < 12) {
     return false;

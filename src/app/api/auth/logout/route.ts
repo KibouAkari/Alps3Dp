@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { destroySession, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Revokes the session server-side (not just client-side cookie removal), so a
+// stolen cookie can't keep working after the user logs out.
 export async function POST(request: Request) {
   const token = request.headers
     .get("cookie")

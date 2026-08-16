@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Updates or removes a single cart line. Setting quantity to 0 deletes it.
 const updateSchema = z.object({
   quantity: z.number().int().nonnegative(),
 });

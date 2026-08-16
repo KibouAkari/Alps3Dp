@@ -1,3 +1,5 @@
+// Converts the Prisma product shape (with its relations) into the flatter
+// Product type consumed by storefront pages and components.
 import type { Product } from "@/lib/types";
 
 export type ProductWithRelations = {

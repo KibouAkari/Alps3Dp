@@ -1,3 +1,5 @@
+// Generic key/value store for shop-wide settings that admins can change at
+// runtime (currently just the flat shipping fee) without a redeploy.
 import { db } from "@/lib/db";
 
 const SHIPPING_KEY = "shipping_cents";

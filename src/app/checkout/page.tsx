@@ -1,5 +1,9 @@
 ﻿"use client";
 
+// Checkout form: works for both signed-in customers (server cart, saved
+// addresses/payment methods) and anonymous guests (cart from localStorage).
+// On submit it posts to /api/checkout, which either confirms an invoice-free
+// order or returns a Stripe Checkout URL to redirect to.
 import { useEffect, useMemo, useState } from "react";
 
 import { formatChf } from "@/lib/data";

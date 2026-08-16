@@ -1,3 +1,6 @@
+// In-memory fixed-window rate limiter. Good enough for a single Node.js
+// instance; note that counters are not shared across serverless instances or
+// deployments, so this complements (rather than replaces) provider-level throttling.
 type RateLimitBucket = {
   count: number;
   resetAt: number;

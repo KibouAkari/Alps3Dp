@@ -4,6 +4,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Adds a single product to the signed-in user's cart, creating the cart row
+// on first use and merging quantities if the product is already present.
 const addItemSchema = z.object({
   productId: z.string().min(1),
   quantity: z.number().int().positive().default(1),

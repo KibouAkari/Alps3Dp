@@ -6,6 +6,9 @@ import { db } from "@/lib/db";
 import { sendOrderEmails } from "@/lib/mail";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
+// Admin-only utility actions for staging/QA: simulate an order to test the
+// email pipeline, or reset dashboard demo data. Destructive actions require
+// an explicit confirmation string in addition to admin auth.
 const schema = z.object({
   action: z.enum(["simulate-order-and-email", "reset-dashboard-data"]),
   email: z.string().email().optional(),

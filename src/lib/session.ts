@@ -1,3 +1,6 @@
+// Cookie-based session management backed by opaque, hashed tokens stored in
+// the database (see UserSession in prisma/schema.prisma). Only the SHA-256
+// hash of a token is persisted, so a database leak alone can't be replayed.
 import { cookies } from "next/headers";
 
 import { db } from "@/lib/db";

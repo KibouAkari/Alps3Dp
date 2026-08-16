@@ -1,5 +1,7 @@
 "use client";
 
+// Adds the product to the cart (server-side cart for signed-in users, local
+// guest cart otherwise) and jumps straight to checkout in one click.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 

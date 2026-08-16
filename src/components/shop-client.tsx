@@ -1,5 +1,7 @@
 "use client";
 
+// Storefront grid: search, category, and sort filters applied client-side
+// over a product list that's fetched once and then refined in the browser.
 import { useEffect, useMemo, useState } from "react";
 
 import { ProductCard } from "@/components/product-card";

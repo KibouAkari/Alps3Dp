@@ -5,6 +5,11 @@ import { db } from "@/lib/db";
 import { sendOrderEmails } from "@/lib/mail";
 import { getStripe } from "@/lib/payments";
 
+// Stripe's source of truth for payment outcomes. This is the only place an
+// order is marked PAID — the checkout route only ever creates it as PENDING.
+// Every code path re-derives trust from the verified Stripe event instead of
+// trusting the client, and updates are idempotent so retried webhook
+// deliveries can't apply side effects (like sending emails) twice.
 export async function POST(request: Request) {
   const stripe = getStripe();
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -32,6 +37,8 @@ export async function POST(request: Request) {
     const orderId = session.metadata?.orderId || session.client_reference_id;
 
     if (orderId) {
+      // Ignore events for sessions that haven't actually completed payment yet
+      // (e.g. an async payment method still pending).
       if (session.payment_status !== "paid") {
         return NextResponse.json({ received: true, ignored: "payment-not-paid" });
       }
@@ -45,6 +52,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true, ignored: "order-not-found" });
       }
 
+      // Defense in depth: reject anything that doesn't match what we charged
+      // for, in case a session were ever tampered with or replayed.
       if (session.currency !== "chf") {
         return NextResponse.json({ received: true, ignored: "currency-mismatch" });
       }
@@ -59,6 +68,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true, ignored: "email-mismatch" });
       }
 
+      // Conditioning the update on the current status makes this handler safe
+      // to run more than once for the same event (Stripe retries webhooks).
       const updateResult = await db.order.updateMany({
         where: {
           id: orderId,

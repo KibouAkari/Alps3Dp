@@ -1,3 +1,4 @@
+// Resolves the public site origin used to build absolute links (emails, Stripe redirects).
 export function getAppBaseUrl() {
   return (
     process.env.NEXT_PUBLIC_APP_URL ||

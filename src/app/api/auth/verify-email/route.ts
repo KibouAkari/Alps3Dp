@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashOpaqueToken } from "@/lib/security";
 
+// Consumes a one-time email verification link. Tokens are single-use and
+// time-limited, and only the hash is ever stored/looked up.
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const token = url.searchParams.get("token");

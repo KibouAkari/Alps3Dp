@@ -1,9 +1,13 @@
+// Persists uploaded product/avatar images to Vercel Blob storage in production,
+// with a local filesystem fallback for development when no Blob token is set.
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 
 import { put } from "@vercel/blob";
 
+// Strips the original file name down to a safe, unique slug so user-supplied
+// input never reaches the filesystem or storage path unescaped.
 function normalizeFileName(input: string) {
   const extension = path.extname(input || "").toLowerCase() || ".webp";
   const baseName = path.basename(input || "upload", extension);

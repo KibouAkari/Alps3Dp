@@ -1,5 +1,6 @@
 "use client";
 
+// Small button that flips the light/dark theme via ThemeProvider's context.
 import { MoonIcon, SunIcon } from "@/components/icons";
 import { useTheme } from "@/components/theme-provider";
 

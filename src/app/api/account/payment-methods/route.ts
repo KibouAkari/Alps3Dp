@@ -4,6 +4,9 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Stores only non-sensitive references to payment methods (e.g. last 4
+// digits, a Stripe payment method id) for display and quick reselection at
+// checkout — full card data is never handled or stored by this app.
 function getCookieToken(request: Request) {
   return request.headers
     .get("cookie")

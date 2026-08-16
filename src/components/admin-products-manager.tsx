@@ -1,5 +1,7 @@
 "use client";
 
+// Admin CRUD screen for the product catalog: create, edit, hide, and delete
+// products, including image upload and category assignment.
 import { useEffect, useMemo, useState } from "react";
 
 import { SafeImage } from "@/components/safe-image";

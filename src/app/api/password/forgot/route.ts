@@ -7,6 +7,8 @@ import { sendPasswordResetEmail } from "@/lib/mail";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { createOpaqueToken, hashOpaqueToken } from "@/lib/security";
 
+// Always responds with success regardless of whether the email exists, so
+// this endpoint can't be used to enumerate registered accounts.
 const forgotSchema = z.object({
   email: z.string().email(),
 });

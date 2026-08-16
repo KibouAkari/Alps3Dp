@@ -4,6 +4,8 @@ import { z } from "zod";
 import { getShippingCents, setShippingCents } from "@/lib/site-settings";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// The flat shipping fee shown at checkout. Reading is public (the storefront
+// needs it to compute totals); only admins may change it.
 const schema = z.object({
   shippingCents: z.number().int().nonnegative(),
 });

@@ -6,6 +6,7 @@ import { mapProduct } from "@/lib/product-mapper";
 import { makeSlug } from "@/lib/security";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Admin-only update/delete for a single product.
 const productSchema = z.object({
   title: z.string().min(2).max(200),
   description: z.string().min(4).max(10000),

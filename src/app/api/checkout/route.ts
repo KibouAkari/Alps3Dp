@@ -9,6 +9,11 @@ import { hashPassword, createOpaqueToken } from "@/lib/security";
 import { getSessionTokenFromRequest, getSessionUserFromToken } from "@/lib/session";
 import { getShippingCents } from "@/lib/site-settings";
 
+// Creates the order record and, for card/TWINT payments, a Stripe Checkout
+// Session. Supports both signed-in customers (cart lives in the database) and
+// anonymous guests (cart lives in the browser and is sent with the request).
+// Orders only become PAID once the Stripe webhook confirms payment — see
+// src/app/api/webhooks/payment/route.ts.
 const guestItemSchema = z.object({
   productId: z.string().min(1),
   quantity: z.number().int().positive(),
@@ -185,7 +190,9 @@ export async function POST(request: Request) {
     }
   }
 
-  // For guests: create a ghost user to satisfy the DB FK constraint on Order.userId
+  // Guest checkout still needs a User row because Order.userId is a required
+  // foreign key. We create a placeholder "ghost" account instead of loosening
+  // the schema, so every order keeps a consistent owner for admin tooling.
   let orderUserId = sessionUser?.id;
   if (isGuest) {
     const guestEmail = `guest.${Date.now()}.${Math.random().toString(36).slice(2, 8)}@alps3dp.internal`;

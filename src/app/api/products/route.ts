@@ -6,6 +6,9 @@ import { mapProduct } from "@/lib/product-mapper";
 import { makeSlug } from "@/lib/security";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Public product listing (GET) plus admin-only product creation (POST).
+// includeHidden is only honored for authenticated admins, so hidden/draft
+// products never leak to anonymous storefront requests.
 export const revalidate = 60;
 
 const productSchema = z.object({

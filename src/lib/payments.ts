@@ -1,7 +1,10 @@
+// Lazily-initialized singleton Stripe client, shared by checkout and the
+// payment webhook so both use identical API configuration.
 import Stripe from "stripe";
 
 let stripeClient: Stripe | null = null;
 
+/** Validates STRIPE_SECRET_KEY and returns a human-readable problem description, or null if it's fine. */
 export function getStripeConfigurationError() {
   const secretKey = process.env.STRIPE_SECRET_KEY?.trim();
   if (!secretKey) {

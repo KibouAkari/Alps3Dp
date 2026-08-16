@@ -4,6 +4,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionUserFromToken, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Reads and updates the signed-in user's profile (name, username, avatar).
+// Email and password changes have their own dedicated, more sensitive routes.
 const updateProfileSchema = z.object({
   firstName: z.string().min(1).max(60).optional(),
   lastName: z.string().min(1).max(60).optional(),

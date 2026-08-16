@@ -7,6 +7,8 @@ import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { verifyPassword } from "@/lib/security";
 import { createSessionForUser, AUTH_COOKIE_NAME } from "@/lib/session";
 
+// Verifies credentials and issues a new session cookie. Both IP-wide and
+// per-account rate limits apply to slow down credential-stuffing attempts.
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),

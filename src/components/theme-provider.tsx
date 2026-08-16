@@ -1,5 +1,7 @@
 "use client";
 
+// Light/dark theme context. Persists the choice in localStorage and falls
+// back to the OS color-scheme preference on first visit.
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 

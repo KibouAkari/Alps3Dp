@@ -1,5 +1,6 @@
 "use client";
 
+// Product detail page image viewer: a large preview with clickable thumbnails.
 import { useState } from "react";
 
 import { SafeImage } from "@/components/safe-image";
