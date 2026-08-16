@@ -34,7 +34,11 @@ export async function storeProductImage(fileName: string, data: Buffer) {
   }
 
   if (process.env.NODE_ENV === "production") {
-    throw new Error("BLOB_READ_WRITE_TOKEN fehlt. Bitte Vercel Blob für Uploads konfigurieren.");
+    // This is unrelated to the Postgres/Prisma database - it's the separate
+    // file storage needed for uploaded image binaries.
+    throw new Error(
+      "Bild-Upload ist nicht konfiguriert: BLOB_READ_WRITE_TOKEN fehlt. Das ist ein separater Datei-Speicher (Vercel Blob), nicht die Datenbank. Bitte in Vercel unter Storage ein Blob-Store verbinden.",
+    );
   }
 
   const uploadDir = path.join(process.cwd(), "public", "uploads");
