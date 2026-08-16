@@ -36,6 +36,17 @@ type ProductsResponse = {
   categories: Array<{ id: string; name: string; slug: string }>;
 };
 
+// Server errors don't always return a JSON body (e.g. a framework-level 500),
+// so parse defensively instead of letting response.json() throw a confusing
+// "Unexpected end of JSON input" error.
+async function parseJsonSafely(response: Response): Promise<Record<string, unknown>> {
+  try {
+    return await response.json();
+  } catch {
+    return {};
+  }
+}
+
 export function AdminProductsManager() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categoryList, setCategoryList] = useState<string[]>([]);
@@ -52,7 +63,7 @@ export function AdminProductsManager() {
   async function loadProducts() {
     setError(null);
     const response = await fetch("/api/products?includeHidden=1", { credentials: "include" });
-    const data = (await response.json()) as ProductsResponse;
+    const data = await parseJsonSafely(response) as Partial<ProductsResponse>;
 
     if (!response.ok) {
       throw new Error("Produkte konnten nicht geladen werden.");
@@ -61,8 +72,9 @@ export function AdminProductsManager() {
     setProducts(data.products || []);
     setCategoryList((data.categories || []).map((entry) => entry.name));
 
-    if (!form.category && data.categories && data.categories.length > 0) {
-      setForm((prev) => ({ ...prev, category: data.categories[0].name }));
+    const categories = data.categories;
+    if (!form.category && categories && categories.length > 0) {
+      setForm((prev) => ({ ...prev, category: categories[0].name }));
     }
   }
 
@@ -108,14 +120,14 @@ export function AdminProductsManager() {
         body: payload,
       });
 
-      const data = await response.json();
+      const data = await parseJsonSafely(response);
       if (!response.ok) {
-        throw new Error(data.error || "Upload fehlgeschlagen.");
+        throw new Error((data.error as string | undefined) || "Upload fehlgeschlagen.");
       }
 
       setForm((prev) => ({
         ...prev,
-        images: [...prev.images, ...(data.urls || [])],
+        images: [...prev.images, ...((data.urls as string[] | undefined) || [])],
       }));
       setMessage(`${accepted.length} Bild(er) hochgeladen.`);
     } catch (err) {
@@ -152,9 +164,9 @@ export function AdminProductsManager() {
       body: JSON.stringify(payload),
     });
 
-    const data = await response.json();
+    const data = await parseJsonSafely(response);
     if (!response.ok) {
-      setError(data.error || "Produkt konnte nicht gespeichert werden.");
+      setError((data.error as string | undefined) || "Produkt konnte nicht gespeichert werden.");
       return;
     }
 
@@ -168,14 +180,18 @@ export function AdminProductsManager() {
     setError(null);
     setMessage(null);
 
+    if (!window.confirm("Dieses Produkt wirklich löschen?")) {
+      return;
+    }
+
     const response = await fetch(`/api/products/${id}`, {
       method: "DELETE",
       credentials: "include",
     });
 
-    const data = await response.json();
+    const data = await parseJsonSafely(response);
     if (!response.ok) {
-      setError(data.error || "Produkt konnte nicht gelöscht werden.");
+      setError((data.error as string | undefined) || "Produkt konnte nicht gelöscht werden.");
       return;
     }
 
@@ -191,13 +207,13 @@ export function AdminProductsManager() {
       body: JSON.stringify({ shippingCents }),
     });
 
-    const data = await response.json();
+    const data = await parseJsonSafely(response);
     if (!response.ok) {
-      setError(data.error || "Lieferkosten konnten nicht gespeichert werden.");
+      setError((data.error as string | undefined) || "Lieferkosten konnten nicht gespeichert werden.");
       return;
     }
 
-    setShippingCents(data.shippingCents || 0);
+    setShippingCents((data.shippingCents as number | undefined) || 0);
     setMessage("Lieferkosten gespeichert.");
   };
 

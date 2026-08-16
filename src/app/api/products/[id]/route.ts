@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
@@ -55,36 +56,44 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   const data = parsed.data;
 
-  let categoryId: string | null = null;
-  const categoryName = data.category?.trim();
-  if (categoryName) {
-    const category = await db.category.upsert({
-      where: { slug: makeSlug(categoryName) },
-      create: { name: categoryName, slug: makeSlug(categoryName) },
-      update: { name: categoryName },
-    });
-    categoryId = category.id;
-  }
+  try {
+    let categoryId: string | null = null;
+    const categoryName = data.category?.trim();
+    if (categoryName) {
+      const category = await db.category.upsert({
+        where: { slug: makeSlug(categoryName) },
+        create: { name: categoryName, slug: makeSlug(categoryName) },
+        update: { name: categoryName },
+      });
+      categoryId = category.id;
+    }
 
-  await db.productImage.deleteMany({ where: { productId: id } });
-  const updated = await db.product.update({
-    where: { id },
-    data: {
-      title: data.title,
-      description: data.description,
-      categoryId,
-      priceCents: data.priceCents,
-      salePriceCents: data.salePriceCents ?? null,
-      stock: data.stock,
-      isHidden: data.isHidden ?? false,
-      images: {
-        create: data.images.map((url, index) => ({ url, sortOrder: index })),
+    await db.productImage.deleteMany({ where: { productId: id } });
+    const updated = await db.product.update({
+      where: { id },
+      data: {
+        title: data.title,
+        description: data.description,
+        categoryId,
+        priceCents: data.priceCents,
+        salePriceCents: data.salePriceCents ?? null,
+        stock: data.stock,
+        isHidden: data.isHidden ?? false,
+        images: {
+          create: data.images.map((url, index) => ({ url, sortOrder: index })),
+        },
       },
-    },
-    include: { images: true, category: true },
-  });
+      include: { images: true, category: true },
+    });
 
-  return NextResponse.json({ product: mapProduct(updated) });
+    return NextResponse.json({ product: mapProduct(updated) });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      return NextResponse.json({ error: "Produkt wurde nicht gefunden." }, { status: 404 });
+    }
+    console.error("[products:update]", error);
+    return NextResponse.json({ error: "Produkt konnte nicht gespeichert werden." }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -93,6 +102,27 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   }
 
   const { id } = await params;
-  await db.product.delete({ where: { id } });
-  return NextResponse.json({ success: true });
+
+  try {
+    await db.product.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    // Orders keep a foreign key to their products (so past order history
+    // stays intact), so a product that was ever ordered can't be hard-deleted.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      return NextResponse.json(
+        {
+          error:
+            "Produkt kann nicht gelöscht werden, da es bereits in Bestellungen verwendet wurde. Bitte stattdessen verstecken.",
+        },
+        { status: 409 },
+      );
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      return NextResponse.json({ error: "Produkt wurde nicht gefunden." }, { status: 404 });
+    }
+
+    console.error("[products:delete]", error);
+    return NextResponse.json({ error: "Produkt konnte nicht gelöscht werden." }, { status: 500 });
+  }
 }

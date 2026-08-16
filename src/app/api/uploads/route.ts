@@ -70,23 +70,33 @@ export async function POST(request: Request) {
 
   const uploadedUrls: string[] = [];
 
-  for (const file of files) {
-    const maxBytes = scope === "avatar" ? 3 * 1024 * 1024 : 8 * 1024 * 1024;
-    if (file.size > maxBytes) {
-      return NextResponse.json({ error: `Datei '${file.name}' ist zu groß (max. ${scope === "avatar" ? "3" : "8"}MB).` }, { status: 400 });
-    }
+  try {
+    for (const file of files) {
+      const maxBytes = scope === "avatar" ? 3 * 1024 * 1024 : 8 * 1024 * 1024;
+      if (file.size > maxBytes) {
+        return NextResponse.json({ error: `Datei '${file.name}' ist zu groß (max. ${scope === "avatar" ? "3" : "8"}MB).` }, { status: 400 });
+      }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    if (!isAllowedImageBuffer(buffer)) {
-      return NextResponse.json(
-        { error: `Datei '${file.name}' ist kein unterstütztes Bildformat.` },
-        { status: 400 },
-      );
-    }
+      const buffer = Buffer.from(await file.arrayBuffer());
+      if (!isAllowedImageBuffer(buffer)) {
+        return NextResponse.json(
+          { error: `Datei '${file.name}' ist kein unterstütztes Bildformat.` },
+          { status: 400 },
+        );
+      }
 
-    const url = await storeProductImage(file.name, buffer);
-    uploadedUrls.push(url);
+      const url = await storeProductImage(file.name, buffer);
+      uploadedUrls.push(url);
+    }
+  } catch (error) {
+    // Storage failures (e.g. missing BLOB_READ_WRITE_TOKEN in production)
+    // must still return JSON, otherwise the client crashes trying to parse
+    // an empty/HTML error body.
+    console.error("[uploads:store]", error);
+    const message = error instanceof Error ? error.message : "Upload fehlgeschlagen.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 
   return NextResponse.json({ urls: uploadedUrls });
 }
+
