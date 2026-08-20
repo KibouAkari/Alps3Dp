@@ -2,7 +2,7 @@
 
 // Light/dark theme context. Persists the choice in localStorage and falls
 // back to the OS color-scheme preference on first visit.
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 type Theme = "light" | "dark";
@@ -30,7 +30,18 @@ function getPreferredTheme(): Theme {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(getPreferredTheme);
+  // Always start from "light" so the server-rendered markup matches the
+  // client's first render exactly (no hydration mismatch). The blocking
+  // inline script in layout.tsx already applied the real theme to
+  // document.documentElement before React even loads, so we just need to
+  // mirror that into React state before the browser paints.
+  const [theme, setThemeState] = useState<Theme>("light");
+
+  useLayoutEffect(() => {
+    const applied = document.documentElement.dataset.theme;
+    const resolved = applied === "dark" || applied === "light" ? applied : getPreferredTheme();
+    setThemeState(resolved);
+  }, []);
 
   const setTheme = (nextTheme: Theme) => {
     document.body.classList.add("theme-switching");

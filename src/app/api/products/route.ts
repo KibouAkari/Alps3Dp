@@ -41,11 +41,28 @@ function getCookieToken(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const requestedIncludeHidden = new URL(request.url).searchParams.get("includeHidden") === "1";
+  const url = new URL(request.url);
+  const requestedIncludeHidden = url.searchParams.get("includeHidden") === "1";
   const requestingUser = requestedIncludeHidden
     ? await getSessionUserFromToken(getCookieToken(request))
     : null;
   const includeHidden = requestedIncludeHidden && requestingUser?.role === "ADMIN";
+
+  // Callers that only need a known set of products (e.g. resolving a guest
+  // cart) can pass ?ids=a,b,c to skip fetching the entire catalog.
+  const idsParam = url.searchParams.get("ids");
+  if (idsParam) {
+    const ids = idsParam.split(",").map((id) => id.trim()).filter(Boolean);
+    const products = await db.product.findMany({
+      where: { id: { in: ids }, isHidden: false, deletedAt: null },
+      include: { images: true, category: true },
+    });
+
+    return NextResponse.json(
+      { products: products.map(mapProduct), categories: [] },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
 
   const products = await db.product.findMany({
     where: includeHidden ? { deletedAt: null } : { isHidden: false, deletedAt: null },

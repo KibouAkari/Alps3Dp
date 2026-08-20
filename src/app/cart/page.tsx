@@ -49,7 +49,7 @@ export default function CartPage() {
         return;
       }
 
-      const productsResponse = await fetch("/api/products");
+      const productsResponse = await fetch(`/api/products?ids=${guestItems.map((item) => item.productId).join(",")}`);
       const productsData = await parseJsonSafely(productsResponse);
       const allProducts: CartRow["product"][] = (productsData.products as CartRow["product"][] | undefined) || [];
 
