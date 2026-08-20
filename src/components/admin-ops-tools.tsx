@@ -27,6 +27,9 @@ type StripeOverview = {
   };
   webhookStatus?: {
     expectedUrl: string;
+    requestHostUrl: string | null;
+    appUrlMismatch: boolean;
+    registeredUrls: string[];
     registered: boolean;
     enabled: boolean;
     missingEvents: string[];
@@ -227,6 +230,14 @@ export function AdminOpsTools() {
                   <p className="mt-0.5 break-all">Erwartete URL: {stripe.webhookStatus.expectedUrl}</p>
                   {stripe.webhookStatus.missingEvents.length > 0 && (
                     <p className="mt-0.5">Fehlende Events: {stripe.webhookStatus.missingEvents.join(", ")}</p>
+                  )}
+                  {stripe.webhookStatus.appUrlMismatch && (
+                    <p className="mt-1 rounded bg-white/60 p-1.5 text-[11px] leading-snug">
+                      Hinweis: APP_URL/NEXT_PUBLIC_APP_URL zeigt auf eine andere Domain als die, über die du das Admin-Panel geraden aufrufst ({stripe.webhookStatus.requestHostUrl}). Bitte in den Vercel-Projekteinstellungen auf die echte Produktions-Domain korrigieren.
+                    </p>
+                  )}
+                  {stripe.webhookStatus.registeredUrls.length > 0 && (
+                    <p className="mt-1 break-all text-[11px] text-slate-500">Registrierte Webhook-URL(s) bei Stripe: {stripe.webhookStatus.registeredUrls.join(", ")}</p>
                   )}
                 </div>
               )}

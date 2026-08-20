@@ -16,7 +16,15 @@ export async function GET(request: Request) {
   const stripe = getStripe();
   const publishableKeyConfigured = Boolean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
   const webhookSecretConfigured = Boolean(process.env.STRIPE_WEBHOOK_SECRET);
-  const expectedWebhookUrl = `${getAppBaseUrl()}/api/webhooks/payment`;
+
+  // getAppBaseUrl() is driven by the APP_URL/NEXT_PUBLIC_APP_URL env vars,
+  // which can drift from the domain Stripe's webhook is actually registered
+  // against (e.g. still pointing at the *.vercel.app preview domain instead
+  // of the custom domain). Fall back to the host the admin is actually
+  // browsing on so the check reflects reality instead of a stale env var.
+  const requestHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
+  const configuredWebhookUrl = `${getAppBaseUrl()}/api/webhooks/payment`;
+  const requestHostWebhookUrl = requestHost ? `https://${requestHost}/api/webhooks/payment` : null;
 
   // Compare loosely (ignore protocol/www/trailing slash) so an
   // APP_URL/NEXT_PUBLIC_APP_URL that differs only by a "www." prefix doesn't
@@ -52,16 +60,26 @@ export async function GET(request: Request) {
       stripe.webhookEndpoints.list({ limit: 20 }),
     ]);
 
-    const matchingWebhook = webhookEndpoints.data.find((endpoint) => normalizeUrl(endpoint.url) === normalizeUrl(expectedWebhookUrl));
+    const candidateUrls = [configuredWebhookUrl, requestHostWebhookUrl].filter((value): value is string => Boolean(value));
+    const matchingWebhook = webhookEndpoints.data.find((endpoint) =>
+      candidateUrls.some((candidate) => normalizeUrl(endpoint.url) === normalizeUrl(candidate)),
+    );
     const requiredEvents = ["checkout.session.completed", "checkout.session.expired"];
     const webhookStatus = {
-      expectedUrl: expectedWebhookUrl,
+      expectedUrl: configuredWebhookUrl,
+      requestHostUrl: requestHostWebhookUrl,
+      appUrlMismatch: Boolean(
+        requestHostWebhookUrl && normalizeUrl(requestHostWebhookUrl) !== normalizeUrl(configuredWebhookUrl),
+      ),
+      registeredUrls: webhookEndpoints.data.map((endpoint) => endpoint.url),
       registered: Boolean(matchingWebhook),
       enabled: matchingWebhook?.status === "enabled",
       missingEvents: matchingWebhook
         ? requiredEvents.filter((event) => !matchingWebhook.enabled_events.includes(event) && !matchingWebhook.enabled_events.includes("*"))
         : requiredEvents,
-      otherEndpointsCount: webhookEndpoints.data.filter((endpoint) => endpoint.url !== expectedWebhookUrl).length,
+      otherEndpointsCount: webhookEndpoints.data.filter(
+        (endpoint) => !candidateUrls.some((candidate) => normalizeUrl(endpoint.url) === normalizeUrl(candidate)),
+      ).length,
     };
 
     return NextResponse.json({
