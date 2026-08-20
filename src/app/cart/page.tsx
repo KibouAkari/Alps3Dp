@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { SafeImage } from "@/components/safe-image";
 import { formatChf } from "@/lib/data";
 import { parseJsonSafely } from "@/lib/fetch-json";
 import { getGuestCart, GUEST_CART_STORAGE_KEY, type GuestCartItem } from "@/lib/guest-cart";
@@ -17,6 +18,7 @@ type CartRow = {
     title: string;
     priceCents: number;
     salePriceCents?: number | null;
+    images?: string[];
   };
 };
 
@@ -24,12 +26,17 @@ export default function CartPage() {
   const [rows, setRows] = useState<CartRow[]>([]);
   const [isGuest, setIsGuest] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadCart = async () => {
-    // Check real auth state first: /api/cart returns an empty list both for
-    // guests and for signed-in users with an empty server cart, so we can't
-    // tell those apart from that response alone.
-    const sessionResponse = await fetch("/api/auth/session", { credentials: "include", cache: "no-store" });
+    // Fire both requests at once instead of waiting for the session check
+    // before starting the cart fetch — /api/cart already returns an empty
+    // list for guests, so this is safe and cuts the round trip in half for
+    // the common signed-in case.
+    const [sessionResponse, cartResponse] = await Promise.all([
+      fetch("/api/auth/session", { credentials: "include", cache: "no-store" }),
+      fetch("/api/cart", { credentials: "include" }),
+    ]);
     const sessionData = await parseJsonSafely(sessionResponse);
     const signedIn = Boolean(sessionData.user);
 
@@ -60,9 +67,8 @@ export default function CartPage() {
       return;
     }
 
-    const response = await fetch("/api/cart", { credentials: "include" });
-    const data = await parseJsonSafely(response);
-    if (!response.ok) {
+    const data = await parseJsonSafely(cartResponse);
+    if (!cartResponse.ok) {
       throw new Error((data.error as string | undefined) || "Warenkorb konnte nicht geladen werden.");
     }
 
@@ -93,7 +99,9 @@ export default function CartPage() {
   };
 
   useEffect(() => {
-    loadCart().catch((err) => setError(err instanceof Error ? err.message : "Warenkorb konnte nicht geladen werden."));
+    loadCart()
+      .catch((err) => setError(err instanceof Error ? err.message : "Warenkorb konnte nicht geladen werden."))
+      .finally(() => setIsLoading(false));
   }, []);
 
   const subtotal = useMemo(
@@ -105,6 +113,19 @@ export default function CartPage() {
     [rows],
   );
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6 fade-in-up">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Warenkorb</h1>
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="h-24 animate-pulse rounded-xl bg-slate-100" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 fade-in-up">
       <h1 className="text-3xl font-bold tracking-tight text-slate-900">Warenkorb</h1>
@@ -113,10 +134,15 @@ export default function CartPage() {
       <div className="space-y-3">
         {rows.map((row) => (
           <div key={row.productId} className="space-y-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-slate-900">{row.product.title}</p>
-                <p className="text-sm text-slate-500">Menge: {row.quantity}</p>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                  <SafeImage src={row.product.images?.[0]} alt={row.product.title} fill className="object-cover" sizes="64px" />
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-900">{row.product.title}</p>
+                  <p className="text-sm text-slate-500">Menge: {row.quantity}</p>
+                </div>
               </div>
               <p className="font-semibold text-slate-900">{formatChf((row.product.salePriceCents ?? row.product.priceCents) * row.quantity)}</p>
             </div>

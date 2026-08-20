@@ -179,21 +179,26 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
           ) : (
           <aside className="filter-panel-enter panel-surface rounded-2xl p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => setIsFilterOpen(false)}
-                className="filter-toggle-button inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-semibold text-slate-900"
-                aria-expanded={true}
-                aria-label="Filter einklappen"
-              >
+              <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
                 <FilterMenuIcon className="h-4 w-4" />
                 Filter
-              </button>
-              {hasActiveFilters && (
-                <button type="button" onClick={resetAll} className="text-xs text-sky-600 hover:underline">
-                  Zurücksetzen
+              </span>
+              <div className="flex items-center gap-3">
+                {hasActiveFilters && (
+                  <button type="button" onClick={resetAll} className="text-xs text-sky-600 hover:underline">
+                    Zurücksetzen
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsFilterOpen(false)}
+                  className="filter-collapse-link text-xs font-medium"
+                  aria-expanded={true}
+                  aria-label="Filter einklappen"
+                >
+                  Einklappen
                 </button>
-              )}
+              </div>
             </div>
 
         <div className="space-y-0">

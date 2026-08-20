@@ -155,7 +155,7 @@ export function SiteSidebar() {
         {!isLoading && user && (
           <div className="relative" ref={userMenuRef}>
             {isUserMenuOpen && (
-              <div className="absolute bottom-full left-0 mb-2 w-full rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] p-2 shadow-xl soft-pop">
+              <div className="absolute bottom-full left-0 mb-2 w-full rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-dropdown-bg)] p-2 shadow-xl soft-pop">
                 <Link
                   href="/account"
                   onClick={() => setIsUserMenuOpen(false)}
