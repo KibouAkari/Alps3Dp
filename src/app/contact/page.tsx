@@ -1,6 +1,47 @@
 "use client";
 
+import { useState } from "react";
+
+import { parseJsonSafely } from "@/lib/fetch-json";
+
 export default function ContactPage() {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setStatus(null);
+    setError(null);
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName, email, subject, message }),
+      });
+      const data = await parseJsonSafely(response);
+      if (!response.ok) {
+        throw new Error((data.error as string | undefined) || "Nachricht konnte nicht gesendet werden.");
+      }
+      setStatus("Danke! Deine Nachricht wurde gesendet, wir melden uns bald.");
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setSubject("");
+      setMessage("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nachricht konnte nicht gesendet werden.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 fade-in-up">
       <section className="hero-shell overflow-hidden rounded-3xl border p-6 shadow-sm sm:p-10">
@@ -15,12 +56,17 @@ export default function ContactPage() {
         {/* Contact Form */}
         <section className="panel-surface rounded-2xl p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Nachricht senden</h2>
-          <form className="mt-4 space-y-4" onSubmit={(e) => e.preventDefault()}>
+          {status && <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{status}</p>}
+          {error && <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
+          <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm text-slate-600">
                 <span className="mb-1 block font-medium">Vorname</span>
                 <input
                   type="text"
+                  required
+                  value={firstName}
+                  onChange={(event) => setFirstName(event.target.value)}
                   placeholder="Max"
                   className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-500 transition focus:ring"
                 />
@@ -29,6 +75,9 @@ export default function ContactPage() {
                 <span className="mb-1 block font-medium">Nachname</span>
                 <input
                   type="text"
+                  required
+                  value={lastName}
+                  onChange={(event) => setLastName(event.target.value)}
                   placeholder="Muster"
                   className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-500 transition focus:ring"
                 />
@@ -38,6 +87,9 @@ export default function ContactPage() {
               <span className="mb-1 block font-medium">E-Mail</span>
               <input
                 type="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 placeholder="max@beispiel.ch"
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-500 transition focus:ring"
               />
@@ -46,6 +98,9 @@ export default function ContactPage() {
               <span className="mb-1 block font-medium">Betreff</span>
               <input
                 type="text"
+                required
+                value={subject}
+                onChange={(event) => setSubject(event.target.value)}
                 placeholder="Bestellung / Anfrage / Sonstiges"
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-500 transition focus:ring"
               />
@@ -54,15 +109,19 @@ export default function ContactPage() {
               <span className="mb-1 block font-medium">Nachricht</span>
               <textarea
                 rows={5}
+                required
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
                 placeholder="Deine Nachricht…"
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-500 transition focus:ring"
               />
             </label>
             <button
               type="submit"
-              className="rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
+              disabled={isSubmitting}
+              className="rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Nachricht senden
+              {isSubmitting ? "Wird gesendet…" : "Nachricht senden"}
             </button>
           </form>
         </section>

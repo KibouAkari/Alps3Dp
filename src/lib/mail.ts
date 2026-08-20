@@ -233,3 +233,28 @@ export async function sendOrderEmails(params: {
     );
   }
 }
+
+export async function sendContactMessage(params: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  subject: string;
+  message: string;
+}) {
+  const owner = process.env.ADMIN_ORDER_EMAIL || process.env.MAIL_FROM || "support@alps3dp.ch";
+  const safeName = escapeHtml(`${params.firstName} ${params.lastName}`.trim());
+  const safeEmail = escapeHtml(params.email);
+  const safeSubject = escapeHtml(params.subject);
+  const safeMessage = escapeHtml(params.message).replaceAll("\n", "<br />");
+
+  await sendMail(
+    owner,
+    `Kontaktformular: ${params.subject}`,
+    renderMailShell({
+      title: "Neue Kontaktanfrage",
+      preview: `Neue Nachricht von ${safeName}`,
+      contentHtml: `<p><strong>Von:</strong> ${safeName} (${safeEmail})</p><p><strong>Betreff:</strong> ${safeSubject}</p><p>${safeMessage}</p>`,
+    }),
+  );
+}
+

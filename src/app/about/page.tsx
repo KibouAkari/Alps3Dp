@@ -1,4 +1,4 @@
-import { LeafIcon, PackageIcon, PrinterIcon, ShieldIcon, TruckIcon, WrenchIcon } from "@/components/icons";
+import { PackageIcon, PrinterIcon, TruckIcon, WrenchIcon } from "@/components/icons";
 
 export default function AboutPage() {
   return (
@@ -12,18 +12,6 @@ export default function AboutPage() {
         <p className="mt-4 max-w-xl text-slate-600">
           Alps3Dp ist ein kleines Schweizer Projekt mit einer grossen Leidenschaft für präzisen 3D-Druck. Jedes Produkt wird auf Bestellung gefertigt – individuell, langlebig und mit Liebe zum Detail.
         </p>
-        <div className="stagger-grid mt-6 flex flex-wrap gap-3">
-          {[
-            { icon: ShieldIcon, label: "Schweizer Qualität" },
-            { icon: LeafIcon, label: "Ressourcenschonend" },
-            { icon: WrenchIcon, label: "Individuell gefertigt" },
-          ].map((badge) => (
-            <div key={badge.label} className="hover-lift theme-pill flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium text-slate-700">
-              <badge.icon className="h-4 w-4 text-violet-600" />
-              {badge.label}
-            </div>
-          ))}
-        </div>
       </section>
 
       {/* Mission + Material */}
