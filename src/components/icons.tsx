@@ -166,6 +166,64 @@ export function FilterMenuIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
+export function PrinterIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M6 9V3h12v6" />
+      <rect x="4" y="9" width="16" height="8" rx="1.5" />
+      <path d="M6 17v4h12v-4" />
+      <path d="M8 13h2" />
+    </svg>
+  );
+}
+
+export function PackageIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" />
+      <path d="M3 8l9 5 9-5" />
+      <path d="M12 13v8" />
+    </svg>
+  );
+}
+
+export function TruckIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M3 7h11v9H3z" />
+      <path d="M14 11h4l3 3v2h-7z" />
+      <circle cx="7.5" cy="18" r="1.5" />
+      <circle cx="17.5" cy="18" r="1.5" />
+    </svg>
+  );
+}
+
+export function LeafIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M20 4c-8 0-16 4-16 14 10 0 14-6 14-14Z" />
+      <path d="M6 18C10 14 14 10 20 4" />
+    </svg>
+  );
+}
+
+export function ShieldIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  );
+}
+
+export function WrenchIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2-2 2.6-2.6Z" />
+    </svg>
+  );
+}
+
 
 export function UploadIcon({ className = "h-4 w-4" }: IconProps) {
   return (

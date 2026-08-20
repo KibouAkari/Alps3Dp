@@ -88,6 +88,7 @@ export async function GET(request: Request) {
     take: 20,
     select: {
       id: true,
+      orderNumber: true,
       createdAt: true,
       status: true,
       totalCents: true,
@@ -107,8 +108,9 @@ export async function GET(request: Request) {
       addresses: fullUser.addresses,
       paymentMethods: fullUser.savedPaymentMethods,
     },
-    orders: orders.map((entry: { id: string; createdAt: Date; status: string; totalCents: number }) => ({
+    orders: orders.map((entry: { id: string; orderNumber: number; createdAt: Date; status: string; totalCents: number }) => ({
       id: entry.id,
+      orderNumber: entry.orderNumber,
       date: entry.createdAt,
       status: entry.status,
       totalCents: entry.totalCents,

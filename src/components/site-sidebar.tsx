@@ -98,7 +98,7 @@ export function SiteSidebar() {
     <div className="sidebar-shell flex h-full flex-col">
       <Link href="/" className="flex items-center gap-2 px-5 pb-6 pt-6">
         <Image src="/images/logo.jpeg" alt="Alps3Dp Logo" width={36} height={36} className="h-9 w-9 rounded-full" priority />
-        <span className="text-lg font-bold tracking-tight text-white">
+        <span className="text-lg font-bold tracking-tight text-[var(--sidebar-fg)]">
           Alps3<span className="text-violet-400">Dp</span>
         </span>
       </Link>
@@ -149,17 +149,17 @@ export function SiteSidebar() {
         )}
       </nav>
 
-      <div className="border-t border-white/10 p-3">
-        <ThemeToggleButton className="mb-2 w-full justify-start text-slate-300 hover:text-white" />
+      <div className="border-t border-[var(--sidebar-border)] p-3">
+        <ThemeToggleButton className="mb-2 w-full justify-start text-[var(--sidebar-muted)] hover:text-[var(--sidebar-fg)]" />
 
         {!isLoading && user && (
           <div className="relative" ref={userMenuRef}>
             {isUserMenuOpen && (
-              <div className="absolute bottom-full left-0 mb-2 w-full rounded-xl border border-white/10 bg-[#181428] p-2 shadow-xl soft-pop">
+              <div className="absolute bottom-full left-0 mb-2 w-full rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] p-2 shadow-xl soft-pop">
                 <Link
                   href="/account"
                   onClick={() => setIsUserMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--sidebar-muted)] transition hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-fg)]"
                 >
                   <UserIcon />
                   Konto-Einstellungen
@@ -180,13 +180,13 @@ export function SiteSidebar() {
             <button
               type="button"
               onClick={() => setIsUserMenuOpen((open) => !open)}
-              className="flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition hover:bg-white/10"
+              className="flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition hover:bg-[var(--sidebar-hover)]"
               aria-label="Konto-Menü öffnen"
             >
               <SafeImage src={user.avatar} alt={user.name} width={32} height={32} className="h-8 w-8 shrink-0 rounded-full object-cover" />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-white">{user.name}</span>
-                <span className="block truncate text-xs text-slate-400">{user.email}</span>
+                <span className="block truncate text-sm font-medium text-[var(--sidebar-fg)]">{user.name}</span>
+                <span className="block truncate text-xs text-[var(--sidebar-muted)]">{user.email}</span>
               </span>
             </button>
           </div>
@@ -208,17 +208,17 @@ export function SiteSidebar() {
   return (
     <>
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-white/10 bg-[#100c1e] px-4 md:hidden">
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] px-4 md:hidden">
         <Link href="/" className="flex items-center gap-2">
           <Image src="/images/logo.jpeg" alt="Alps3Dp Logo" width={28} height={28} className="h-7 w-7 rounded-full" priority />
-          <span className="text-base font-bold tracking-tight text-white">
+          <span className="text-base font-bold tracking-tight text-[var(--sidebar-fg)]">
             Alps3<span className="text-violet-400">Dp</span>
           </span>
         </Link>
         <button
           type="button"
           onClick={() => setIsMobileOpen(true)}
-          className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-medium text-slate-200"
+          className="inline-flex items-center gap-2 rounded-lg border border-[var(--sidebar-border)] px-3 py-1.5 text-xs font-medium text-[var(--sidebar-muted)]"
           aria-label="Navigation öffnen"
         >
           <FilterMenuIcon className="h-4 w-4" />
@@ -227,7 +227,7 @@ export function SiteSidebar() {
       </header>
 
       {/* Desktop fixed sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-white/10 bg-[#100c1e] md:block">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] md:block">
         {sidebarBody}
       </aside>
 
@@ -235,7 +235,7 @@ export function SiteSidebar() {
       {isMobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setIsMobileOpen(false)} aria-hidden="true" />
-          <aside className="soft-pop absolute inset-y-0 left-0 w-64 border-r border-white/10 bg-[#100c1e]">
+          <aside className="soft-pop absolute inset-y-0 left-0 w-64 border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)]">
             {sidebarBody}
           </aside>
         </div>

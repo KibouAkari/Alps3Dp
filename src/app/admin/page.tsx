@@ -7,6 +7,7 @@ import { AdminGuard } from "@/components/admin-guard";
 import { AdminOpsTools } from "@/components/admin-ops-tools";
 import { formatChf } from "@/lib/data";
 import { db } from "@/lib/db";
+import { formatOrderNumber } from "@/lib/order-number";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,7 @@ export default async function AdminHomePage() {
 
   const latestOrders = latestOrdersRaw as Array<{
     id: string;
+    orderNumber: number;
     customerName: string;
     totalCents: number;
     status: string;
@@ -65,6 +67,7 @@ export default async function AdminHomePage() {
 
   const recentOrders = latestOrders.map((order) => ({
     id: order.id,
+    orderNumber: order.orderNumber,
     customer: order.customerName,
     product: order.items[0]?.product.title || "-",
     amount: formatChf(order.totalCents),
@@ -127,7 +130,7 @@ export default async function AdminHomePage() {
                 )}
                 {recentOrders.map((order) => (
                   <tr key={order.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition">
-                    <td className="px-6 py-3 font-mono text-xs text-slate-500">{order.id.slice(0, 8)}</td>
+                    <td className="px-6 py-3 font-mono text-xs text-slate-500">{formatOrderNumber(order.orderNumber)}</td>
                     <td className="px-4 py-3 text-slate-800">{order.customer}</td>
                     <td className="px-4 py-3 text-slate-600">{order.product}</td>
                     <td className="px-4 py-3 font-medium text-slate-900">{order.amount}</td>

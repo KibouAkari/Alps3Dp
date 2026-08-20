@@ -9,9 +9,11 @@ import { ThemeToggleButton } from "@/components/theme-toggle";
 import { useMockSession } from "@/hooks/use-mock-session";
 import { parseJsonSafely } from "@/lib/fetch-json";
 import { formatChf } from "@/lib/money";
+import { formatOrderNumber } from "@/lib/order-number";
 
 type AccountOrder = {
   id: string;
+  orderNumber: number;
   date: string;
   status: string;
   totalCents: number;
@@ -101,8 +103,9 @@ export default function AccountPage() {
           throw new Error((data.error as string | undefined) || "Konto konnte nicht geladen werden.");
         }
         setOrders(
-          ((data.orders as Array<{ id: string; date: string; status: string; totalCents: number }> | undefined) || []).map((entry) => ({
+          ((data.orders as Array<{ id: string; orderNumber: number; date: string; status: string; totalCents: number }> | undefined) || []).map((entry) => ({
             id: entry.id,
+            orderNumber: entry.orderNumber,
             date: new Date(entry.date).toISOString().slice(0, 10),
             status: entry.status,
             totalCents: entry.totalCents,
@@ -166,7 +169,11 @@ export default function AccountPage() {
         <section className="stagger-grid grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="account-overview-card hover-lift rounded-2xl p-5 shadow-sm soft-pop">
             <p className="text-xs uppercase tracking-wide text-slate-500">Profil</p>
-            <p className="mt-2 text-sm text-slate-900">{user.name}</p>
+            <p className="mt-2 text-sm font-semibold text-slate-900">
+              {user.salutation ? `${user.salutation} ` : ""}
+              {user.firstName || user.lastName ? `${user.firstName || ""} ${user.lastName || ""}`.trim() : user.name}
+            </p>
+            {user.username && <p className="text-sm text-slate-600">@{user.username}</p>}
             <p className="text-sm text-slate-600">{user.email}</p>
           </div>
           <div className="account-overview-card hover-lift rounded-2xl p-5 shadow-sm soft-pop">
@@ -624,7 +631,7 @@ export default function AccountPage() {
             {orders.length === 0 && <p className="text-sm text-slate-500">Noch keine Bestellungen vorhanden.</p>}
             {orders.map((order) => (
               <div key={order.id} className="flex flex-wrap items-center justify-between rounded-lg border border-slate-200 bg-white p-3 text-sm">
-                <span>{order.id}</span>
+                <span className="font-mono font-medium text-slate-800">{formatOrderNumber(order.orderNumber)}</span>
                 <span className="text-slate-500">{order.date}</span>
                 <span>{order.status}</span>
                 <span className="font-semibold text-sky-700">{formatChf(order.totalCents)}</span>

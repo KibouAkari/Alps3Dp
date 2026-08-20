@@ -62,7 +62,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </Script>
         <ThemeProvider>
           <SiteSidebar />
-          <main className="w-full px-4 py-8 sm:px-6 md:ml-64 lg:px-8">
+          <main className="w-full px-4 pb-8 pt-4 sm:px-6 sm:pt-6 md:ml-64 md:pt-8 lg:px-8">
             <div className="mx-auto w-full max-w-6xl">{children}</div>
           </main>
         </ThemeProvider>

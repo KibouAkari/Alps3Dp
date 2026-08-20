@@ -1,6 +1,8 @@
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
 
+import { formatOrderNumber } from "@/lib/order-number";
+
 type MailPayload = {
   from: string;
   to: string;
@@ -195,6 +197,7 @@ export async function sendOrderEmails(params: {
   customerEmail: string;
   customerName: string;
   orderId: string;
+  orderNumber: number;
   totalCents: number;
   lines: Array<{ title: string; quantity: number; unitCents: number }>;
 }) {
@@ -206,7 +209,7 @@ export async function sendOrderEmails(params: {
     )
     .join("");
   const safeCustomerName = escapeHtml(params.customerName);
-  const safeOrderId = escapeHtml(params.orderId);
+  const safeOrderNumber = escapeHtml(formatOrderNumber(params.orderNumber));
 
   await sendMail(
     params.customerEmail,
@@ -214,16 +217,16 @@ export async function sendOrderEmails(params: {
     renderMailShell({
       title: "Bestellung erfolgreich",
       preview: "Deine Bestellung wurde erfolgreich erfasst.",
-      contentHtml: `<p>Danke ${safeCustomerName}, deine Bestellung ${safeOrderId} war erfolgreich.</p><ul>${lineItemsHtml}</ul><p>Total: CHF ${(params.totalCents / 100).toFixed(2)}</p>`,
+      contentHtml: `<p>Danke ${safeCustomerName}, deine Bestellung ${safeOrderNumber} war erfolgreich.</p><ul>${lineItemsHtml}</ul><p>Total: CHF ${(params.totalCents / 100).toFixed(2)}</p>`,
     }),
   );
 
   if (owner) {
     await sendMail(
       owner,
-      `Neue Bestellung ${safeOrderId}`,
+      `Neue Bestellung ${safeOrderNumber}`,
       renderMailShell({
-        title: `Neue Bestellung ${safeOrderId}`,
+        title: `Neue Bestellung ${safeOrderNumber}`,
         preview: "Neue Bestellung im Shop eingegangen.",
         contentHtml: `<p>Bitte Bestellung bearbeiten und versenden.</p><ul>${lineItemsHtml}</ul><p>Einnahmen: CHF ${(params.totalCents / 100).toFixed(2)}</p>`,
       }),

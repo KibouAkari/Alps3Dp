@@ -112,6 +112,7 @@ export async function POST(request: Request) {
         customerEmail: order.customerEmail,
         customerName: order.customerName,
         orderId: order.id,
+        orderNumber: order.orderNumber,
         totalCents: order.totalCents,
         lines: order.items.map((item: { quantity: number; unitCents: number; product: { title: string } }) => ({
           title: item.product.title,

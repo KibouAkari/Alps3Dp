@@ -145,6 +145,9 @@ model CartItem {
 
 model Order {
   id                    String   @id @default(cuid())
+  // Human-friendly, sequential order number shown to customers/admins
+  // instead of the opaque cuid id (e.g. displayed as "ALP-000042").
+  orderNumber           Int      @unique @default(autoincrement())
   userId                String
   user                  User     @relation(fields: [userId], references: [id], onDelete: Restrict)
   status                OrderStatus @default(PENDING)
