@@ -5,7 +5,9 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { ProductCard } from "@/components/product-card";
+import { FilterMenuIcon } from "@/components/icons";
 import { formatChf, getDisplayPriceCents } from "@/lib/data";
+import { parseJsonSafely } from "@/lib/fetch-json";
 import type { Product } from "@/lib/types";
 
 type SortMode = "relevance" | "price-asc" | "price-desc" | "newest";
@@ -63,6 +65,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
   const [maxPrice, setMaxPrice] = useState(35);
   const [sortMode, setSortMode] = useState<SortMode>("relevance");
   const [onlySale, setOnlySale] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(true);
 
   useEffect(() => {
     if (initialProducts.length > 0) {
@@ -71,7 +74,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
 
     fetch("/api/products")
       .then(async (response) => {
-        const data = (await response.json()) as ProductsResponse;
+        const data = (await parseJsonSafely(response)) as Partial<ProductsResponse>;
         if (!response.ok) {
           throw new Error("Produkte konnten nicht geladen werden.");
         }
@@ -159,16 +162,29 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
   }
 
   return (
-    <section className="fade-in-up grid gap-6 lg:grid-cols-[260px_1fr]">
-      <aside className="panel-surface h-fit rounded-2xl p-4 shadow-sm lg:sticky lg:top-20">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-900">Filter</h2>
-          {hasActiveFilters && (
-            <button type="button" onClick={resetAll} className="text-xs text-sky-600 hover:underline">
-              Zurücksetzen
-            </button>
-          )}
-        </div>
+    <section className="fade-in-up space-y-4">
+      <button
+        type="button"
+        onClick={() => setIsFilterOpen((open) => !open)}
+        className="filter-toggle-button inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-slate-700"
+        aria-expanded={isFilterOpen}
+      >
+        <FilterMenuIcon className="h-4 w-4" />
+        Filter
+        {hasActiveFilters && <span className="h-1.5 w-1.5 rounded-full bg-violet-500" aria-hidden="true" />}
+      </button>
+
+      <div className={`grid gap-6 ${isFilterOpen ? "lg:grid-cols-[260px_1fr]" : "lg:grid-cols-1"}`}>
+        {isFilterOpen && (
+          <aside className="filter-panel-enter panel-surface h-fit rounded-2xl p-4 shadow-sm lg:sticky lg:top-6">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-900">Filter</h2>
+              {hasActiveFilters && (
+                <button type="button" onClick={resetAll} className="text-xs text-sky-600 hover:underline">
+                  Zurücksetzen
+                </button>
+              )}
+            </div>
 
         <div className="space-y-0">
           <FilterGroup title="Suche">
@@ -242,9 +258,10 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
             </label>
           </FilterGroup>
         </div>
-      </aside>
+          </aside>
+        )}
 
-      <div className="space-y-4">
+        <div className="space-y-4">
         {loadError && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{loadError}</p>}
 
         {hasActiveFilters && (
@@ -281,6 +298,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
             Keine Produkte gefunden.
           </div>
         )}
+        </div>
       </div>
     </section>
   );

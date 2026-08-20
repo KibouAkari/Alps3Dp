@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { formatChf } from "@/lib/data";
+import { parseJsonSafely } from "@/lib/fetch-json";
 import { getGuestCart, GUEST_CART_STORAGE_KEY, type GuestCartItem } from "@/lib/guest-cart";
 
 type CartRow = {
@@ -29,7 +30,7 @@ export default function CartPage() {
     // guests and for signed-in users with an empty server cart, so we can't
     // tell those apart from that response alone.
     const sessionResponse = await fetch("/api/auth/session", { credentials: "include", cache: "no-store" });
-    const sessionData = await sessionResponse.json();
+    const sessionData = await parseJsonSafely(sessionResponse);
     const signedIn = Boolean(sessionData.user);
 
     if (!signedIn) {
@@ -42,8 +43,8 @@ export default function CartPage() {
       }
 
       const productsResponse = await fetch("/api/products");
-      const productsData = await productsResponse.json();
-      const allProducts: CartRow["product"][] = productsData.products || [];
+      const productsData = await parseJsonSafely(productsResponse);
+      const allProducts: CartRow["product"][] = (productsData.products as CartRow["product"][] | undefined) || [];
 
       const resolved: CartRow[] = guestItems
         .map((item: GuestCartItem) => {
@@ -60,13 +61,13 @@ export default function CartPage() {
     }
 
     const response = await fetch("/api/cart", { credentials: "include" });
-    const data = await response.json();
+    const data = await parseJsonSafely(response);
     if (!response.ok) {
-      throw new Error(data.error || "Warenkorb konnte nicht geladen werden.");
+      throw new Error((data.error as string | undefined) || "Warenkorb konnte nicht geladen werden.");
     }
 
     setIsGuest(false);
-    setRows(data.items || []);
+    setRows((data.items as CartRow[] | undefined) || []);
     window.dispatchEvent(new Event("cart:updated"));
   };
 

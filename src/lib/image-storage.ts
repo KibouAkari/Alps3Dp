@@ -20,14 +20,23 @@ function normalizeFileName(input: string) {
   return `${safeBase || "image"}-${crypto.randomUUID().slice(0, 8)}${extension}`;
 }
 
+const CONTENT_TYPE_BY_EXTENSION: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+};
+
 export async function storeProductImage(fileName: string, data: Buffer) {
   const normalizedName = normalizeFileName(fileName);
+  const contentType = CONTENT_TYPE_BY_EXTENSION[path.extname(normalizedName)] || "application/octet-stream";
 
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const blob = await put(`products/${normalizedName}`, data, {
       access: "public",
       addRandomSuffix: false,
-      contentType: "image/webp",
+      contentType,
     });
 
     return blob.url;

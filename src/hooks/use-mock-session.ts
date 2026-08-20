@@ -4,6 +4,7 @@
 // Despite the name, this talks to real server sessions — nothing here is mocked.
 import { useCallback, useEffect, useState } from "react";
 
+import { parseJsonSafely } from "@/lib/fetch-json";
 import {
   AUTH_EVENT,
   DEFAULT_AVATAR,
@@ -45,7 +46,7 @@ async function fetchSession(): Promise<SessionUser | null> {
     return null;
   }
 
-  const data = (await response.json()) as SessionApiResponse;
+  const data = (await parseJsonSafely(response)) as Partial<SessionApiResponse>;
   if (!data.user) {
     return null;
   }
@@ -100,11 +101,7 @@ export function useMockSession() {
     });
 
     let data: Record<string, unknown> = {};
-    try {
-      data = await response.json();
-    } catch {
-      // ignore JSON parse error
-    }
+    data = await parseJsonSafely(response);
     if (!response.ok) {
       throw new Error(
         (data.error as string | undefined) || "Benutzername oder Passwort inkorrekt.",
@@ -143,22 +140,22 @@ export function useMockSession() {
       }),
     });
 
-    const data = await response.json();
+    const data = await parseJsonSafely(response);
     if (!response.ok) {
-      throw new Error(data.error || "Registrierung fehlgeschlagen.");
+      throw new Error((data.error as string | undefined) || "Registrierung fehlgeschlagen.");
     }
 
+    const registeredUser = data.user as Record<string, unknown>;
     const nextUser: SessionUser = {
-      id: data.user.id,
-      avatar: data.user.avatarUrl || DEFAULT_AVATAR,
-      username: data.user.username ?? null,
-      firstName: data.user.firstName ?? null,
-      lastName: data.user.lastName ?? null,
-      salutation: data.user.salutation ?? null,
-      name: data.user.name,
-      email: data.user.email,
-      role: data.user.role,
-      
+      id: registeredUser.id as string,
+      avatar: (registeredUser.avatarUrl as string | undefined) || DEFAULT_AVATAR,
+      username: (registeredUser.username as string | null | undefined) ?? null,
+      firstName: (registeredUser.firstName as string | null | undefined) ?? null,
+      lastName: (registeredUser.lastName as string | null | undefined) ?? null,
+      salutation: (registeredUser.salutation as string | null | undefined) ?? null,
+      name: registeredUser.name as string,
+      email: registeredUser.email as string,
+      role: registeredUser.role as UserRole,
     };
 
     window.dispatchEvent(new Event(AUTH_EVENT));
@@ -189,21 +186,21 @@ export function useMockSession() {
       }),
     });
 
-    const data = await response.json();
+    const data = await parseJsonSafely(response);
     if (!response.ok) {
-      throw new Error(data.error || "Profil konnte nicht gespeichert werden.");
+      throw new Error((data.error as string | undefined) || "Profil konnte nicht gespeichert werden.");
     }
 
     const nextUser: SessionUser = {
-      id: data.id,
-      username: data.username ?? null,
-      firstName: data.firstName ?? null,
-      lastName: data.lastName ?? null,
-      salutation: data.salutation ?? null,
-      name: data.name,
-      email: data.email,
+      id: data.id as string,
+      username: (data.username as string | null | undefined) ?? null,
+      firstName: (data.firstName as string | null | undefined) ?? null,
+      lastName: (data.lastName as string | null | undefined) ?? null,
+      salutation: (data.salutation as string | null | undefined) ?? null,
+      name: data.name as string,
+      email: data.email as string,
       role: user?.role || "CUSTOMER",
-      avatar: data.avatarUrl || user?.avatar || DEFAULT_AVATAR,
+      avatar: (data.avatarUrl as string | undefined) || user?.avatar || DEFAULT_AVATAR,
     };
 
     window.dispatchEvent(new Event(AUTH_EVENT));

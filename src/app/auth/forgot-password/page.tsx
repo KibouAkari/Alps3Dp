@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { parseJsonSafely } from "@/lib/fetch-json";
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -26,9 +28,9 @@ export default function ForgotPasswordPage() {
             body: JSON.stringify({ email }),
           });
 
-          const data = await response.json();
+          const data = await parseJsonSafely(response);
           if (!response.ok) {
-            setError(data.error || "Fehler beim Versand des Reset-Links.");
+            setError((data.error as string | undefined) || "Fehler beim Versand des Reset-Links.");
             return;
           }
 

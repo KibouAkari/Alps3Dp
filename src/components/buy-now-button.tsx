@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { addToGuestCart } from "@/lib/guest-cart";
+import { parseJsonSafely } from "@/lib/fetch-json";
 
 export function BuyNowButton({ productId }: { productId: string }) {
   const router = useRouter();
@@ -28,8 +29,8 @@ export function BuyNowButton({ productId }: { productId: string }) {
           if (response.status === 401) {
             addToGuestCart(productId, 1);
           } else if (!response.ok) {
-            const data = await response.json().catch(() => ({}));
-            throw new Error(data.error || "Produkt konnte nicht hinzugefügt werden.");
+            const data = await parseJsonSafely(response);
+            throw new Error((data.error as string | undefined) || "Produkt konnte nicht hinzugefügt werden.");
           }
 
           router.push("/checkout");

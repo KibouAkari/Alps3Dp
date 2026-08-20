@@ -1,8 +1,22 @@
 # Changelog
 
-<p align="center"><img src="public/images/logo.png" alt="Alp3D Shop Logo" width="72"></p>
+<p align="center"><img src="public/images/logo.jpeg" alt="Alp3D Shop Logo" width="72"></p>
 
 All notable changes to Alp3D Shop are documented in this file.
+
+## 2026-08-20
+
+A follow-up pass fixed a real, live bug: the storefront home page could show a raw browser error ("Unexpected end of JSON input") instead of the product grid whenever an API response wasn't valid JSON. The root cause was a widespread pattern across nearly every client-side data fetch (storefront, cart, checkout, account, auth, admin) that assumed `response.json()` always succeeds. All of these now go through one shared, defensive JSON parser (`src/lib/fetch-json.ts`) instead of each screen duplicating its own try/catch, so a bad response shows a proper error message instead of crashing. `getAppBaseUrl()`'s production fallback was also corrected to the canonical `www.alps3dp.ch` host. Product image uploads no longer force an incorrect `image/webp` content type on JPEG/PNG/GIF files; the content type is now derived from the actual file extension.
+
+Major navigation and admin design overhaul.
+
+Replaced the old logo with the new circular Alps3Dp mark (`public/images/logo.jpeg`) across the site header, sidebar, and social/share metadata. Replaced the top navbar with a left-hand sidebar (`src/components/site-sidebar.tsx`): primary links now show icons, the cart badge lives inline, and the account area (login, account settings, logout, theme toggle) is anchored to the bottom of the sidebar instead of a top-right dropdown. On small screens the sidebar collapses into a slim top bar with a slide-in drawer. The main content area shifts right (`md:ml-64`) to make room for it on desktop.
+
+Introduced a violet accent (matching the reference dashboard design) for the sidebar, admin dashboard stat cards, and the admin product form, layered on top of the existing light/dark theme system rather than replacing it site-wide.
+
+The storefront product filters are now collapsible via a "Filter" button with a custom hamburger icon (longer middle bar), instead of always being visible.
+
+Simplified the admin "new/edit product" form into three clearly numbered sections - Produktbilder, Basisdaten, and Preis/Lager/Sichtbarkeit - so editing a product doesn't require scanning one long unlabeled grid of fields. The admin dashboard's stat cards gained a staggered fade-in and hover-lift animation.
 
 ## 2026-08-16
 

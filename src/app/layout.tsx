@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import type { ReactNode } from "react";
 
-import { SiteHeader } from "@/components/site-header";
+import { SiteSidebar } from "@/components/site-sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getAppBaseUrl } from "@/lib/app-url";
 
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     siteName: "Alps3Dp",
     images: [
       {
-        url: "/images/logo.png",
+        url: "/images/logo.jpeg",
         width: 512,
         height: 512,
         alt: "Alps3Dp",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Alps3Dp",
     description: "Handgefertigte 3D-gedruckte Produkte aus der Schweiz.",
-    images: ["/images/logo.png"],
+    images: ["/images/logo.jpeg"],
   },
   robots: {
     index: true,
@@ -61,8 +61,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {`(() => { try { const stored = localStorage.getItem('alps3dp.theme'); const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches; const theme = stored === 'light' || stored === 'dark' ? stored : (prefersDark ? 'dark' : 'light'); document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; } catch (error) {} })();`}
         </Script>
         <ThemeProvider>
-          <SiteHeader />
-          <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+          <SiteSidebar />
+          <main className="w-full px-4 py-8 sm:px-6 md:ml-64 lg:px-8">
+            <div className="mx-auto w-full max-w-6xl">{children}</div>
+          </main>
         </ThemeProvider>
       </body>
     </html>

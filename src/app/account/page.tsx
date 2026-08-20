@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SafeImage } from "@/components/safe-image";
 import { ThemeToggleButton } from "@/components/theme-toggle";
 import { useMockSession } from "@/hooks/use-mock-session";
+import { parseJsonSafely } from "@/lib/fetch-json";
 import { formatChf } from "@/lib/money";
 
 type AccountOrder = {
@@ -95,21 +96,22 @@ export default function AccountPage() {
 
     fetch("/api/account", { credentials: "include", cache: "no-store" })
       .then(async (response) => {
-        const data = await response.json();
+        const data = await parseJsonSafely(response);
         if (!response.ok) {
-          throw new Error(data.error || "Konto konnte nicht geladen werden.");
+          throw new Error((data.error as string | undefined) || "Konto konnte nicht geladen werden.");
         }
         setOrders(
-          (data.orders || []).map((entry: { id: string; date: string; status: string; totalCents: number }) => ({
+          ((data.orders as Array<{ id: string; date: string; status: string; totalCents: number }> | undefined) || []).map((entry) => ({
             id: entry.id,
             date: new Date(entry.date).toISOString().slice(0, 10),
             status: entry.status,
             totalCents: entry.totalCents,
           }))
         );
-        setAddresses(data.profile?.addresses || []);
-        setPayments(data.profile?.paymentMethods || []);
-        setNewEmail(data.profile?.email || "");
+        const profile = data.profile as { addresses?: SavedAddress[]; paymentMethods?: SavedPaymentMethod[]; email?: string } | undefined;
+        setAddresses(profile?.addresses || []);
+        setPayments(profile?.paymentMethods || []);
+        setNewEmail(profile?.email || "");
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Konto konnte nicht geladen werden."));
   }, [user]);
@@ -235,12 +237,12 @@ export default function AccountPage() {
                         credentials: "include",
                         body: payload,
                       });
-                      const data = await response.json();
+                      const data = await parseJsonSafely(response);
                       if (!response.ok) {
-                        throw new Error(data.error || "Avatar konnte nicht hochgeladen werden.");
+                        throw new Error((data.error as string | undefined) || "Avatar konnte nicht hochgeladen werden.");
                       }
 
-                      const nextAvatar = data.urls?.[0];
+                      const nextAvatar = (data.urls as string[] | undefined)?.[0];
                       if (!nextAvatar) {
                         throw new Error("Avatar konnte nicht gespeichert werden.");
                       }
@@ -346,9 +348,9 @@ export default function AccountPage() {
                     credentials: "include",
                     body: JSON.stringify({ newEmail, currentPassword: emailPassword }),
                   });
-                  const data = await response.json();
+                  const data = await parseJsonSafely(response);
                   if (!response.ok) {
-                    throw new Error(data.error || "E-Mail konnte nicht aktualisiert werden.");
+                    throw new Error((data.error as string | undefined) || "E-Mail konnte nicht aktualisiert werden.");
                   }
                   setStatus("E-Mail geändert. Bitte Verifizierungs-Mail bestätigen.");
                   setEmailPassword("");
@@ -392,9 +394,9 @@ export default function AccountPage() {
                     credentials: "include",
                     body: JSON.stringify({ currentPassword, newPassword }),
                   });
-                  const data = await response.json();
+                  const data = await parseJsonSafely(response);
                   if (!response.ok) {
-                    throw new Error(data.error || "Passwort konnte nicht aktualisiert werden.");
+                    throw new Error((data.error as string | undefined) || "Passwort konnte nicht aktualisiert werden.");
                   }
                   setStatus("Passwort erfolgreich geändert.");
                   setCurrentPassword("");
@@ -517,12 +519,13 @@ export default function AccountPage() {
                       credentials: "include",
                       body: JSON.stringify(addressForm),
                     });
-                    const data = await response.json();
+                    const data = await parseJsonSafely(response);
                     if (!response.ok) {
-                      setError(data.error || "Adresse konnte nicht gespeichert werden.");
+                      setError((data.error as string | undefined) || "Adresse konnte nicht gespeichert werden.");
                       return;
                     }
-                    setAddresses((prev) => [data.address, ...prev.filter((a) => !data.address.isDefault || !a.isDefault)]);
+                    const savedAddress = data.address as SavedAddress;
+                    setAddresses((prev) => [savedAddress, ...prev.filter((a) => !savedAddress.isDefault || !a.isDefault)]);
                     setAddressForm({ salutation: "", firstName: "", lastName: "", street: "", zipCode: "", city: "", country: "CH", isDefault: false });
                     setShowNewAddressForm(false);
                     setStatus("Adresse gespeichert.");
@@ -594,12 +597,13 @@ export default function AccountPage() {
                       isDefault: newPaymentIsDefault,
                     }),
                   });
-                  const data = await response.json();
+                  const data = await parseJsonSafely(response);
                   if (!response.ok) {
-                    setError(data.error || "Zahlungsart konnte nicht gespeichert werden.");
+                    setError((data.error as string | undefined) || "Zahlungsart konnte nicht gespeichert werden.");
                     return;
                   }
-                  setPayments((prev) => [data, ...prev.filter((m) => !data.isDefault || !m.isDefault)]);
+                  const savedMethod = data as unknown as SavedPaymentMethod;
+                  setPayments((prev) => [savedMethod, ...prev.filter((m) => !savedMethod.isDefault || !m.isDefault)]);
                   setNewPaymentType("invoice");
                   setNewPaymentIsDefault(false);
                   setStatus("Zahlungsart gespeichert.");

@@ -4,6 +4,8 @@
 // admins trigger safe test/reset utilities backed by /api/admin/ops.
 import { useState } from "react";
 
+import { parseJsonSafely } from "@/lib/fetch-json";
+
 type StripeOverview = {
   configured: boolean;
   dashboardUrl: string;
@@ -53,9 +55,9 @@ export function AdminOpsTools() {
         email: email || undefined,
       }),
     });
-    const data = await response.json();
+    const data = await parseJsonSafely(response);
     if (!response.ok) {
-      setError(data.error || "Test konnte nicht ausgeführt werden.");
+      setError((data.error as string | undefined) || "Test konnte nicht ausgeführt werden.");
       return;
     }
     setStatus(`Test erfolgreich: ${data.orderId}`);
@@ -79,9 +81,9 @@ export function AdminOpsTools() {
         confirmation,
       }),
     });
-    const data = await response.json();
+    const data = await parseJsonSafely(response);
     if (!response.ok) {
-      setError(data.error || "Reset konnte nicht ausgeführt werden.");
+      setError((data.error as string | undefined) || "Reset konnte nicht ausgeführt werden.");
       return;
     }
     setStatus(
@@ -94,13 +96,13 @@ export function AdminOpsTools() {
     setLoadingStripe(true);
     setError(null);
     const response = await fetch("/api/admin/stripe/overview", { credentials: "include", cache: "no-store" });
-    const data = await response.json();
+    const data = await parseJsonSafely(response);
     if (!response.ok) {
-      setError(data.error || "Stripe-Übersicht konnte nicht geladen werden.");
+      setError((data.error as string | undefined) || "Stripe-Übersicht konnte nicht geladen werden.");
       setLoadingStripe(false);
       return;
     }
-    setStripe(data);
+    setStripe(data as StripeOverview);
     setLoadingStripe(false);
   };
 

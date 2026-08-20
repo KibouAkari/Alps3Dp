@@ -77,7 +77,7 @@ export default async function AdminHomePage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
           <div className="flex gap-2">
-            <Link href="/admin/products" className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 transition">
+            <Link href="/admin/products" className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 transition">
               Produkte verwalten
             </Link>
             <Link href={"/admin/stripe" as Route} className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition">
@@ -90,9 +90,9 @@ export default async function AdminHomePage() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="stagger-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => (
-            <div key={stat.label} className="panel-surface rounded-2xl p-5 shadow-sm">
+            <div key={stat.label} className="dashboard-stat-card hover-lift rounded-2xl p-5 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{stat.label}</p>
               <p className="mt-2 text-2xl font-bold text-slate-900">{stat.value}</p>
               <p className="mt-1 text-xs text-emerald-600">{stat.change}</p>
@@ -150,17 +150,17 @@ export default async function AdminHomePage() {
             <ul className="mt-3 space-y-2">
               <li>
                 <Link href="/admin/products" className="flex items-center gap-2 rounded-lg p-2 text-sm text-slate-700 hover:bg-slate-50 transition">
-                  <span className="text-sky-600">→</span> Produkte & Kategorien verwalten
+                  <span className="text-violet-600">→</span> Produkte & Kategorien verwalten
                 </Link>
               </li>
               <li>
                 <Link href="/admin/analytics" className="flex items-center gap-2 rounded-lg p-2 text-sm text-slate-700 hover:bg-slate-50 transition">
-                  <span className="text-sky-600">→</span> Analytics & Monitoring
+                  <span className="text-violet-600">→</span> Analytics & Monitoring
                 </Link>
               </li>
               <li>
                 <Link href="/" className="flex items-center gap-2 rounded-lg p-2 text-sm text-slate-700 hover:bg-slate-50 transition">
-                  <span className="text-sky-600">→</span> Shop-Ansicht öffnen
+                  <span className="text-violet-600">→</span> Shop-Ansicht öffnen
                 </Link>
               </li>
             </ul>

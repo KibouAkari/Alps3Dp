@@ -3,6 +3,8 @@
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
+import { parseJsonSafely } from "@/lib/fetch-json";
+
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "";
@@ -39,10 +41,10 @@ export default function ResetPasswordPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token, password }),
           });
-          const data = await response.json();
+          const data = await parseJsonSafely(response);
 
           if (!response.ok) {
-            setError(data.error || "Passwort konnte nicht aktualisiert werden.");
+            setError((data.error as string | undefined) || "Passwort konnte nicht aktualisiert werden.");
             return;
           }
 

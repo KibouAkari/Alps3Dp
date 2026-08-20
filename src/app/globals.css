@@ -403,6 +403,60 @@ body.theme-switching * {
 .stagger-grid > *:nth-child(5) { animation-delay: 320ms; }
 .stagger-grid > *:nth-child(6) { animation-delay: 390ms; }
 
+.sidebar-shell {
+  background: linear-gradient(180deg, #140f26 0%, #100c1e 60%, #0c0918 100%);
+}
+
+.sidebar-link {
+  color: rgb(203 213 225 / 0.85);
+}
+
+.sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.sidebar-link-active {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.28), rgba(139, 92, 246, 0.08));
+  color: white;
+  box-shadow: inset 3px 0 0 0 #8b5cf6;
+}
+
+.dashboard-stat-card {
+  background: linear-gradient(160deg, rgba(139, 92, 246, 0.12), rgba(15, 23, 42, 0.02));
+  border: 1px solid var(--surface-border);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.dashboard-stat-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: 0 16px 34px rgba(88, 28, 135, 0.16);
+}
+
+.filter-toggle-button {
+  background: var(--surface-soft);
+  border: 1px solid var(--surface-border);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.filter-toggle-button:hover {
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.filter-toggle-button:active {
+  transform: scale(0.97);
+}
+
+.filter-panel-enter {
+  animation: filterPanelIn 260ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+@keyframes filterPanelIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes immersiveRise {
   from {
     opacity: 0;

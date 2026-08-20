@@ -1,6 +1,6 @@
 # Contributing to Alp3D Shop
 
-<p align="center"><img src="public/images/logo.png" alt="Alp3D Shop Logo" width="72"></p>
+<p align="center"><img src="public/images/logo.jpeg" alt="Alp3D Shop Logo" width="72"></p>
 
 Thank you for contributing to Alp3D Shop.
 

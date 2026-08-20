@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { formatChf } from "@/lib/data";
+import { parseJsonSafely } from "@/lib/fetch-json";
 import { getGuestCart, clearGuestCart, GUEST_CART_STORAGE_KEY, type GuestCartItem } from "@/lib/guest-cart";
 
 type CartRow = {
@@ -62,8 +63,8 @@ export default function CheckoutPage() {
   useEffect(() => {
     fetch("/api/settings/shipping", { credentials: "include" })
       .then(async (r) => {
-        const d = await r.json();
-        if (r.ok) setShippingCents(d.shippingCents || 0);
+        const d = await parseJsonSafely(r);
+        if (r.ok) setShippingCents((d.shippingCents as number | undefined) || 0);
       })
       .catch(() => undefined);
 
@@ -76,8 +77,8 @@ export default function CheckoutPage() {
           const guestItems = getGuestCart();
           if (guestItems.length > 0) {
             const productsResponse = await fetch("/api/products");
-            const productsData = await productsResponse.json();
-            const allProducts: CartRow["product"][] = productsData.products || [];
+            const productsData = await parseJsonSafely(productsResponse);
+            const allProducts: CartRow["product"][] = (productsData.products as CartRow["product"][] | undefined) || [];
             const resolved: CartRow[] = guestItems
               .map((item: GuestCartItem) => {
                 const product = allProducts.find((p) => p.id === item.productId);
@@ -90,9 +91,10 @@ export default function CheckoutPage() {
           return;
         }
 
-        const data = await response.json();
-        const addresses = data.profile?.addresses || [];
-        const methods = data.profile?.paymentMethods || [];
+        const data = await parseJsonSafely(response);
+        const profile = data.profile as { addresses?: SavedAddress[]; paymentMethods?: SavedPaymentMethod[]; email?: string } | undefined;
+        const addresses = profile?.addresses || [];
+        const methods = profile?.paymentMethods || [];
         setSavedAddresses(addresses);
         setSavedMethods(methods);
 
@@ -113,14 +115,14 @@ export default function CheckoutPage() {
             defaultMethod.type === "twint" ? "TWINT" : "CARD",
           );
         }
-        if (data.profile?.email) {
-          setEmail(data.profile.email);
+        if (profile?.email) {
+          setEmail(profile.email);
         }
 
         // Load DB cart for logged-in user
         const cartResponse = await fetch("/api/cart", { credentials: "include" });
-        const cartData = await cartResponse.json();
-        setRows(cartData.items || []);
+        const cartData = await parseJsonSafely(cartResponse);
+        setRows((cartData.items as CartRow[] | undefined) || []);
       })
       .catch(() => undefined);
   }, []);
@@ -156,8 +158,8 @@ export default function CheckoutPage() {
       body: JSON.stringify({ quantity: row.quantity - 1 }),
     });
     const response = await fetch("/api/cart", { credentials: "include", cache: "no-store" });
-    const data = await response.json();
-    setRows(data.items || []);
+    const data = await parseJsonSafely(response);
+    setRows((data.items as CartRow[] | undefined) || []);
     window.dispatchEvent(new Event("cart:updated"));
   };
 
@@ -207,9 +209,9 @@ export default function CheckoutPage() {
                 body: JSON.stringify(payload),
               });
 
-              const data = await response.json();
+              const data = await parseJsonSafely(response);
               if (!response.ok) {
-                setError(data.error || "Checkout fehlgeschlagen.");
+                setError((data.error as string | undefined) || "Checkout fehlgeschlagen.");
                 return;
               }
 
@@ -244,7 +246,7 @@ export default function CheckoutPage() {
                 }
               }
               if (isGuest) clearGuestCart();
-              window.location.href = data.checkoutUrl;
+              window.location.href = data.checkoutUrl as string;
               return;
             }
 

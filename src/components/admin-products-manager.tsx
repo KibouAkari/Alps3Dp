@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { SafeImage } from "@/components/safe-image";
 import { formatChf, getDisplayPriceCents } from "@/lib/data";
+import { parseJsonSafely } from "@/lib/fetch-json";
 import type { Product } from "@/lib/types";
 
 type ProductForm = {
@@ -35,17 +36,6 @@ type ProductsResponse = {
   products: Product[];
   categories: Array<{ id: string; name: string; slug: string }>;
 };
-
-// Server errors don't always return a JSON body (e.g. a framework-level 500),
-// so parse defensively instead of letting response.json() throw a confusing
-// "Unexpected end of JSON input" error.
-async function parseJsonSafely(response: Response): Promise<Record<string, unknown>> {
-  try {
-    return await response.json();
-  } catch {
-    return {};
-  }
-}
 
 export function AdminProductsManager() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -93,9 +83,9 @@ export function AdminProductsManager() {
 
     fetch("/api/settings/shipping", { credentials: "include" })
       .then(async (response) => {
-        const data = await response.json();
+        const data = await parseJsonSafely(response);
         if (response.ok) {
-          setShippingCents(data.shippingCents || 0);
+          setShippingCents((data.shippingCents as number | undefined) || 0);
         }
       })
       .catch(() => undefined);
@@ -287,7 +277,7 @@ export function AdminProductsManager() {
           <button
             type="button"
             onClick={saveShipping}
-            className="h-fit self-end rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
+            className="h-fit self-end rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500"
           >
             Speichern
           </button>
@@ -300,123 +290,41 @@ export function AdminProductsManager() {
           <span className="theme-pill rounded-full px-3 py-1 text-xs text-slate-600">{visibleCount} sichtbare Produkte</span>
         </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <label className="space-y-1 text-sm text-slate-600">
-            <span>Titel</span>
-            <input
-              value={form.title}
-              onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
-              placeholder="z.B. Articulated Dragon"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
-            />
-          </label>
-
-          <label className="space-y-1 text-sm text-slate-600">
-            <span>Kategorie</span>
-            <input
-              value={form.category}
-              onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
-              list="known-categories"
-              placeholder="z.B. Home"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
-            />
-            <datalist id="known-categories">
-              {categoryList.map((category) => (
-                <option key={category} value={category} />
-              ))}
-            </datalist>
-          </label>
-
-          <label className="space-y-1 text-sm text-slate-600">
-            <span>Preis (CHF)</span>
-            <input
-              type="number"
-              value={form.priceCents / 100}
-              min={1}
-              onChange={(event) => setForm((prev) => ({ ...prev, priceCents: Number(event.target.value) * 100 }))}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
-            />
-          </label>
-
-          <label className="space-y-1 text-sm text-slate-600">
-            <span>Aktionspreis (optional)</span>
-            <input
-              type="number"
-              value={(form.salePriceCents ?? 0) / 100}
-              min={0}
-              onChange={(event) => {
-                const value = Number(event.target.value);
-                setForm((prev) => ({ ...prev, salePriceCents: value > 0 ? value * 100 : undefined }));
+        <div className="mt-5 space-y-5">
+          <div className="rounded-xl border border-slate-200 p-4">
+            <p className="mb-3 text-sm font-semibold text-slate-800">1. Produktbilder</p>
+            <div
+              className={`upload-zone rounded-xl p-4 transition ${isDraggingFiles ? "upload-zone-active" : ""}`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setIsDraggingFiles(true);
               }}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
-            />
-          </label>
-
-          <label className="space-y-1 text-sm text-slate-600">
-            <span>Lagerbestand</span>
-            <input
-              type="number"
-              value={form.stock}
-              min={0}
-              onChange={(event) => setForm((prev) => ({ ...prev, stock: Number(event.target.value) }))}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
-            />
-          </label>
-
-          <label className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={form.isHidden}
-              onChange={(event) => setForm((prev) => ({ ...prev, isHidden: event.target.checked }))}
-            />
-            Produkt verstecken
-          </label>
-
-          <label className="space-y-1 text-sm text-slate-600 sm:col-span-2">
-            <span>Beschreibung</span>
-            <textarea
-              value={form.description}
-              onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-              placeholder="Kurzbeschreibung"
-              className="min-h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
-            />
-          </label>
-        </div>
-
-        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="mb-2 text-sm font-medium text-slate-700">Produktbilder</p>
-          <div
-            className={`upload-zone rounded-xl p-4 transition ${isDraggingFiles ? "upload-zone-active" : ""}`}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setIsDraggingFiles(true);
-            }}
-            onDragLeave={() => setIsDraggingFiles(false)}
-            onDrop={async (event) => {
-              event.preventDefault();
-              setIsDraggingFiles(false);
-              await addFiles(event.dataTransfer.files);
-            }}
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-800">Bilder per Drag-and-drop hier ablegen</p>
-                <p className="text-xs text-slate-500">Mehrere Bilder werden optimiert gespeichert und bleiben schnell ladbar.</p>
+              onDragLeave={() => setIsDraggingFiles(false)}
+              onDrop={async (event) => {
+                event.preventDefault();
+                setIsDraggingFiles(false);
+                await addFiles(event.dataTransfer.files);
+              }}
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-800">Bilder per Drag-and-drop hier ablegen</p>
+                  <p className="text-xs text-slate-500">Mehrere Bilder werden optimiert gespeichert und bleiben schnell ladbar.</p>
+                </div>
+                <label className="hover-lift inline-flex cursor-pointer items-center rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                  Bilddateien auswählen
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={async (event) => {
+                      await addFiles(event.currentTarget.files);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                </label>
               </div>
-              <label className="hover-lift inline-flex cursor-pointer items-center rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                Bilddateien auswählen
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={async (event) => {
-                    await addFiles(event.currentTarget.files);
-                    event.currentTarget.value = "";
-                  }}
-                />
-              </label>
-            </div>
 
             {isUploading && <p className="mt-3 text-xs text-sky-700">Bilder werden hochgeladen...</p>}
 
@@ -462,11 +370,103 @@ export function AdminProductsManager() {
           </div>
         </div>
 
+        <div className="rounded-xl border border-slate-200 p-4">
+          <p className="mb-3 text-sm font-semibold text-slate-800">2. Basisdaten</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="space-y-1 text-sm text-slate-600">
+              <span>Titel</span>
+              <input
+                value={form.title}
+                onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+                placeholder="z.B. Articulated Dragon"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+              />
+            </label>
+
+            <label className="space-y-1 text-sm text-slate-600">
+              <span>Kategorie</span>
+              <input
+                value={form.category}
+                onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
+                list="known-categories"
+                placeholder="z.B. Home"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+              />
+              <datalist id="known-categories">
+                {categoryList.map((category) => (
+                  <option key={category} value={category} />
+                ))}
+              </datalist>
+            </label>
+
+            <label className="space-y-1 text-sm text-slate-600 sm:col-span-2">
+              <span>Beschreibung</span>
+              <textarea
+                value={form.description}
+                onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+                placeholder="Kurzbeschreibung"
+                className="min-h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+              />
+            </label>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 p-4">
+          <p className="mb-3 text-sm font-semibold text-slate-800">3. Preis, Lager & Sichtbarkeit</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="space-y-1 text-sm text-slate-600">
+              <span>Preis (CHF)</span>
+              <input
+                type="number"
+                value={form.priceCents / 100}
+                min={1}
+                onChange={(event) => setForm((prev) => ({ ...prev, priceCents: Number(event.target.value) * 100 }))}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+              />
+            </label>
+
+            <label className="space-y-1 text-sm text-slate-600">
+              <span>Aktionspreis (optional)</span>
+              <input
+                type="number"
+                value={(form.salePriceCents ?? 0) / 100}
+                min={0}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setForm((prev) => ({ ...prev, salePriceCents: value > 0 ? value * 100 : undefined }));
+                }}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+              />
+            </label>
+
+            <label className="space-y-1 text-sm text-slate-600">
+              <span>Lagerbestand</span>
+              <input
+                type="number"
+                value={form.stock}
+                min={0}
+                onChange={(event) => setForm((prev) => ({ ...prev, stock: Number(event.target.value) }))}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+              />
+            </label>
+
+            <label className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.isHidden}
+                onChange={(event) => setForm((prev) => ({ ...prev, isHidden: event.target.checked }))}
+              />
+              Produkt verstecken
+            </label>
+          </div>
+        </div>
+        </div>
+
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={saveProduct}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
+            className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500"
           >
             {form.id ? "Änderungen speichern" : "Produkt speichern"}
           </button>

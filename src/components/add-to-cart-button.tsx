@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { addToGuestCart } from "@/lib/guest-cart";
+import { parseJsonSafely } from "@/lib/fetch-json";
 
 type AddToCartButtonProps = {
   productId: string;
@@ -33,9 +34,9 @@ export function AddToCartButton({ productId }: AddToCartButtonProps) {
               setMessage("Zum Warenkorb hinzugefügt.");
               return;
             }
-            const data = await response.json();
+            const data = await parseJsonSafely(response);
             if (!response.ok) {
-              setMessage(data.error || "Konnte nicht in den Warenkorb gelegt werden.");
+              setMessage((data.error as string | undefined) || "Konnte nicht in den Warenkorb gelegt werden.");
               return;
             }
             setMessage("Zum Warenkorb hinzugefügt.");
