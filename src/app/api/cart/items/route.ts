@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   const cart = await db.cart.upsert({ where: { userId: user.id }, create: { userId: user.id }, update: {} });
 
   const product = await db.product.findUnique({ where: { id: parsed.data.productId } });
-  if (!product || product.isHidden) {
+  if (!product || product.isHidden || product.deletedAt) {
     return NextResponse.json({ error: "Produkt nicht gefunden." }, { status: 404 });
   }
 

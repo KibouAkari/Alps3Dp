@@ -48,7 +48,7 @@ export async function GET(request: Request) {
   const includeHidden = requestedIncludeHidden && requestingUser?.role === "ADMIN";
 
   const products = await db.product.findMany({
-    where: includeHidden ? undefined : { isHidden: false },
+    where: includeHidden ? { deletedAt: null } : { isHidden: false, deletedAt: null },
     include: { images: true, category: true },
     orderBy: { createdAt: "desc" },
   });

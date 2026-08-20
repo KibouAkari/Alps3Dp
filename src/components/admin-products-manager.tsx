@@ -186,6 +186,38 @@ export function AdminProductsManager() {
     setImageUrlInput("");
   };
 
+  // Immediately flips visibility without going through the edit form, since
+  // admins expect this to be a one-click toggle.
+  const toggleHidden = async (product: Product) => {
+    setError(null);
+    setMessage(null);
+
+    const response = await fetch(`/api/products/${product.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        title: product.title,
+        description: product.description,
+        category: product.category,
+        priceCents: product.priceCents,
+        salePriceCents: product.salePriceCents,
+        stock: product.stock,
+        images: product.images,
+        isHidden: !product.isHidden,
+      }),
+    });
+
+    const data = await parseJsonSafely(response);
+    if (!response.ok) {
+      setError((data.error as string | undefined) || "Sichtbarkeit konnte nicht geändert werden.");
+      return;
+    }
+
+    await loadProducts();
+    setMessage(product.isHidden ? "Produkt ist wieder sichtbar." : "Produkt ist jetzt versteckt.");
+  };
+
   const deleteProduct = async (id: string) => {
     setError(null);
     setMessage(null);
@@ -206,7 +238,11 @@ export function AdminProductsManager() {
     }
 
     await loadProducts();
-    setMessage("Produkt gelöscht.");
+    setMessage(
+      data.archived
+        ? "Produkt entfernt. Da es bereits bestellt wurde, bleibt es für die Bestellhistorie im Hintergrund erhalten."
+        : "Produkt gelöscht.",
+    );
   };
 
   const saveShipping = async () => {
@@ -500,22 +536,10 @@ export function AdminProductsManager() {
                     </button>
                     <button
                       type="button"
-                      onClick={() =>
-                        setForm({
-                          id: product.id,
-                          title: product.title,
-                          description: product.description,
-                          category: product.category,
-                          priceCents: product.priceCents,
-                          salePriceCents: product.salePriceCents,
-                          stock: product.stock,
-                          images: product.images,
-                          isHidden: !Boolean(product.isHidden),
-                        })
-                      }
+                      onClick={() => void toggleHidden(product)}
                       className="rounded-md border border-slate-300 px-2 py-1 text-xs"
                     >
-                      {product.isHidden ? "Einblenden vorbereiten" : "Verstecken vorbereiten"}
+                      {product.isHidden ? "Einblenden" : "Verstecken"}
                     </button>
                     <button
                       type="button"

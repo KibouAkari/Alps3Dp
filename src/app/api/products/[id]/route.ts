@@ -109,14 +109,11 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   } catch (error) {
     // Orders keep a foreign key to their products (so past order history
     // stays intact), so a product that was ever ordered can't be hard-deleted.
+    // Soft-delete instead: it disappears from every list (storefront and
+    // admin) exactly like a real delete, but the row stays for order history.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
-      return NextResponse.json(
-        {
-          error:
-            "Produkt kann nicht gelöscht werden, da es bereits in Bestellungen verwendet wurde. Bitte stattdessen verstecken.",
-        },
-        { status: 409 },
-      );
+      await db.product.update({ where: { id }, data: { deletedAt: new Date(), isHidden: true } });
+      return NextResponse.json({ success: true, archived: true });
     }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
       return NextResponse.json({ error: "Produkt wurde nicht gefunden." }, { status: 404 });

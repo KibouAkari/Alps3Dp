@@ -17,7 +17,7 @@ export default async function HomePage() {
   try {
     const [products, categories] = await Promise.all([
       db.product.findMany({
-        where: { isHidden: false },
+        where: { isHidden: false, deletedAt: null },
         include: { images: true, category: true },
         orderBy: { createdAt: "desc" },
         take: 60,

@@ -95,6 +95,10 @@ model Product {
   salePriceCents Int?
   stock          Int
   isHidden       Boolean     @default(false)
+  // Soft-delete: set instead of a hard delete when a product still has
+  // order history, so past orders keep a valid product reference. Excluded
+  // from every query (storefront and admin) once set.
+  deletedAt      DateTime?
   clicks         Int         @default(0)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt

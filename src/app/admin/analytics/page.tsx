@@ -37,7 +37,7 @@ export default async function AdminAnalyticsPage() {
     .slice(0, 4);
 
   const clicksProductsRaw = await db.product.findMany({
-    where: { isHidden: false },
+    where: { isHidden: false, deletedAt: null },
     select: { id: true, title: true, clicks: true },
     orderBy: { clicks: "desc" },
     take: 4,

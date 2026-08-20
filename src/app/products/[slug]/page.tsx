@@ -41,7 +41,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     },
   });
 
-  const product = dbProduct ? mapProduct(dbProduct) : null;
+  const product = dbProduct && !dbProduct.deletedAt ? mapProduct(dbProduct) : null;
 
   if (!product) {
     notFound();
@@ -50,6 +50,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const recommendationPool = await db.product.findMany({
     where: {
       isHidden: false,
+      deletedAt: null,
       id: { not: product.id },
     },
     select: {

@@ -140,7 +140,7 @@ export async function POST(request: Request) {
     }
     const productIds = guestItems.map((item) => item.productId);
     const products = await db.product.findMany({
-      where: { id: { in: productIds }, isHidden: false },
+      where: { id: { in: productIds }, isHidden: false, deletedAt: null },
       select: { id: true, title: true, priceCents: true, salePriceCents: true, stock: true },
     });
     for (const item of guestItems) {
@@ -164,11 +164,12 @@ export async function POST(request: Request) {
       where: { userId: sessionUser!.id },
       include: { items: { include: { product: true } } },
     });
-    if (!cart || cart.items.length === 0) {
+    const availableItems = (cart?.items || []).filter((item) => !item.product.isHidden && !item.product.deletedAt);
+    if (!cart || availableItems.length === 0) {
       return NextResponse.json({ error: "Warenkorb ist leer." }, { status: 400 });
     }
     cartDbId = cart.id;
-    cartLines = cart.items.map((item) => ({
+    cartLines = availableItems.map((item) => ({
       productId: item.productId,
       quantity: item.quantity,
       unitCents: item.product.salePriceCents ?? item.product.priceCents,

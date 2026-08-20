@@ -30,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const products = await db.product.findMany({
-      where: { isHidden: false },
+      where: { isHidden: false, deletedAt: null },
       select: { slug: true, updatedAt: true },
       orderBy: { updatedAt: "desc" },
       take: 200,

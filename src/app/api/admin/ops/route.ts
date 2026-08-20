@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
   if (parsed.data.action === "simulate-order-and-email") {
     const sampleProduct = await db.product.findFirst({
-      where: { isHidden: false },
+      where: { isHidden: false, deletedAt: null },
       orderBy: { createdAt: "desc" },
     });
 
