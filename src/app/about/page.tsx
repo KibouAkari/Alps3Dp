@@ -4,9 +4,9 @@ export default function AboutPage() {
   return (
     <div className="space-y-6 fade-in-up">
       {/* Hero */}
-      <section className="hero-shell blueprint-bg overflow-hidden rounded-3xl border p-6 shadow-sm sm:p-10">
+      <section className="hero-shell blueprint-bg overflow-hidden rounded-3xl border p-5 shadow-sm sm:p-10">
         <p className="text-sm uppercase tracking-[0.2em] text-sky-700">Über uns</p>
-        <h1 className="mt-3 max-w-2xl text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="mt-3 max-w-2xl text-2xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Qualität aus dem 3D-Drucker – gefertigt in der Schweiz
         </h1>
         <p className="mt-4 max-w-xl text-slate-600">
