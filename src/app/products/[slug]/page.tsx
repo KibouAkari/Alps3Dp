@@ -43,6 +43,14 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   const product = dbProduct && !dbProduct.deletedAt ? mapProduct(dbProduct) : null;
 
+  if (product) {
+    // Fire-and-forget click tracking for the Monitoring & Analytics page —
+    // never let a tracking failure block rendering the product page.
+    db.product.update({ where: { id: product.id }, data: { clicks: { increment: 1 } } }).catch((error: unknown) => {
+      console.error("[product:clicks]", error);
+    });
+  }
+
   if (!product) {
     notFound();
   }

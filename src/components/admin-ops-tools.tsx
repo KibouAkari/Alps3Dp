@@ -25,6 +25,13 @@ type StripeOverview = {
     paidOrders: number;
     latestPaidAt: string | null;
   };
+  webhookStatus?: {
+    expectedUrl: string;
+    registered: boolean;
+    enabled: boolean;
+    missingEvents: string[];
+    otherEndpointsCount: number;
+  };
   sessions?: Array<{
     id: string;
     created: number;
@@ -42,10 +49,13 @@ export function AdminOpsTools() {
   const [error, setError] = useState<string | null>(null);
   const [stripe, setStripe] = useState<StripeOverview | null>(null);
   const [loadingStripe, setLoadingStripe] = useState(false);
+  const [isRunningMailTest, setIsRunningMailTest] = useState(false);
+  const [isRunningStripeTest, setIsRunningStripeTest] = useState(false);
 
   const runTestOrder = async () => {
     setStatus(null);
     setError(null);
+    setIsRunningMailTest(true);
     const response = await fetch("/api/admin/ops", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -56,11 +66,41 @@ export function AdminOpsTools() {
       }),
     });
     const data = await parseJsonSafely(response);
+    setIsRunningMailTest(false);
     if (!response.ok) {
       setError((data.error as string | undefined) || "Test konnte nicht ausgeführt werden.");
       return;
     }
     setStatus(`Test erfolgreich: ${data.orderId}`);
+  };
+
+  const runStripeCheckoutTest = async () => {
+    setStatus(null);
+    setError(null);
+    setIsRunningStripeTest(true);
+    const response = await fetch("/api/admin/ops", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        action: "simulate-stripe-checkout",
+        email: email || undefined,
+      }),
+    });
+    const data = await parseJsonSafely(response);
+    setIsRunningStripeTest(false);
+    if (!response.ok) {
+      setError((data.error as string | undefined) || "Stripe-Test konnte nicht gestartet werden.");
+      return;
+    }
+    const checkoutUrl = data.checkoutUrl as string | undefined;
+    if (checkoutUrl) {
+      window.open(checkoutUrl, "_blank", "noreferrer");
+    }
+    setStatus(
+      (data.message as string | undefined) ||
+        "Stripe-Testsession erstellt. Schliesse die Zahlung im neuen Tab ab, um den Webhook zu prüfen.",
+    );
   };
 
   const resetDashboardData = async () => {
@@ -124,28 +164,39 @@ export function AdminOpsTools() {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">Kauf simulieren + Mail senden</h3>
-          <p className="mt-1 text-xs text-slate-600">Erstellt eine Testbestellung und löst Kunden-/Admin-Mails aus.</p>
+          <h3 className="text-sm font-semibold text-slate-900">Bestellung + Mail testen</h3>
+          <p className="mt-1 text-xs text-slate-600">Erstellt direkt eine bezahlte Testbestellung (ohne Stripe) und löst Kunden-/Admin-Mails aus.</p>
           <input
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="Optional: test@alps3dp.ch"
             className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
           />
-          <button
-            type="button"
-            onClick={runTestOrder}
-            className="mt-3 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
-          >
-            Test ausführen
-          </button>
-          <button
-            type="button"
-            onClick={resetDashboardData}
-            className="mt-2 rounded-lg border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
-          >
-            Dashboard-Daten zurücksetzen
-          </button>
+          <div className="mt-3 flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={runTestOrder}
+              disabled={isRunningMailTest}
+              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isRunningMailTest ? "Wird ausgeführt…" : "Mail-Test ausführen"}
+            </button>
+            <button
+              type="button"
+              onClick={runStripeCheckoutTest}
+              disabled={isRunningStripeTest}
+              className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isRunningStripeTest ? "Wird gestartet…" : "Echte Stripe-Testzahlung starten"}
+            </button>
+            <button
+              type="button"
+              onClick={resetDashboardData}
+              className="rounded-lg border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
+            >
+              Dashboard-Daten zurücksetzen
+            </button>
+          </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -167,6 +218,17 @@ export function AdminOpsTools() {
                 <p>
                   DB Zahlungen: {stripe.paymentSummary.paidOrders} bezahlt / {stripe.paymentSummary.pendingOrders} offen
                 </p>
+              )}
+              {stripe.webhookStatus && (
+                <div className={`rounded-lg border p-2 ${stripe.webhookStatus.registered && stripe.webhookStatus.enabled && stripe.webhookStatus.missingEvents.length === 0 ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+                  <p className="font-semibold">
+                    Webhook: {stripe.webhookStatus.registered ? (stripe.webhookStatus.enabled ? "aktiv" : "registriert, aber deaktiviert") : "nicht registriert"}
+                  </p>
+                  <p className="mt-0.5 break-all">Erwartete URL: {stripe.webhookStatus.expectedUrl}</p>
+                  {stripe.webhookStatus.missingEvents.length > 0 && (
+                    <p className="mt-0.5">Fehlende Events: {stripe.webhookStatus.missingEvents.join(", ")}</p>
+                  )}
+                </div>
               )}
               {stripe.message && <p>{stripe.message}</p>}
               <a href={stripe.dashboardUrl} target="_blank" rel="noreferrer" className="inline-flex text-sky-700 hover:underline">

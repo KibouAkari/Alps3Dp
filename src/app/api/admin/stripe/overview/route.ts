@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireAdminFromRequest } from "@/lib/admin-auth";
+import { getAppBaseUrl } from "@/lib/app-url";
 import { db } from "@/lib/db";
 import { getStripe } from "@/lib/payments";
 
@@ -15,6 +16,12 @@ export async function GET(request: Request) {
   const stripe = getStripe();
   const publishableKeyConfigured = Boolean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
   const webhookSecretConfigured = Boolean(process.env.STRIPE_WEBHOOK_SECRET);
+  const expectedWebhookUrl = `${getAppBaseUrl()}/api/webhooks/payment`;
+
+  // Compare loosely (ignore protocol/www/trailing slash) so an
+  // APP_URL/NEXT_PUBLIC_APP_URL that differs only by a "www." prefix doesn't
+  // produce a false "not registered" result.
+  const normalizeUrl = (value: string) => value.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/+$/, "");
 
   const [pendingOrders, paidOrders, latestPaidOrder] = await Promise.all([
     db.order.count({ where: { status: "PENDING" } }),
@@ -38,17 +45,31 @@ export async function GET(request: Request) {
   }
 
   try {
-    const [sessions, paymentIntents, account] = await Promise.all([
+    const [sessions, paymentIntents, account, webhookEndpoints] = await Promise.all([
       stripe.checkout.sessions.list({ limit: 10 }),
       stripe.paymentIntents.list({ limit: 10 }),
       stripe.accounts.retrieve(),
+      stripe.webhookEndpoints.list({ limit: 20 }),
     ]);
+
+    const matchingWebhook = webhookEndpoints.data.find((endpoint) => normalizeUrl(endpoint.url) === normalizeUrl(expectedWebhookUrl));
+    const requiredEvents = ["checkout.session.completed", "checkout.session.expired"];
+    const webhookStatus = {
+      expectedUrl: expectedWebhookUrl,
+      registered: Boolean(matchingWebhook),
+      enabled: matchingWebhook?.status === "enabled",
+      missingEvents: matchingWebhook
+        ? requiredEvents.filter((event) => !matchingWebhook.enabled_events.includes(event) && !matchingWebhook.enabled_events.includes("*"))
+        : requiredEvents,
+      otherEndpointsCount: webhookEndpoints.data.filter((endpoint) => endpoint.url !== expectedWebhookUrl).length,
+    };
 
     return NextResponse.json({
       configured: true,
       dashboardUrl: process.env.STRIPE_DASHBOARD_URL || "https://dashboard.stripe.com",
       publishableKeyConfigured,
       webhookSecretConfigured,
+      webhookStatus,
       mode: process.env.STRIPE_SECRET_KEY?.startsWith("sk_live") ? "live" : "test",
       account: {
         id: account.id,
