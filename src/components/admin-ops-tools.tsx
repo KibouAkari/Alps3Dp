@@ -27,10 +27,14 @@ type StripeOverview = {
   };
   webhookStatus?: {
     expectedUrl: string;
+    configuredUrl: string;
     requestHostUrl: string | null;
     appUrlMismatch: boolean;
     registeredUrls: string[];
     registered: boolean;
+    exactMatch: boolean;
+    matchedUrl: string | null;
+    domainMismatch: boolean;
     enabled: boolean;
     missingEvents: string[];
     otherEndpointsCount: number;
@@ -225,11 +229,25 @@ export function AdminOpsTools() {
               {stripe.webhookStatus && (
                 <div className={`rounded-lg border p-2 ${stripe.webhookStatus.registered && stripe.webhookStatus.enabled && stripe.webhookStatus.missingEvents.length === 0 ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
                   <p className="font-semibold">
-                    Webhook: {stripe.webhookStatus.registered ? (stripe.webhookStatus.enabled ? "aktiv" : "registriert, aber deaktiviert") : "nicht registriert"}
+                    Webhook: {stripe.webhookStatus.registered
+                      ? stripe.webhookStatus.domainMismatch
+                        ? "registriert, aber auf anderer Domain"
+                        : stripe.webhookStatus.enabled
+                          ? "aktiv"
+                          : "registriert, aber deaktiviert"
+                      : "nicht registriert"}
                   </p>
                   <p className="mt-0.5 break-all">Erwartete URL: {stripe.webhookStatus.expectedUrl}</p>
+                  {stripe.webhookStatus.matchedUrl && stripe.webhookStatus.domainMismatch && (
+                    <p className="mt-0.5 break-all">Gefundene registrierte URL: {stripe.webhookStatus.matchedUrl}</p>
+                  )}
                   {stripe.webhookStatus.missingEvents.length > 0 && (
                     <p className="mt-0.5">Fehlende Events: {stripe.webhookStatus.missingEvents.join(", ")}</p>
+                  )}
+                  {stripe.webhookStatus.domainMismatch && (
+                    <p className="mt-1 rounded bg-white/60 p-1.5 text-[11px] leading-snug">
+                      Stripe hat bereits einen Webhook für denselben Endpunktpfad registriert, aber auf einer anderen Domain. Das ist meist ein Hinweis darauf, dass APP_URL oder NEXT_PUBLIC_APP_URL noch auf eine Preview- oder Vercel-Domain zeigt.
+                    </p>
                   )}
                   {stripe.webhookStatus.appUrlMismatch && (
                     <p className="mt-1 rounded bg-white/60 p-1.5 text-[11px] leading-snug">

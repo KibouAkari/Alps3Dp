@@ -158,7 +158,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const appUrl = getAppBaseUrl();
+    const appUrl = getAppBaseUrl(request);
 
     try {
       const session = await stripe.checkout.sessions.create({

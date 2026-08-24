@@ -237,7 +237,7 @@ export async function POST(request: Request) {
     include: { items: { include: { product: true } } },
   });
 
-  const appUrl = getAppBaseUrl();
+  const appUrl = getAppBaseUrl(request);
 
   const paymentMethodTypes: Array<"card" | "twint"> = parsed.data.paymentMethod === "TWINT" ? ["twint"] : ["card"];
 
