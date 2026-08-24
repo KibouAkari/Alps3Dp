@@ -4,6 +4,14 @@
 
 All notable changes to Alp3D Shop are documented in this file.
 
+## 2026-08-24
+
+This pass focused on Stripe webhook correctness across production, preview, and custom-domain environments.
+
+The project now resolves its public base URL more carefully. Request-driven flows such as Stripe Checkout redirects no longer rely only on `APP_URL` or `NEXT_PUBLIC_APP_URL`; they prefer the actual host serving the request. That prevents Stripe test and live sessions from redirecting shoppers back to a stale preview domain when the storefront is being accessed through the real production host.
+
+The Stripe admin overview was also improved so webhook detection is no longer falsely reported as missing when Stripe is already configured for the same `/api/webhooks/payment` path on a different domain. The admin panel now distinguishes between an exact match and a domain mismatch, shows the registered URL it found, and makes it clearer when the remaining issue is environment configuration rather than a broken webhook endpoint.
+
 ## 2026-08-20
 
 A follow-up pass fixed a real, live bug: the storefront home page could show a raw browser error ("Unexpected end of JSON input") instead of the product grid whenever an API response wasn't valid JSON. The root cause was a widespread pattern across nearly every client-side data fetch (storefront, cart, checkout, account, auth, admin) that assumed `response.json()` always succeeds. All of these now go through one shared, defensive JSON parser (`src/lib/fetch-json.ts`) instead of each screen duplicating its own try/catch, so a bad response shows a proper error message instead of crashing. `getAppBaseUrl()`'s production fallback was also corrected to the canonical `www.alps3dp.ch` host. Product image uploads no longer force an incorrect `image/webp` content type on JPEG/PNG/GIF files; the content type is now derived from the actual file extension.

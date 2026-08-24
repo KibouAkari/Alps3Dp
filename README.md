@@ -38,11 +38,13 @@ Checkout is available to signed-in customers and to anonymous guests: guests kee
 
 Checkout sessions are created server-side in `src/app/api/checkout/route.ts`. Payment completion is accepted only after Stripe webhook verification in `src/app/api/webhooks/payment/route.ts`, which cross-checks the paid amount, currency, and customer email before marking an order as paid. Stripe redirects the shopper to a dedicated `/success` or `/failed` page rather than back into the checkout form.
 
+For environments that use both preview and production domains, Alp3D Shop now resolves Stripe redirect URLs from the active request host when possible. This reduces the risk of a working Stripe setup being misread as broken simply because `APP_URL` still points at an older Vercel or preview domain.
+
 Email delivery is handled in `src/lib/mail.ts`. If SMTP credentials are present, SMTP is used. If not, Resend can be used through `RESEND_API_KEY`. In production, a missing mail configuration raises an error instead of silently dropping the message.
 
 ## Production Readiness
 
-Alp3D Shop includes rate limiting, input validation, role checks for admin routes, and Stripe webhook signature verification. Recent hardening work also added stricter checkout email validation, stronger webhook checks for amount and payment status, and safer upload file validation based on binary signatures.
+Alp3D Shop includes rate limiting, input validation, role checks for admin routes, and Stripe webhook signature verification. Recent hardening work also added stricter checkout email validation, stronger webhook checks for amount and payment status, safer upload file validation based on binary signatures, and better Stripe diagnostics when a webhook is registered on the correct endpoint path but a different domain.
 
 For production rollout, secrets must stay in Vercel environment settings and never be committed to Git. Database migrations should be run intentionally, and deployment builds should not silently seed production data.
 
