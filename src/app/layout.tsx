@@ -62,7 +62,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </Script>
         <ThemeProvider>
           <SiteSidebar />
-          <main className="w-full overflow-x-hidden px-4 pb-8 pt-4 sm:px-6 sm:pt-6 md:ml-64 md:pt-8 lg:px-8">
+          {/* w-full + ml-64 would overflow the viewport by 256px (width:100% ignores margins), so
+              subtract the sidebar width explicitly instead of just offsetting with margin. */}
+          <main className="w-full overflow-x-hidden px-4 pb-8 pt-4 sm:px-6 sm:pt-6 md:ml-64 md:w-[calc(100%-16rem)] md:pt-8 lg:px-8">
             <div className="mx-auto w-full max-w-6xl">{children}</div>
           </main>
         </ThemeProvider>
