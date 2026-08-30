@@ -78,6 +78,19 @@ textarea {
   border-color: var(--surface-border);
 }
 
+/* Grid/flex children default to a min-width based on their content, which can
+   force the track wider than its available space (clipped on the right by
+   the overflow-x: hidden above) at laptop/tablet widths where the sidebar
+   already reserves horizontal space. Let them shrink to fit instead.
+   Placed in the base layer so any utility class (e.g. min-w-[...]) still wins. */
+@layer base {
+  .grid > *,
+  .flex > * {
+    min-width: 0;
+  }
+}
+
+
 html {
   scroll-behavior: smooth;
 }

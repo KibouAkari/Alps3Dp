@@ -20,6 +20,8 @@ type StripeOverview = {
     chargesEnabled: boolean;
     payoutsEnabled: boolean;
   };
+  twintCapabilityStatus?: string;
+  cardCapabilityStatus?: string;
   paymentSummary?: {
     pendingOrders: number;
     paidOrders: number;
@@ -220,6 +222,16 @@ export function AdminOpsTools() {
                 <p>
                   Account {stripe.account.id.slice(0, 10)} · {stripe.account.country || "-"} · {stripe.account.defaultCurrency?.toUpperCase() || "-"}
                 </p>
+              )}
+              {stripe.twintCapabilityStatus && (
+                <div className={`rounded-lg border p-2 ${stripe.twintCapabilityStatus === "active" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+                  <p className="font-semibold">TWINT-Kapazität: {stripe.twintCapabilityStatus}</p>
+                  {stripe.twintCapabilityStatus !== "active" && (
+                    <p className="mt-1 text-[11px] leading-snug">
+                      TWINT ist im Stripe Dashboard (Einstellungen → Zahlungsmethoden) noch nicht aktiv (Status: {stripe.twintCapabilityStatus}). Solange das so ist, schlagen TWINT-Zahlungen fehl, Kartenzahlungen funktionieren aber weiterhin normal.
+                    </p>
+                  )}
+                </div>
               )}
               {stripe.paymentSummary && (
                 <p>

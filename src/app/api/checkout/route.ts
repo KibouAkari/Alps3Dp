@@ -283,7 +283,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ checkoutUrl: session.url, orderId: order.id });
   } catch (error) {
     console.error("[checkout:stripe]", error);
-    const stripeMessage = error instanceof Error ? error.message : "Unbekannter Stripe-Fehler";
+    let stripeMessage = error instanceof Error ? error.message : "Unbekannter Stripe-Fehler";
+    // Stripe rejects the whole session if a requested payment method type isn't
+    // activated for the account yet (common right after switching API keys, since
+    // TWINT requires separate manual activation in the Stripe Dashboard).
+    if (parsed.data.paymentMethod === "TWINT" && /payment method type|twint/i.test(stripeMessage)) {
+      stripeMessage +=
+        " TWINT muss im Stripe Dashboard unter Einstellungen > Zahlungsmethoden separat aktiviert werden (Onboarding-Prüfung kann etwas dauern).";
+    }
     return NextResponse.json(
       {
         error: `Zahlung konnte nicht gestartet werden: ${stripeMessage}`,
