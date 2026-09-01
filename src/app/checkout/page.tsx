@@ -274,8 +274,16 @@ export default function CheckoutPage() {
             </span>
           </button>
         </form>
-              <p className="mt-2 text-sm text-slate-900">Kreditkarte via Stripe</p>
-              <p className="text-sm text-slate-600">Kartenangaben werden sicher von Stripe verarbeitet.</p>
+      </section>
+
+      <aside className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-slate-900">Bestellübersicht</h2>
+        <div className="mt-4 space-y-2 text-sm text-slate-600">
+          {rows.map((row) => (
+            <div key={row.productId} className="flex items-center gap-3 border-b border-slate-100 pb-3">
+              <button
+                type="button"
+                onClick={() => void reduceQuantity(row)}
                 className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-300 text-base leading-none text-slate-500 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
                 aria-label={`${row.product.title} einmal entfernen`}
                 title="Ein Stück entfernen"
