@@ -109,7 +109,6 @@ export async function GET(request: Request) {
         chargesEnabled: account.charges_enabled,
         payoutsEnabled: account.payouts_enabled,
       },
-      twintCapabilityStatus: account.capabilities?.twint_payments || "unknown",
       cardCapabilityStatus: account.capabilities?.card_payments || "unknown",
       paymentSummary: {
         pendingOrders,

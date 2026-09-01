@@ -4,6 +4,10 @@
 
 All notable changes to Alp3D Shop are documented in this file.
 
+## 2026-09-01
+
+TWINT support was removed from the customer checkout, account area, and Stripe administration view. Alp3D Shop now creates Stripe Checkout sessions with card payments only. The checkout API enforces this server-side, so TWINT cannot be re-enabled through a direct request. Existing historical order data remains unchanged.
+
 ## 2026-08-24
 
 This pass focused on Stripe webhook correctness across production, preview, and custom-domain environments.

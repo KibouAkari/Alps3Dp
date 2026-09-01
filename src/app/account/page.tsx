@@ -31,20 +31,13 @@ type SavedAddress = {
   isDefault: boolean;
 };
 
-type SavedPaymentMethod = {
-  id: string;
-  type: "card" | "twint" | "invoice";
-  last4: string | null;
-  isDefault: boolean;
-};
-
 type TabKey = "overview" | "profile" | "security" | "delivery" | "orders";
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "overview", label: "Übersicht" },
   { key: "profile", label: "Profil" },
   { key: "security", label: "Sicherheit" },
-  { key: "delivery", label: "Adressen & Zahlung" },
+  { key: "delivery", label: "Adressen" },
   { key: "orders", label: "Bestellungen" },
 ];
 
@@ -54,7 +47,6 @@ export default function AccountPage() {
 
   const [orders, setOrders] = useState<AccountOrder[]>([]);
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
-  const [payments, setPayments] = useState<SavedPaymentMethod[]>([]);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -78,8 +70,6 @@ export default function AccountPage() {
     isDefault: false,
   });
 
-  const [newPaymentType, setNewPaymentType] = useState<"invoice" | "card" | "twint">("invoice");
-  const [newPaymentIsDefault, setNewPaymentIsDefault] = useState(false);
 
   const [saved, setSaved] = useState(false);
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
@@ -111,20 +101,18 @@ export default function AccountPage() {
             totalCents: entry.totalCents,
           }))
         );
-        const profile = data.profile as { addresses?: SavedAddress[]; paymentMethods?: SavedPaymentMethod[]; email?: string } | undefined;
+        const profile = data.profile as { addresses?: SavedAddress[]; email?: string } | undefined;
         setAddresses(profile?.addresses || []);
-        setPayments(profile?.paymentMethods || []);
         setNewEmail(profile?.email || "");
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Konto konnte nicht geladen werden."));
   }, [user]);
 
   const defaultAddress = useMemo(() => addresses.find((entry) => entry.isDefault), [addresses]);
-  const defaultPayment = useMemo(() => payments.find((entry) => entry.isDefault), [payments]);
   const profileCompletion = useMemo(() => {
-    const checks = [Boolean(user?.firstName), Boolean(user?.lastName), Boolean(user?.username), Boolean(defaultAddress), Boolean(defaultPayment)];
+    const checks = [Boolean(user?.firstName), Boolean(user?.lastName), Boolean(user?.username), Boolean(defaultAddress)];
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
-  }, [defaultAddress, defaultPayment, user?.firstName, user?.lastName, user?.username]);
+  }, [defaultAddress, user?.firstName, user?.lastName, user?.username]);
 
   if (isLoading) {
     return <div className="h-60 animate-pulse rounded-2xl bg-slate-100" />;
@@ -188,16 +176,8 @@ export default function AccountPage() {
           </div>
           <div className="account-overview-card hover-lift rounded-2xl p-5 shadow-sm soft-pop">
             <p className="text-xs uppercase tracking-wide text-slate-500">Standardzahlung</p>
-            <p className="mt-2 text-sm text-slate-900">
-              {defaultPayment
-                ? defaultPayment.type === "invoice"
-                  ? "Rechnung/Vorkasse"
-                  : defaultPayment.type === "twint"
-                  ? "TWINT"
-                  : "Karte"
-                : "Noch nicht gesetzt"}
-            </p>
-            <p className="text-sm text-slate-600">Bestellungen: {orders.length}</p>
+            <p className="mt-2 text-sm text-slate-900">Kreditkarte via Stripe</p>
+            <p className="text-sm text-slate-600">Kartenangaben werden sicher von Stripe verarbeitet.</p>
           </div>
           <div className="account-overview-card hover-lift rounded-2xl p-5 shadow-sm soft-pop">
             <p className="text-xs uppercase tracking-wide text-slate-500">Profilstatus</p>
@@ -545,82 +525,6 @@ export default function AccountPage() {
             )}
           </div>
 
-          <div className="panel-surface rounded-2xl p-6 shadow-sm soft-pop">
-            <h2 className="text-lg font-semibold text-slate-900">Zahlungsarten</h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Karteninfos werden hier absichtlich nicht verarbeitet. Sicherer Standard ist Rechnung/Vorkasse.
-            </p>
-            <div className="mt-4 space-y-3">
-              {payments.length === 0 && <p className="text-sm text-slate-500">Noch keine Zahlungsart gespeichert.</p>}
-              {payments.map((method) => (
-                <div key={method.id} className="rounded-lg border border-slate-200 p-3 text-sm">
-                  <p className="font-semibold text-slate-900">
-                    {method.type === "invoice" ? "Rechnung/Vorkasse" : method.type === "twint" ? "TWINT" : "Karte"}
-                  </p>
-                  {method.last4 && <p className="text-slate-600">**** {method.last4}</p>}
-                  {method.isDefault && <p className="mt-1 text-xs font-semibold text-emerald-700">Standard</p>}
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const response = await fetch(`/api/account/payment-methods/${method.id}`, {
-                        method: "DELETE",
-                        credentials: "include",
-                      });
-                      if (response.ok) {
-                        setPayments((prev) => prev.filter((m) => m.id !== method.id));
-                      }
-                    }}
-                    className="mt-2 text-xs text-rose-600 hover:text-rose-700"
-                  >
-                    Entfernen
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 space-y-3">
-              <select
-                value={newPaymentType}
-                onChange={(event) => setNewPaymentType(event.target.value as "invoice" | "card" | "twint")}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
-              >
-                <option value="invoice">Rechnung / Vorkasse</option>
-                <option value="twint">TWINT (extern)</option>
-                <option value="card">Karte (extern)</option>
-              </select>
-              <label className="flex items-center gap-2 text-sm text-slate-700">
-                <input type="checkbox" checked={newPaymentIsDefault} onChange={(e) => setNewPaymentIsDefault(e.target.checked)} />
-                Als Standard setzen
-              </label>
-              <button
-                type="button"
-                onClick={async () => {
-                  const response = await fetch("/api/account/payment-methods", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({
-                      type: newPaymentType,
-                      isDefault: newPaymentIsDefault,
-                    }),
-                  });
-                  const data = await parseJsonSafely(response);
-                  if (!response.ok) {
-                    setError((data.error as string | undefined) || "Zahlungsart konnte nicht gespeichert werden.");
-                    return;
-                  }
-                  const savedMethod = data as unknown as SavedPaymentMethod;
-                  setPayments((prev) => [savedMethod, ...prev.filter((m) => !savedMethod.isDefault || !m.isDefault)]);
-                  setNewPaymentType("invoice");
-                  setNewPaymentIsDefault(false);
-                  setStatus("Zahlungsart gespeichert.");
-                }}
-                className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
-              >
-                Zahlungsart speichern
-              </button>
-            </div>
-          </div>
         </section>
       )}
 

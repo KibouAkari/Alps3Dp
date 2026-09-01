@@ -9,7 +9,7 @@ import { hashPassword, createOpaqueToken } from "@/lib/security";
 import { getSessionTokenFromRequest, getSessionUserFromToken } from "@/lib/session";
 import { getShippingCents } from "@/lib/site-settings";
 
-// Creates the order record and, for card/TWINT payments, a Stripe Checkout
+// Creates the order record and a card-only Stripe Checkout
 // Session. Supports both signed-in customers (cart lives in the database) and
 // anonymous guests (cart lives in the browser and is sent with the request).
 // Orders only become PAID once the Stripe webhook confirms payment — see
@@ -30,7 +30,7 @@ const checkoutSchema = z.object({
   city: z.string().min(2).optional(),
   country: z.string().min(2).max(2).default("CH").optional(),
   email: z.string().email(),
-  paymentMethod: z.enum(["CARD", "TWINT"]),
+  paymentMethod: z.literal("CARD"),
   savedPaymentMethodId: z.string().optional(),
 });
 
@@ -239,7 +239,7 @@ export async function POST(request: Request) {
 
   const appUrl = getAppBaseUrl(request);
 
-  const paymentMethodTypes: Array<"card" | "twint"> = parsed.data.paymentMethod === "TWINT" ? ["twint"] : ["card"];
+  const paymentMethodTypes: ["card"] = ["card"];
 
   try {
     const stripe = getStripe();
@@ -283,14 +283,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ checkoutUrl: session.url, orderId: order.id });
   } catch (error) {
     console.error("[checkout:stripe]", error);
-    let stripeMessage = error instanceof Error ? error.message : "Unbekannter Stripe-Fehler";
-    // Stripe rejects the whole session if a requested payment method type isn't
-    // activated for the account yet (common right after switching API keys, since
-    // TWINT requires separate manual activation in the Stripe Dashboard).
-    if (parsed.data.paymentMethod === "TWINT" && /payment method type|twint/i.test(stripeMessage)) {
-      stripeMessage +=
-        " TWINT muss im Stripe Dashboard unter Einstellungen > Zahlungsmethoden separat aktiviert werden (Onboarding-Prüfung kann etwas dauern).";
-    }
+    const stripeMessage = error instanceof Error ? error.message : "Unbekannter Stripe-Fehler";
     return NextResponse.json(
       {
         error: `Zahlung konnte nicht gestartet werden: ${stripeMessage}`,

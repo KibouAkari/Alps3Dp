@@ -31,22 +31,12 @@ type SavedAddress = {
   isDefault: boolean;
 };
 
-type SavedPaymentMethod = {
-  id: string;
-  type: "card" | "twint";
-  last4: string | null;
-  isDefault: boolean;
-};
-
 export default function CheckoutPage() {
   const [rows, setRows] = useState<CartRow[]>([]);
   const [shippingCents, setShippingCents] = useState(0);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
-  const [savedMethods, setSavedMethods] = useState<SavedPaymentMethod[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
-  const [selectedMethodId, setSelectedMethodId] = useState("");
   const [saveAddress, setSaveAddress] = useState(false);
-  const [saveMethod, setSaveMethod] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -58,7 +48,6 @@ export default function CheckoutPage() {
   const [address1, setAddress1] = useState("");
   const [zip, setZip] = useState("");
   const [city, setCity] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"CARD" | "TWINT">("CARD");
 
   useEffect(() => {
     fetch("/api/settings/shipping", { credentials: "include" })
@@ -92,14 +81,11 @@ export default function CheckoutPage() {
         }
 
         const data = await parseJsonSafely(response);
-        const profile = data.profile as { addresses?: SavedAddress[]; paymentMethods?: SavedPaymentMethod[]; email?: string } | undefined;
+        const profile = data.profile as { addresses?: SavedAddress[]; email?: string } | undefined;
         const addresses = profile?.addresses || [];
-        const methods = profile?.paymentMethods || [];
         setSavedAddresses(addresses);
-        setSavedMethods(methods);
 
         const defaultAddress = addresses.find((entry: SavedAddress) => entry.isDefault);
-        const defaultMethod = methods.find((entry: SavedPaymentMethod) => entry.isDefault);
 
         if (defaultAddress) {
           setSelectedAddressId(defaultAddress.id);
@@ -108,12 +94,6 @@ export default function CheckoutPage() {
           setAddress1(defaultAddress.street || "");
           setZip(defaultAddress.zipCode || "");
           setCity(defaultAddress.city || "");
-        }
-        if (defaultMethod) {
-          setSelectedMethodId(defaultMethod.id);
-          setPaymentMethod(
-            defaultMethod.type === "twint" ? "TWINT" : "CARD",
-          );
         }
         if (profile?.email) {
           setEmail(profile.email);
@@ -167,7 +147,7 @@ export default function CheckoutPage() {
     <div className="grid gap-6 fade-in-up lg:grid-cols-[1.2fr_1fr]">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-bold text-slate-900">Checkout</h1>
-        <p className="mt-2 text-sm text-slate-600">Sichere Zahlung mit Kreditkarte oder TWINT.</p>
+        <p className="mt-2 text-sm text-slate-600">Sichere Zahlung mit Kreditkarte.</p>
         {isGuest && (
           <p className="mt-2 text-xs text-slate-500">
             Du bestellst als Gast. <a href="/auth/login" className="text-sky-600 hover:underline">Einloggen</a> für Bestellhistorie & gespeicherte Adressen.
@@ -187,7 +167,6 @@ export default function CheckoutPage() {
             try {
               const payload: Record<string, unknown> = {
                 addressId: selectedAddressId || undefined,
-                savedPaymentMethodId: selectedMethodId || undefined,
                 firstName,
                 lastName,
                 email,
@@ -195,7 +174,7 @@ export default function CheckoutPage() {
                 zip,
                 city,
                 country: "CH",
-                paymentMethod,
+                paymentMethod: "CARD",
               };
 
               if (isGuest) {
@@ -230,17 +209,6 @@ export default function CheckoutPage() {
                       city,
                       country: "CH",
                       isDefault: savedAddresses.length === 0,
-                    }),
-                  });
-                }
-                if (saveMethod && !selectedMethodId) {
-                  await fetch("/api/account/payment-methods", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({
-                      type: paymentMethod === "TWINT" ? "twint" : "card",
-                      isDefault: savedMethods.length === 0,
                     }),
                   });
                 }
@@ -297,44 +265,8 @@ export default function CheckoutPage() {
             </label>
           )}
 
-          {savedMethods.length > 0 && (
-            <select
-              value={selectedMethodId}
-              onChange={(e) => {
-                const id = e.target.value;
-                setSelectedMethodId(id);
-                if (!id) return;
-                const method = savedMethods.find((entry) => entry.id === id);
-                if (!method) return;
-                setPaymentMethod(
-                  method.type === "twint" ? "TWINT" : "CARD",
-                );
-              }}
-              className="sm:col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
-            >
-              <option value="">Neue Zahlungsart verwenden</option>
-              {savedMethods.map((method) => (
-                <option key={method.id} value={method.id}>
-                  {method.type === "twint" ? "TWINT" : "Kreditkarte"}
-                  {method.last4 ? ` ****${method.last4}` : ""}
-                </option>
-              ))}
-            </select>
-          )}
-
-          <select
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value as "CARD" | "TWINT")}
-            className="sm:col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
-          >
-            <option value="CARD">Kreditkarte</option>
-            <option value="TWINT">TWINT</option>
-          </select>
           {!isGuest && (
-            <label className="sm:col-span-2 flex items-center gap-2 text-sm text-slate-700">
-              <input type="checkbox" checked={saveMethod} onChange={(e) => setSaveMethod(e.target.checked)} />
-              Zahlungsart für nächste Bestellung speichern
-            </label>
+            <p className="sm:col-span-2 text-xs text-slate-500">Die Kartendaten werden sicher direkt bei Stripe eingegeben und nicht bei Alps3Dp gespeichert.</p>
           )}
           <button type="submit" disabled={isSubmitting} className="checkout-submit-button sm:col-span-2 rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white transition hover:bg-sky-700 disabled:cursor-wait disabled:opacity-80">
             <span className={isSubmitting ? "checkout-button-label checkout-button-label-loading" : "checkout-button-label"}>
@@ -342,16 +274,8 @@ export default function CheckoutPage() {
             </span>
           </button>
         </form>
-      </section>
-
-      <aside className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Bestellübersicht</h2>
-        <div className="mt-4 space-y-2 text-sm text-slate-600">
-          {rows.map((row) => (
-            <div key={row.productId} className="flex items-center gap-3 border-b border-slate-100 pb-3">
-              <button
-                type="button"
-                onClick={() => void reduceQuantity(row)}
+              <p className="mt-2 text-sm text-slate-900">Kreditkarte via Stripe</p>
+              <p className="text-sm text-slate-600">Kartenangaben werden sicher von Stripe verarbeitet.</p>
                 className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-300 text-base leading-none text-slate-500 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
                 aria-label={`${row.product.title} einmal entfernen`}
                 title="Ein Stück entfernen"
