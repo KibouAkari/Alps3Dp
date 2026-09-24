@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { SiteSidebar } from "@/components/site-sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CursorGlow } from "@/components/cursor-glow";
+import { IntroScreen } from "@/components/intro-screen";
 import { PageTransition } from "@/components/page-transition";
 import { getAppBaseUrl } from "@/lib/app-url";
 
@@ -63,6 +64,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {`(() => { try { const stored = localStorage.getItem('alps3dp.theme'); const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches; const theme = stored === 'light' || stored === 'dark' ? stored : (prefersDark ? 'dark' : 'light'); document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; } catch (error) {} })();`}
         </Script>
         <ThemeProvider>
+          <IntroScreen />
           <CursorGlow />
           <SiteSidebar />
           {/* w-full + ml-64 would overflow the viewport by 256px (width:100% ignores margins), so

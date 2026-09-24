@@ -39,7 +39,10 @@ type ProductsResponse = {
 
 export function AdminProductsManager() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categoryList, setCategoryList] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; slug: string }>>([]);
+  const [categoryEdits, setCategoryEdits] = useState<Record<string, string>>({});
+  const [categoryBusyId, setCategoryBusyId] = useState<string | null>(null);
+  const categoryList = useMemo(() => categories.map((entry) => entry.name), [categories]);
   const [form, setForm] = useState<ProductForm>(defaultForm);
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
@@ -70,11 +73,11 @@ export function AdminProductsManager() {
     }
 
     setProducts(data.products || []);
-    setCategoryList((data.categories || []).map((entry) => entry.name));
+    setCategories(data.categories || []);
 
-    const categories = data.categories;
-    if (!form.category && categories && categories.length > 0) {
-      setForm((prev) => ({ ...prev, category: categories[0].name }));
+    const fetchedCategories = data.categories;
+    if (!form.category && fetchedCategories && fetchedCategories.length > 0) {
+      setForm((prev) => ({ ...prev, category: fetchedCategories[0].name }));
     }
   }
 
@@ -235,6 +238,62 @@ export function AdminProductsManager() {
     );
   };
 
+  const renameCategory = async (id: string) => {
+    const name = (categoryEdits[id] ?? categories.find((c) => c.id === id)?.name ?? "").trim();
+    if (!name) {
+      setError("Bitte einen Kategorienamen angeben.");
+      return;
+    }
+
+    setError(null);
+    setMessage(null);
+    setCategoryBusyId(id);
+    try {
+      const response = await fetch(`/api/categories/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ name }),
+      });
+      const data = await parseJsonSafely(response);
+      if (!response.ok) {
+        setError((data.error as string | undefined) || "Kategorie konnte nicht gespeichert werden.");
+        return;
+      }
+      await loadProducts();
+      setMessage("Kategorie umbenannt.");
+    } finally {
+      setCategoryBusyId(null);
+    }
+  };
+
+  // Deletes the category outright; affected products keep existing but lose
+  // their category (schema.prisma sets categoryId to null), they are not deleted.
+  const deleteCategory = async (id: string, name: string) => {
+    if (!window.confirm(`Kategorie "${name}" wirklich löschen? Zugehörige Produkte verlieren nur die Kategoriezuordnung.`)) {
+      return;
+    }
+
+    setError(null);
+    setMessage(null);
+    setCategoryBusyId(id);
+    try {
+      const response = await fetch(`/api/categories/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await parseJsonSafely(response);
+      if (!response.ok) {
+        setError((data.error as string | undefined) || "Kategorie konnte nicht gelöscht werden.");
+        return;
+      }
+      await loadProducts();
+      setMessage("Kategorie gelöscht.");
+    } finally {
+      setCategoryBusyId(null);
+    }
+  };
+
   const saveShipping = async () => {
     const response = await fetch("/api/settings/shipping", {
       method: "PATCH",
@@ -255,29 +314,29 @@ export function AdminProductsManager() {
 
   return (
     <div className="space-y-6 fade-in-up">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-900">Produkte verwalten</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-[var(--fg)]">Produkte verwalten</h1>
 
       {message && <p ref={feedbackRef} className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p>}
       {error && <p ref={feedbackRef} className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
 
       <section className="panel-surface rounded-2xl p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Shop-Einstellungen</h2>
+        <h2 className="text-lg font-semibold text-[var(--fg)]">Shop-Einstellungen</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-[200px_1fr_auto]">
-          <label className="text-sm text-slate-600">
+          <label className="text-sm text-[var(--muted)]">
             Lieferkosten (CHF)
             <input
               type="number"
               min={0}
               value={shippingCents / 100}
               onChange={(event) => setShippingCents(Math.max(0, Math.round(Number(event.target.value) * 100)))}
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+              className="field-input mt-1"
             />
           </label>
-          <div className="text-sm text-slate-500">Wird automatisch im Checkout auf jede Bestellung addiert.</div>
+          <div className="text-sm text-[var(--muted)]">Wird automatisch im Checkout auf jede Bestellung addiert.</div>
           <button
             type="button"
             onClick={saveShipping}
-            className="h-fit self-end rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-700"
+            className="press h-fit self-end rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-700"
           >
             Speichern
           </button>
@@ -286,13 +345,57 @@ export function AdminProductsManager() {
 
       <section className="panel-surface rounded-2xl p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-slate-900">{form.id ? "Produkt bearbeiten" : "Neues Produkt"}</h2>
-          <span className="theme-pill rounded-full px-3 py-1 text-xs text-slate-600">{visibleCount} sichtbare Produkte</span>
+          <h2 className="text-lg font-semibold text-[var(--fg)]">Kategorien verwalten</h2>
+          <span className="chip">{categories.length} Kategorien</span>
+        </div>
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Umbenennen wirkt sich sofort auf alle zugehörigen Produkte aus. Löschen entfernt nur die Kategorie – betroffene Produkte bleiben erhalten und verlieren lediglich die Zuordnung.
+        </p>
+
+        <div className="mt-4 space-y-2">
+          {categories.map((category) => {
+            const busy = categoryBusyId === category.id;
+            return (
+              <div key={category.id} className="field-box flex flex-wrap items-center gap-2 p-2">
+                <input
+                  value={categoryEdits[category.id] ?? category.name}
+                  onChange={(event) => setCategoryEdits((prev) => ({ ...prev, [category.id]: event.target.value }))}
+                  className="field-input flex-1 border-none bg-transparent"
+                />
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void renameCategory(category.id)}
+                  className="btn-outline press rounded-lg px-3 py-1.5 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Speichern
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void deleteCategory(category.id, category.name)}
+                  className="btn-danger-outline press rounded-lg px-3 py-1.5 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Löschen
+                </button>
+              </div>
+            );
+          })}
+          {categories.length === 0 && (
+            <p className="text-sm text-[var(--muted)]">Noch keine Kategorien vorhanden. Sie werden beim Anlegen eines Produkts automatisch erstellt.</p>
+          )}
+        </div>
+      </section>
+
+      <section className="panel-surface rounded-2xl p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-[var(--fg)]">{form.id ? "Produkt bearbeiten" : "Neues Produkt"}</h2>
+          <span className="chip">{visibleCount} sichtbare Produkte</span>
         </div>
 
         <div className="mt-5 space-y-5">
-          <div className="rounded-xl border border-slate-200 p-4">
-            <p className="mb-3 text-sm font-semibold text-slate-800">1. Produktbilder</p>
+          <div className="field-box p-4">
+            <p className="mb-3 text-sm font-semibold text-[var(--fg)]">1. Produktbilder</p>
             <div
               className={`upload-zone rounded-xl p-4 transition ${isDraggingFiles ? "upload-zone-active" : ""}`}
               onDragOver={(event) => {
@@ -308,10 +411,10 @@ export function AdminProductsManager() {
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-800">Bilder per Drag-and-drop hier ablegen</p>
-                  <p className="text-xs text-slate-500">Mehrere Bilder werden optimiert gespeichert und bleiben schnell ladbar.</p>
+                  <p className="text-sm font-medium text-[var(--fg)]">Bilder per Drag-and-drop hier ablegen</p>
+                  <p className="text-xs text-[var(--muted)]">Mehrere Bilder werden optimiert gespeichert und bleiben schnell ladbar.</p>
                 </div>
-                <label className="hover-lift inline-flex cursor-pointer items-center rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                <label className="btn-outline hover-lift press inline-flex cursor-pointer items-center rounded-lg px-3 py-2 text-sm">
                   Bilddateien auswählen
                   <input
                     type="file"
@@ -326,19 +429,19 @@ export function AdminProductsManager() {
                 </label>
               </div>
 
-            {isUploading && <p className="mt-3 text-xs text-neutral-700">Bilder werden hochgeladen...</p>}
+            {isUploading && <p className="mt-3 text-xs text-[var(--muted)]">Bilder werden hochgeladen...</p>}
 
             <div className="mt-4 flex flex-wrap gap-2">
             {form.images.map((image, index) => (
               <div
                 key={`${image}-${index}`}
-                className="group hover-lift relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
+                className="group hover-lift relative h-20 w-20 overflow-hidden rounded-lg border border-[var(--surface-border)] bg-[var(--surface)] shadow-sm"
               >
                 <SafeImage src={image} alt={`Bild ${index + 1}`} fill className="object-cover" sizes="80px" />
                 <button
                   type="button"
                   onClick={() => setForm((prev) => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }))}
-                  className="absolute right-1 top-1 rounded-full bg-white/90 px-1 text-xs text-rose-600 shadow-sm transition hover:bg-white"
+                  className="absolute right-1 top-1 rounded-full bg-[var(--bg-soft)]/90 px-1 text-xs text-rose-600 shadow-sm transition hover:bg-[var(--bg-soft)]"
                 >
                   x
                 </button>
@@ -351,7 +454,7 @@ export function AdminProductsManager() {
                 value={imageUrlInput}
                 onChange={(event) => setImageUrlInput(event.target.value)}
                 placeholder="Bild-URL einfügen (optional)"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                className="field-input"
               />
               <button
                 type="button"
@@ -362,7 +465,7 @@ export function AdminProductsManager() {
                   setForm((prev) => ({ ...prev, images: [...prev.images, imageUrlInput.trim()] }));
                   setImageUrlInput("");
                 }}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                className="btn-outline press rounded-lg px-3 py-2 text-sm"
               >
                 Hinzufügen
               </button>
@@ -370,27 +473,27 @@ export function AdminProductsManager() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 p-4">
-          <p className="mb-3 text-sm font-semibold text-slate-800">2. Basisdaten</p>
+        <div className="field-box p-4">
+          <p className="mb-3 text-sm font-semibold text-[var(--fg)]">2. Basisdaten</p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-1 text-sm text-slate-600">
+            <label className="space-y-1 text-sm text-[var(--muted)]">
               <span>Titel</span>
               <input
                 value={form.title}
                 onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
                 placeholder="z.B. Articulated Dragon"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                className="field-input"
               />
             </label>
 
-            <label className="space-y-1 text-sm text-slate-600">
+            <label className="space-y-1 text-sm text-[var(--muted)]">
               <span>Kategorie</span>
               <input
                 value={form.category}
                 onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
                 list="known-categories"
                 placeholder="z.B. Home"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                className="field-input"
               />
               <datalist id="known-categories">
                 {categoryList.map((category) => (
@@ -399,33 +502,33 @@ export function AdminProductsManager() {
               </datalist>
             </label>
 
-            <label className="space-y-1 text-sm text-slate-600 sm:col-span-2">
+            <label className="space-y-1 text-sm text-[var(--muted)] sm:col-span-2">
               <span>Beschreibung</span>
               <textarea
                 value={form.description}
                 onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
                 placeholder="Kurzbeschreibung"
-                className="min-h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                className="field-input min-h-24"
               />
             </label>
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 p-4">
-          <p className="mb-3 text-sm font-semibold text-slate-800">3. Preis, Lager & Sichtbarkeit</p>
+        <div className="field-box p-4">
+          <p className="mb-3 text-sm font-semibold text-[var(--fg)]">3. Preis, Lager & Sichtbarkeit</p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-1 text-sm text-slate-600">
+            <label className="space-y-1 text-sm text-[var(--muted)]">
               <span>Preis (CHF)</span>
               <input
                 type="number"
                 value={form.priceCents / 100}
                 min={1}
                 onChange={(event) => setForm((prev) => ({ ...prev, priceCents: Number(event.target.value) * 100 }))}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                className="field-input"
               />
             </label>
 
-            <label className="space-y-1 text-sm text-slate-600">
+            <label className="space-y-1 text-sm text-[var(--muted)]">
               <span>Aktionspreis (optional)</span>
               <input
                 type="number"
@@ -435,22 +538,22 @@ export function AdminProductsManager() {
                   const value = Number(event.target.value);
                   setForm((prev) => ({ ...prev, salePriceCents: value > 0 ? value * 100 : undefined }));
                 }}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                className="field-input"
               />
             </label>
 
-            <label className="space-y-1 text-sm text-slate-600">
+            <label className="space-y-1 text-sm text-[var(--muted)]">
               <span>Lagerbestand</span>
               <input
                 type="number"
                 value={form.stock}
                 min={0}
                 onChange={(event) => setForm((prev) => ({ ...prev, stock: Number(event.target.value) }))}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                className="field-input"
               />
             </label>
 
-            <label className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700">
+            <label className="field-box flex items-center gap-2 px-3 py-2 text-sm text-[var(--fg)]">
               <input
                 type="checkbox"
                 checked={form.isHidden}
@@ -473,7 +576,7 @@ export function AdminProductsManager() {
           <button
             type="button"
             onClick={() => setForm({ ...defaultForm, category: categoryList[0] || "" })}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700"
+            className="btn-outline press rounded-lg px-4 py-2 text-sm"
           >
             Zurücksetzen
           </button>
@@ -482,7 +585,7 @@ export function AdminProductsManager() {
 
       <section className="panel-surface overflow-x-auto rounded-2xl shadow-sm">
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-500">
+          <thead className="bg-[var(--surface-soft)] text-left text-[var(--muted)]">
             <tr>
               <th className="px-4 py-3">Produkt</th>
               <th className="px-4 py-3">Preis</th>
@@ -492,21 +595,21 @@ export function AdminProductsManager() {
           </thead>
           <tbody>
             {products.map((product) => (
-              <tr key={product.id} className="border-t border-slate-200 text-slate-700">
+              <tr key={product.id} className="border-t border-[var(--surface-border)] text-[var(--muted)]">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="relative h-10 w-10 overflow-hidden rounded-md border border-slate-200">
+                    <div className="relative h-10 w-10 overflow-hidden rounded-md border border-[var(--surface-border)]">
                       <SafeImage src={product.images[0]} alt={product.title} fill className="object-cover" sizes="40px" />
                     </div>
                     <div>
-                      <p className="font-medium text-slate-900">{product.title}</p>
-                      <p className="text-xs text-slate-500">{product.category}</p>
+                      <p className="font-medium text-[var(--fg)]">{product.title}</p>
+                      <p className="text-xs text-[var(--muted)]">{product.category}</p>
                     </div>
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="font-semibold">{formatChf(getDisplayPriceCents(product))}</span>
-                  {product.salePriceCents && <span className="ml-2 text-xs text-slate-400 line-through">{formatChf(product.priceCents)}</span>}
+                  <span className="font-semibold text-[var(--fg)]">{formatChf(getDisplayPriceCents(product))}</span>
+                  {product.salePriceCents && <span className="ml-2 text-xs text-[var(--muted)] line-through">{formatChf(product.priceCents)}</span>}
                 </td>
                 <td className="px-4 py-3">
                   <span className={`rounded-full px-2 py-1 text-xs ${product.isHidden ? "status-pill-hidden" : "status-pill-visible"}`}>
@@ -530,21 +633,21 @@ export function AdminProductsManager() {
                           isHidden: Boolean(product.isHidden),
                         })
                       }
-                      className="rounded-md border border-slate-300 px-2 py-1 text-xs"
+                      className="btn-outline press rounded-md px-2 py-1 text-xs"
                     >
                       Bearbeiten
                     </button>
                     <button
                       type="button"
                       onClick={() => void toggleHidden(product)}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-xs"
+                      className="btn-outline press rounded-md px-2 py-1 text-xs"
                     >
                       {product.isHidden ? "Einblenden" : "Verstecken"}
                     </button>
                     <button
                       type="button"
                       onClick={() => deleteProduct(product.id)}
-                      className="rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-600"
+                      className="btn-danger-outline press rounded-md px-2 py-1 text-xs"
                     >
                       Löschen
                     </button>
@@ -554,7 +657,7 @@ export function AdminProductsManager() {
             ))}
             {products.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-sm text-slate-500">
+                <td colSpan={4} className="px-4 py-8 text-center text-sm text-[var(--muted)]">
                   Noch keine Produkte vorhanden.
                 </td>
               </tr>

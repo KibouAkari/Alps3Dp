@@ -174,7 +174,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
             <button
               type="button"
               onClick={() => setIsFilterOpen(true)}
-              className="filter-toggle-button inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-slate-700"
+              className="filter-toggle-button inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-[var(--muted)]"
               aria-expanded={false}
             >
               <FilterMenuIcon className="h-4 w-4" />
@@ -184,7 +184,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
           ) : (
           <aside className="filter-panel-enter panel-surface rounded-2xl p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
-              <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <span className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--fg)]">
                 <FilterMenuIcon className="h-4 w-4" />
                 Filter
               </span>
@@ -212,7 +212,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Produkt suchen..."
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-neutral-800 transition focus:ring"
+              className="field-input"
             />
           </FilterGroup>
 
@@ -223,10 +223,10 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
                   key={category}
                   type="button"
                   onClick={() => setSelectedCategory(category)}
-                  className={`block w-full rounded-lg px-3 py-1.5 text-left text-sm transition ${
+                  className={`press block w-full rounded-lg px-3 py-1.5 text-left text-sm transition ${
                     selectedCategory === category
-                      ? "bg-neutral-100 font-medium text-neutral-800"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      ? "bg-[var(--accent-soft)] font-medium text-[var(--fg)]"
+                      : "text-[var(--muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--fg)]"
                   }`}
                 >
                   {category === "All" ? "Alle Kategorien" : category}
@@ -239,7 +239,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
             <select
               value={sortMode}
               onChange={(event) => setSortMode(event.target.value as SortMode)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-neutral-800 transition focus:ring"
+              className="field-input"
             >
               <option value="relevance">Relevanz</option>
               <option value="price-asc">Preis aufsteigend</option>
@@ -250,9 +250,9 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
 
           <FilterGroup title="Max. Preis">
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs text-slate-500">
+              <div className="flex items-center justify-between text-xs text-[var(--muted)]">
                 <span>{formatChf(minSliderPrice * 100)}</span>
-                <span className="font-medium text-slate-700">{formatChf(maxPrice * 100)}</span>
+                <span className="font-semibold text-[var(--fg)]">{formatChf(maxPrice * 100)}</span>
               </div>
               <input
                 type="range"
@@ -261,13 +261,16 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
                 step={1}
                 value={maxPrice}
                 onChange={(event) => setMaxPrice(Number(event.target.value))}
-                className="w-full accent-neutral-900"
+                className="price-slider"
+                style={{
+                  "--slider-fill": `${maxAvailablePrice > minSliderPrice ? ((maxPrice - minSliderPrice) / (maxAvailablePrice - minSliderPrice)) * 100 : 100}%`,
+                } as React.CSSProperties}
               />
             </div>
           </FilterGroup>
 
           <FilterGroup title="Aktionen" defaultOpen={false}>
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-sm text-slate-700">
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-sm text-[var(--muted)]">
               <input
                 type="checkbox"
                 checked={onlySale}
@@ -288,17 +291,17 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
         {hasActiveFilters && (
           <div className="flex flex-wrap gap-2">
             {query && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">
+              <span className="chip">
                 Suche: {query}
-                <button type="button" onClick={() => setQuery("")} aria-label="Suche entfernen" className="ml-1 hover:text-slate-900">
+                <button type="button" onClick={() => setQuery("")} aria-label="Suche entfernen" className="ml-1 hover:text-[var(--fg)]">
                   x
                 </button>
               </span>
             )}
             {selectedCategory !== "All" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">
+              <span className="chip">
                 {selectedCategory}
-                <button type="button" onClick={() => setSelectedCategory("All")} aria-label="Kategorie entfernen" className="ml-1 hover:text-slate-900">
+                <button type="button" onClick={() => setSelectedCategory("All")} aria-label="Kategorie entfernen" className="ml-1 hover:text-[var(--fg)]">
                   x
                 </button>
               </span>
