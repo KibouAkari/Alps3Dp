@@ -15,8 +15,8 @@ const PHRASES = [
   "Am Ende steht ein Unikat.",
 ];
 
-const PHRASE_DURATION = 1150;
-const LOGO_DURATION = 1700;
+const PHRASE_DURATION = 2100;
+const LOGO_DURATION = 2200;
 const LEAVE_DURATION = 750;
 
 export function IntroScreen() {
@@ -60,17 +60,21 @@ export function IntroScreen() {
   return (
     <div className="intro-screen" data-leaving={stage === "leaving"} aria-hidden="true">
       {stage === "phrases" && (
-        <p key={phraseIndex} className="intro-phrase max-w-md px-6 text-center text-lg font-medium tracking-tight text-[var(--fg)] sm:text-2xl">
+        <p
+          key={phraseIndex}
+          className="intro-phrase max-w-md px-6 text-center text-lg font-medium tracking-tight text-[var(--fg)] sm:text-2xl"
+          style={{ "--intro-phrase-duration": `${PHRASE_DURATION}ms` } as React.CSSProperties}
+        >
           {PHRASES[phraseIndex]}
         </p>
       )}
 
       {(stage === "logo" || stage === "leaving") && (
         <div className="text-center">
-          <h1 className="intro-screen-word text-4xl font-bold tracking-tight text-[var(--fg)] sm:text-7xl">
+          <h1 className="intro-screen-title text-4xl font-bold leading-none tracking-tight text-[var(--fg)] sm:text-7xl">
             Alps3Dp
           </h1>
-          <div className="intro-screen-line relative mt-5 inline-flex gap-2">
+          <div className="intro-screen-line relative mt-8 inline-flex gap-2 sm:mt-10">
             <span
               className="intro-screen-word text-xs font-medium uppercase tracking-[0.35em] text-[var(--muted)] sm:text-sm"
               style={{ animationDelay: "260ms" }}

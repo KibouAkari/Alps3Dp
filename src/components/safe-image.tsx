@@ -5,7 +5,7 @@
 // Wraps next/image but falls back to a plain <img> for data: URLs and other
 // sources next/image can't optimize, and swaps in a placeholder on load errors.
 import Image, { ImageProps } from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type SafeImageProps = Omit<ImageProps, "src"> & {
   src?: string;
@@ -14,6 +14,14 @@ type SafeImageProps = Omit<ImageProps, "src"> & {
 
 export function SafeImage({ src, fallbackSrc = "/images/placeholder-product.svg", alt, ...rest }: SafeImageProps) {
   const [currentSrc, setCurrentSrc] = useState(src || fallbackSrc);
+
+  // useState's initial value only runs once on mount, so swapping the `src`
+  // prop later (e.g. clicking a gallery thumbnail) would otherwise keep
+  // rendering the very first image forever — resync whenever it changes.
+  useEffect(() => {
+    setCurrentSrc(src || fallbackSrc);
+  }, [src, fallbackSrc]);
+
   const isExternalSource = typeof currentSrc === "string" && /^(data:image\/|https?:\/\/)/i.test(currentSrc);
   const { fill, ...imageRest } = rest as ImageProps;
 
