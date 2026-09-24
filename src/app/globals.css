@@ -681,7 +681,6 @@ body.theme-switching * {
 
 /* Glassmorphism hover */
 .glass-hover {
-  position: relative;
   transition: background-color 260ms ease, border-color 260ms ease, backdrop-filter 260ms ease, box-shadow 260ms ease, transform 260ms ease;
 }
 

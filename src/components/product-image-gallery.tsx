@@ -58,7 +58,7 @@ export function ProductImageGallery({ images, title }: ProductImageGalleryProps)
               type="button"
               onClick={goPrev}
               aria-label="Vorheriges Bild"
-              className="press glass-hover absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-[var(--surface-border)] bg-[var(--bg-soft)]/80 p-2 text-[var(--fg)] opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100 focus-visible:opacity-100"
+              className="press absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-[var(--surface-border)] bg-[var(--bg-soft)]/80 p-2 text-[var(--fg)] opacity-0 shadow-sm transition-opacity duration-200 hover:bg-[var(--bg-soft)] group-hover:opacity-100 focus-visible:opacity-100"
             >
               <ArrowLeftIcon className="h-4 w-4" />
             </button>
@@ -66,7 +66,7 @@ export function ProductImageGallery({ images, title }: ProductImageGalleryProps)
               type="button"
               onClick={goNext}
               aria-label="Nächstes Bild"
-              className="press glass-hover absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-[var(--surface-border)] bg-[var(--bg-soft)]/80 p-2 text-[var(--fg)] opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100 focus-visible:opacity-100"
+              className="press absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-[var(--surface-border)] bg-[var(--bg-soft)]/80 p-2 text-[var(--fg)] opacity-0 shadow-sm transition-opacity duration-200 hover:bg-[var(--bg-soft)] group-hover:opacity-100 focus-visible:opacity-100"
             >
               <ArrowRightIcon className="h-4 w-4" />
             </button>
