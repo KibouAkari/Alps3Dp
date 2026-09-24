@@ -1,16 +1,27 @@
 "use client";
 
-// One-time splash intro on first load per browser session: brand name blurs
-// into focus, a subtitle reveals word by word, an underline draws in, then
-// the whole overlay fades to reveal the site. Skipped entirely on repeat
-// navigations within the same session and for prefers-reduced-motion.
+// One-time splash intro on first load per browser session: a short sequence
+// of phrases blur/fade through one another, then the wordmark reveals with
+// a drawn underline, before the whole overlay fades to reveal the site.
+// Skipped entirely on repeat navigations within the same session and for
+// prefers-reduced-motion.
 import { useEffect, useState } from "react";
 
 const SESSION_KEY = "alps3dp.introShown";
-const SUBTITLE = "Handgefertigt in der Schweiz";
+
+const PHRASES = [
+  "Jede Idee beginnt als Linie im Raum.",
+  "Schicht für Schicht nimmt sie Form an.",
+  "Am Ende steht ein Unikat.",
+];
+
+const PHRASE_DURATION = 1150;
+const LOGO_DURATION = 1700;
+const LEAVE_DURATION = 750;
 
 export function IntroScreen() {
-  const [phase, setPhase] = useState<"hidden" | "entering" | "leaving">("hidden");
+  const [stage, setStage] = useState<"hidden" | "phrases" | "logo" | "leaving">("hidden");
+  const [phraseIndex, setPhraseIndex] = useState(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -20,40 +31,56 @@ export function IntroScreen() {
     }
 
     sessionStorage.setItem(SESSION_KEY, "1");
-    setPhase("entering");
+    setStage("phrases");
 
-    const leaveTimer = setTimeout(() => setPhase("leaving"), 2200);
-    const hideTimer = setTimeout(() => setPhase("hidden"), 2900);
+    const scheduled: ReturnType<typeof setTimeout>[] = [];
+
+    PHRASES.forEach((_, index) => {
+      if (index === 0) return;
+      scheduled.push(setTimeout(() => setPhraseIndex(index), index * PHRASE_DURATION));
+    });
+
+    const logoAt = PHRASES.length * PHRASE_DURATION;
+    const leaveAt = logoAt + LOGO_DURATION;
+    const hideAt = leaveAt + LEAVE_DURATION;
+
+    scheduled.push(setTimeout(() => setStage("logo"), logoAt));
+    scheduled.push(setTimeout(() => setStage("leaving"), leaveAt));
+    scheduled.push(setTimeout(() => setStage("hidden"), hideAt));
 
     return () => {
-      clearTimeout(leaveTimer);
-      clearTimeout(hideTimer);
+      scheduled.forEach(clearTimeout);
     };
   }, []);
 
-  if (phase === "hidden") {
+  if (stage === "hidden") {
     return null;
   }
 
   return (
-    <div className="intro-screen" data-leaving={phase === "leaving"} aria-hidden="true">
-      <div className="text-center">
-        <h1 className="intro-screen-word text-4xl font-bold tracking-tight text-[var(--fg)] sm:text-6xl" style={{ animationDelay: "150ms" }}>
-          Alps3Dp
-        </h1>
-        <div className="intro-screen-line relative mt-5 inline-flex gap-2">
-          {SUBTITLE.split(" ").map((word, index) => (
+    <div className="intro-screen" data-leaving={stage === "leaving"} aria-hidden="true">
+      {stage === "phrases" && (
+        <p key={phraseIndex} className="intro-phrase max-w-md px-6 text-center text-lg font-medium tracking-tight text-[var(--fg)] sm:text-2xl">
+          {PHRASES[phraseIndex]}
+        </p>
+      )}
+
+      {(stage === "logo" || stage === "leaving") && (
+        <div className="text-center">
+          <h1 className="intro-screen-word text-4xl font-bold tracking-tight text-[var(--fg)] sm:text-7xl">
+            Alps3Dp
+          </h1>
+          <div className="intro-screen-line relative mt-5 inline-flex gap-2">
             <span
-              key={word}
-              className="intro-screen-word text-xs font-medium uppercase tracking-[0.3em] text-[var(--muted)] sm:text-sm"
-              style={{ animationDelay: `${520 + index * 90}ms` }}
+              className="intro-screen-word text-xs font-medium uppercase tracking-[0.35em] text-[var(--muted)] sm:text-sm"
+              style={{ animationDelay: "260ms" }}
             >
-              {word}
+              3D-Druck · Präzision · Schweiz
             </span>
-          ))}
-          <span className="intro-screen-underline" />
+            <span className="intro-screen-underline" />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
