@@ -40,7 +40,7 @@ export function BuyNowButton({ productId }: { productId: string }) {
           setLoading(false);
         }
       }}
-      className="inline-flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-50"
+      className="press inline-flex items-center justify-center gap-2 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:opacity-50"
     >
       {loading ? "Wird vorbereitet..." : "Jetzt kaufen"}
     </button>

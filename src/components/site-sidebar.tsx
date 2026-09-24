@@ -96,10 +96,10 @@ export function SiteSidebar() {
 
   const sidebarBody = (
     <div className="sidebar-shell flex h-full flex-col">
-      <Link href="/" className="flex items-center gap-2 px-5 pb-6 pt-6">
+      <Link href="/" className="press flex items-center gap-2 px-5 pb-6 pt-6">
         <Image src="/images/logo.jpeg" alt="Alps3Dp Logo" width={36} height={36} className="h-9 w-9 rounded-full" priority />
         <span className="text-lg font-bold tracking-tight text-[var(--sidebar-fg)]">
-          Alps3<span className="text-violet-400">Dp</span>
+          Alps3<span className="text-[var(--sidebar-muted)]">Dp</span>
         </span>
       </Link>
 
@@ -111,7 +111,7 @@ export function SiteSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`sidebar-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+              className={`sidebar-link press flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
                 active ? "sidebar-link-active" : ""
               }`}
             >
@@ -123,14 +123,14 @@ export function SiteSidebar() {
 
         <Link
           href="/cart"
-          className={`sidebar-link relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+          className={`sidebar-link press relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
             isActive("/cart") ? "sidebar-link-active" : ""
           }`}
         >
           <CartIcon className="h-4 w-4 shrink-0" />
           Warenkorb
           {cartCount > 0 && (
-            <span key={cartCount} className="cart-count-bump ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-500 px-1 text-[11px] font-semibold text-white">
+            <span key={cartCount} className="cart-count-bump ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--sidebar-fg)] px-1 text-[11px] font-semibold text-[var(--bg)]">
               {cartCount > 99 ? "99+" : cartCount}
             </span>
           )}
@@ -139,7 +139,7 @@ export function SiteSidebar() {
         {!isLoading && user?.role === "ADMIN" && (
           <Link
             href="/admin"
-            className={`sidebar-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+            className={`sidebar-link press flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
               isActive("/admin") ? "sidebar-link-active" : ""
             }`}
           >
@@ -155,7 +155,7 @@ export function SiteSidebar() {
         {!isLoading && user && (
           <div className="relative" ref={userMenuRef}>
             {isUserMenuOpen && (
-              <div className="absolute bottom-full left-0 mb-2 w-full rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-dropdown-bg)] p-2 shadow-xl soft-pop">
+              <div className="glass-hover absolute bottom-full left-0 mb-2 w-full rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-dropdown-bg)] p-2 shadow-xl soft-pop">
                 <Link
                   href="/account"
                   onClick={() => setIsUserMenuOpen(false)}
@@ -170,7 +170,7 @@ export function SiteSidebar() {
                     setIsUserMenuOpen(false);
                     signOut();
                   }}
-                  className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-rose-400 transition hover:bg-rose-500/10"
+                  className="press mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--sidebar-muted)] transition hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-fg)]"
                 >
                   <LogoutIcon />
                   Logout
@@ -195,7 +195,7 @@ export function SiteSidebar() {
         {!isLoading && !user && (
           <Link
             href="/auth/login"
-            className="flex items-center gap-2.5 rounded-xl bg-violet-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500"
+            className="press flex items-center gap-2.5 rounded-xl bg-[var(--sidebar-fg)] px-3 py-2.5 text-sm font-semibold text-[var(--bg)] transition"
           >
             <UserIcon />
             Anmelden
@@ -212,7 +212,7 @@ export function SiteSidebar() {
         <Link href="/" className="flex items-center gap-2">
           <Image src="/images/logo.jpeg" alt="Alps3Dp Logo" width={28} height={28} className="h-7 w-7 rounded-full" priority />
           <span className="text-base font-bold tracking-tight text-[var(--sidebar-fg)]">
-            Alps3<span className="text-violet-400">Dp</span>
+            Alps3<span className="text-[var(--sidebar-muted)]">Dp</span>
           </span>
         </Link>
         <button

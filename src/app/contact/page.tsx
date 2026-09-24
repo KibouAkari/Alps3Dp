@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { Reveal } from "@/components/reveal";
 import { parseJsonSafely } from "@/lib/fetch-json";
 
 export default function ContactPage() {
@@ -45,11 +46,15 @@ export default function ContactPage() {
   return (
     <div className="space-y-6 fade-in-up">
       <section className="hero-shell overflow-hidden rounded-3xl border p-6 shadow-sm sm:p-10">
-        <p className="text-sm uppercase tracking-[0.2em] text-sky-700">Kontakt</p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Wir freuen uns von dir zu hören</h1>
-        <p className="mt-3 max-w-xl text-slate-600">
-          Bei Fragen zu Bestellungen, individuellen Anfragen oder allgemeinen Themen – schreib uns einfach.
-        </p>
+        <Reveal><p className="text-sm uppercase tracking-[0.2em] text-neutral-700">Kontakt</p></Reveal>
+        <Reveal delay={80}>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Wir freuen uns von dir zu hören</h1>
+        </Reveal>
+        <Reveal delay={160}>
+          <p className="mt-3 max-w-xl text-slate-600">
+            Bei Fragen zu Bestellungen, individuellen Anfragen oder allgemeinen Themen – schreib uns einfach.
+          </p>
+        </Reveal>
       </section>
 
       <div className="stagger-grid grid gap-6 lg:grid-cols-[1fr_340px]">
@@ -68,7 +73,7 @@ export default function ContactPage() {
                   value={firstName}
                   onChange={(event) => setFirstName(event.target.value)}
                   placeholder="Max"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-500 transition focus:ring"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-neutral-800 transition focus:ring"
                 />
               </label>
               <label className="block text-sm text-slate-600">
@@ -79,7 +84,7 @@ export default function ContactPage() {
                   value={lastName}
                   onChange={(event) => setLastName(event.target.value)}
                   placeholder="Muster"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-500 transition focus:ring"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-neutral-800 transition focus:ring"
                 />
               </label>
             </div>
@@ -91,7 +96,7 @@ export default function ContactPage() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="max@beispiel.ch"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-500 transition focus:ring"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-neutral-800 transition focus:ring"
               />
             </label>
             <label className="block text-sm text-slate-600">
@@ -102,7 +107,7 @@ export default function ContactPage() {
                 value={subject}
                 onChange={(event) => setSubject(event.target.value)}
                 placeholder="Bestellung / Anfrage / Sonstiges"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-500 transition focus:ring"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-neutral-800 transition focus:ring"
               />
             </label>
             <label className="block text-sm text-slate-600">
@@ -113,13 +118,13 @@ export default function ContactPage() {
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 placeholder="Deine Nachricht…"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-500 transition focus:ring"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-neutral-800 transition focus:ring"
               />
             </label>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="press rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSubmitting ? "Wird gesendet…" : "Nachricht senden"}
             </button>
@@ -133,7 +138,7 @@ export default function ContactPage() {
             <ul className="mt-3 space-y-3 text-sm text-slate-700">
               <li>
                 <span className="block text-xs text-slate-400">E-Mail</span>
-                <a href="mailto:support@alps3dp.ch" className="text-sky-700 hover:underline">support@alps3dp.ch</a>
+                <a href="mailto:support@alps3dp.ch" className="text-neutral-700 hover:underline">support@alps3dp.ch</a>
               </li>
               <li>
                 <span className="block text-xs text-slate-400">Antwortzeit</span>

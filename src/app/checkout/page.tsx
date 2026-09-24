@@ -150,7 +150,7 @@ export default function CheckoutPage() {
         <p className="mt-2 text-sm text-slate-600">Sichere Zahlung mit Kreditkarte.</p>
         {isGuest && (
           <p className="mt-2 text-xs text-slate-500">
-            Du bestellst als Gast. <a href="/auth/login" className="text-sky-600 hover:underline">Einloggen</a> für Bestellhistorie & gespeicherte Adressen.
+            Du bestellst als Gast. <a href="/auth/login" className="text-neutral-900 hover:underline">Einloggen</a> für Bestellhistorie & gespeicherte Adressen.
           </p>
         )}
         {status && <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{status}</p>}
@@ -268,7 +268,7 @@ export default function CheckoutPage() {
           {!isGuest && (
             <p className="sm:col-span-2 text-xs text-slate-500">Die Kartendaten werden sicher direkt bei Stripe eingegeben und nicht bei Alps3Dp gespeichert.</p>
           )}
-          <button type="submit" disabled={isSubmitting} className="checkout-submit-button sm:col-span-2 rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white transition hover:bg-sky-700 disabled:cursor-wait disabled:opacity-80">
+          <button type="submit" disabled={isSubmitting} className="press checkout-submit-button sm:col-span-2 rounded-lg bg-neutral-900 px-4 py-2 font-semibold text-white transition hover:bg-neutral-700 disabled:cursor-wait disabled:opacity-80">
             <span className={isSubmitting ? "checkout-button-label checkout-button-label-loading" : "checkout-button-label"}>
               {isSubmitting ? "Zahlung wird vorbereitet..." : "Bestellung abschliessen"}
             </span>

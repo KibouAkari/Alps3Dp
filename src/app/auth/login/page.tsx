@@ -47,15 +47,15 @@ export default function LoginPage() {
           placeholder="Passwort"
           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
         />
-        <button type="submit" className="w-full rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white transition hover:bg-sky-700">
+        <button type="submit" className="press w-full rounded-lg bg-neutral-900 px-4 py-2 font-semibold text-white transition hover:bg-neutral-700">
           Login
         </button>
       </form>
       <div className="mt-4 flex justify-between text-sm text-slate-500">
-        <Link href="/auth/forgot-password" className="hover:text-sky-700">
+        <Link href="/auth/forgot-password" className="hover:text-neutral-700">
           Passwort vergessen?
         </Link>
-        <Link href="/auth/register" className="hover:text-sky-700">
+        <Link href="/auth/register" className="hover:text-neutral-700">
           Konto erstellen
         </Link>
       </div>

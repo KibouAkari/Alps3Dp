@@ -212,7 +212,7 @@ export default function CartPage() {
             <p className="text-slate-600">Subtotal</p>
             <p className="text-xl font-bold text-slate-900">{formatChf(subtotal)}</p>
           </div>
-          <Link href="/checkout" className="inline-block rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white transition hover:bg-sky-700">
+          <Link href="/checkout" className="inline-block rounded-lg bg-neutral-900 px-4 py-2 font-semibold text-white transition hover:bg-neutral-700">
             Weiter zum Checkout
           </Link>
         </>

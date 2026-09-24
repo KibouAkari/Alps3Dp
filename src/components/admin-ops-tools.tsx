@@ -185,7 +185,7 @@ export function AdminOpsTools() {
               type="button"
               onClick={runTestOrder}
               disabled={isRunningMailTest}
-              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="press rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isRunningMailTest ? "Wird ausgeführt…" : "Mail-Test ausführen"}
             </button>
@@ -193,7 +193,7 @@ export function AdminOpsTools() {
               type="button"
               onClick={runStripeCheckoutTest}
               disabled={isRunningStripeTest}
-              className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
+              className="press rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isRunningStripeTest ? "Wird gestartet…" : "Echte Stripe-Testzahlung starten"}
             </button>
@@ -264,7 +264,7 @@ export function AdminOpsTools() {
                 </div>
               )}
               {stripe.message && <p>{stripe.message}</p>}
-              <a href={stripe.dashboardUrl} target="_blank" rel="noreferrer" className="inline-flex text-sky-700 hover:underline">
+              <a href={stripe.dashboardUrl} target="_blank" rel="noreferrer" className="inline-flex text-neutral-700 hover:underline">
                 Stripe Dashboard öffnen
               </a>
               {stripe.sessions && stripe.sessions.length > 0 && (

@@ -107,7 +107,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         <ProductImageGallery images={product.images} title={product.title} />
 
         <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-sky-700">{product.category}</p>
+          <p className="text-xs uppercase tracking-wide text-neutral-700">{product.category}</p>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">{product.title}</h1>
           <p className="text-slate-600">{product.description}</p>
           <div className="pt-4">

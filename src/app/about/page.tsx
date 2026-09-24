@@ -1,17 +1,22 @@
 import { PackageIcon, PrinterIcon, TruckIcon, WrenchIcon } from "@/components/icons";
+import { Reveal } from "@/components/reveal";
 
 export default function AboutPage() {
   return (
     <div className="space-y-6 fade-in-up">
       {/* Hero */}
       <section className="hero-shell blueprint-bg overflow-hidden rounded-3xl border p-5 shadow-sm sm:p-10">
-        <p className="text-sm uppercase tracking-[0.2em] text-sky-700">Über uns</p>
-        <h1 className="mt-3 max-w-2xl text-2xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          Qualität aus dem 3D-Drucker – gefertigt in der Schweiz
-        </h1>
-        <p className="mt-4 max-w-xl text-slate-600">
-          Alps3Dp ist ein kleines Schweizer Projekt mit einer grossen Leidenschaft für präzisen 3D-Druck. Jedes Produkt wird auf Bestellung gefertigt – individuell, langlebig und mit Liebe zum Detail.
-        </p>
+        <Reveal><p className="text-sm uppercase tracking-[0.2em] text-neutral-700">Über uns</p></Reveal>
+        <Reveal delay={80}>
+          <h1 className="mt-3 max-w-2xl text-2xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+            Qualität aus dem 3D-Drucker – gefertigt in der Schweiz
+          </h1>
+        </Reveal>
+        <Reveal delay={160}>
+          <p className="mt-4 max-w-xl text-slate-600">
+            Alps3Dp ist ein kleines Schweizer Projekt mit einer grossen Leidenschaft für präzisen 3D-Druck. Jedes Produkt wird auf Bestellung gefertigt – individuell, langlebig und mit Liebe zum Detail.
+          </p>
+        </Reveal>
       </section>
 
       {/* Mission + Material */}
@@ -30,15 +35,15 @@ export default function AboutPage() {
           <h2 className="text-lg font-semibold text-slate-900">Materialien & Qualität</h2>
           <ul className="mt-3 space-y-3 text-sm text-slate-600">
             <li className="flex items-start gap-3">
-              <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-xs font-bold text-violet-700">PLA</span>
+              <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-xs font-bold text-neutral-700">PLA</span>
               <span>Biologisch abbaubar, farbintensiv und ideal für Dekorations- und Alltagsobjekte.</span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-xs font-bold text-violet-700">PETG</span>
+              <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-xs font-bold text-neutral-700">PETG</span>
               <span>Robust, lebensmittelecht und temperaturbeständig – für den praktischen Einsatz.</span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
+              <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-700">
                 <WrenchIcon className="h-4 w-4" />
               </span>
               <span>Nachbearbeitung: Schleifen, Grundieren und Lackieren auf Wunsch möglich.</span>
@@ -72,7 +77,7 @@ export default function AboutPage() {
         <h2 className="text-lg font-semibold text-slate-900">Fragen oder individuelle Wünsche?</h2>
         <p className="mt-2 text-sm text-slate-600">
           Wir sind offen für Sonderwünsche, Logoprints und individuelle Projekte.{" "}
-          <a href="/contact" className="text-sky-700 hover:underline">Schreib uns</a> – wir melden uns schnell.
+          <a href="/contact" className="text-neutral-700 hover:underline">Schreib uns</a> – wir melden uns schnell.
         </p>
       </section>
     </div>

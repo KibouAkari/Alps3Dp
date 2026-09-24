@@ -40,16 +40,21 @@ function ChevronIcon({ open }: { open: boolean }) {
 function FilterGroup({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+    <div className="border-b border-[var(--surface-border)] pb-3 last:border-0 last:pb-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between py-2 text-sm font-medium text-slate-700 hover:text-slate-900"
+        className="press flex w-full items-center justify-between py-2 text-sm font-medium text-[var(--muted)] hover:text-[var(--fg)]"
+        aria-expanded={open}
       >
         {title}
-        <ChevronIcon open={open} />
+        <span className="accordion-chevron" data-open={open}>
+          <ChevronIcon open={false} />
+        </span>
       </button>
-      {open && <div className="mt-2">{children}</div>}
+      <div className="accordion-content" data-open={open}>
+        <div><div className="mt-2">{children}</div></div>
+      </div>
     </div>
   );
 }
@@ -154,7 +159,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
       <section className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="h-64 animate-pulse rounded-2xl bg-slate-100" />
+            <div key={index} className="skeleton h-64" />
           ))}
         </div>
       </section>
@@ -174,7 +179,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
             >
               <FilterMenuIcon className="h-4 w-4" />
               Filter
-              {hasActiveFilters && <span className="h-1.5 w-1.5 rounded-full bg-violet-500" aria-hidden="true" />}
+              {hasActiveFilters && <span className="h-1.5 w-1.5 rounded-full bg-neutral-700" aria-hidden="true" />}
             </button>
           ) : (
           <aside className="filter-panel-enter panel-surface rounded-2xl p-4 shadow-sm">
@@ -185,7 +190,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
               </span>
               <div className="flex items-center gap-3">
                 {hasActiveFilters && (
-                  <button type="button" onClick={resetAll} className="text-xs text-sky-600 hover:underline">
+                  <button type="button" onClick={resetAll} className="text-xs text-neutral-900 hover:underline">
                     Zurücksetzen
                   </button>
                 )}
@@ -207,7 +212,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Produkt suchen..."
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-500 transition focus:ring"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-neutral-800 transition focus:ring"
             />
           </FilterGroup>
 
@@ -220,7 +225,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
                   onClick={() => setSelectedCategory(category)}
                   className={`block w-full rounded-lg px-3 py-1.5 text-left text-sm transition ${
                     selectedCategory === category
-                      ? "bg-sky-50 font-medium text-sky-800"
+                      ? "bg-neutral-100 font-medium text-neutral-800"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                   }`}
                 >
@@ -234,7 +239,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
             <select
               value={sortMode}
               onChange={(event) => setSortMode(event.target.value as SortMode)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-500 transition focus:ring"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-neutral-800 transition focus:ring"
             >
               <option value="relevance">Relevanz</option>
               <option value="price-asc">Preis aufsteigend</option>
@@ -256,7 +261,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
                 step={1}
                 value={maxPrice}
                 onChange={(event) => setMaxPrice(Number(event.target.value))}
-                className="w-full accent-sky-600"
+                className="w-full accent-neutral-900"
               />
             </div>
           </FilterGroup>
@@ -267,7 +272,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
                 type="checkbox"
                 checked={onlySale}
                 onChange={(e) => setOnlySale(e.target.checked)}
-                className="h-4 w-4 accent-sky-600"
+                className="h-4 w-4 accent-neutral-900"
               />
               Nur Aktionspreise anzeigen
             </label>
@@ -302,7 +307,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
         )}
 
         {filteredProducts.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="stagger-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -310,7 +315,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
         )}
 
         {filteredProducts.length === 0 && (
-          <div className="panel-soft rounded-xl p-6 text-center text-sm text-slate-500">
+          <div className="panel-soft rounded-xl p-6 text-center text-sm text-[var(--muted)]">
             Keine Produkte gefunden.
           </div>
         )}

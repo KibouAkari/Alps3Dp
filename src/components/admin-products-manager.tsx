@@ -277,7 +277,7 @@ export function AdminProductsManager() {
           <button
             type="button"
             onClick={saveShipping}
-            className="h-fit self-end rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500"
+            className="h-fit self-end rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-700"
           >
             Speichern
           </button>
@@ -326,7 +326,7 @@ export function AdminProductsManager() {
                 </label>
               </div>
 
-            {isUploading && <p className="mt-3 text-xs text-sky-700">Bilder werden hochgeladen...</p>}
+            {isUploading && <p className="mt-3 text-xs text-neutral-700">Bilder werden hochgeladen...</p>}
 
             <div className="mt-4 flex flex-wrap gap-2">
             {form.images.map((image, index) => (
@@ -466,7 +466,7 @@ export function AdminProductsManager() {
           <button
             type="button"
             onClick={saveProduct}
-            className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500"
+            className="press rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-700"
           >
             {form.id ? "Änderungen speichern" : "Produkt speichern"}
           </button>

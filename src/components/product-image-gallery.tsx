@@ -35,7 +35,7 @@ export function ProductImageGallery({ images, title }: ProductImageGalleryProps)
               type="button"
               onClick={() => setActiveIndex(index)}
               className={`relative h-20 overflow-hidden rounded-lg border bg-white transition ${
-                isActive ? "border-sky-500 ring-2 ring-sky-200" : "border-slate-200 hover:border-sky-300"
+                isActive ? "border-neutral-800 ring-2 ring-neutral-200" : "border-slate-200 hover:border-neutral-300"
               }`}
             >
               <SafeImage src={image} alt={`${title} Ansicht ${index + 1}`} fill className="object-cover" sizes="120px" />

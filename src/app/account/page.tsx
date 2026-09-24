@@ -142,7 +142,7 @@ export default function AccountPage() {
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
                 className={`rounded-full px-3 py-1.5 text-sm transition ${
-                  activeTab === tab.key ? "bg-sky-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  activeTab === tab.key ? "bg-neutral-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
               >
                 {tab.label}
@@ -183,7 +183,7 @@ export default function AccountPage() {
             <p className="text-xs uppercase tracking-wide text-slate-500">Profilstatus</p>
             <p className="mt-2 text-2xl font-bold text-slate-900">{profileCompletion}%</p>
             <div className="mt-3 h-2 rounded-full bg-slate-100">
-              <div className="h-full rounded-full bg-sky-600 transition-all duration-500" style={{ width: `${profileCompletion}%` }} />
+              <div className="h-full rounded-full bg-neutral-900 transition-all duration-500" style={{ width: `${profileCompletion}%` }} />
             </div>
             <p className="mt-2 text-xs text-slate-500">Vollständiges Profil verbessert Checkout und Support.</p>
           </div>
@@ -245,7 +245,7 @@ export default function AccountPage() {
                   }}
                 />
               </label>
-              {isAvatarUploading && <p className="text-xs text-sky-700">Lade Profilbild hoch...</p>}
+              {isAvatarUploading && <p className="text-xs text-neutral-700">Lade Profilbild hoch...</p>}
             </div>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -296,7 +296,7 @@ export default function AccountPage() {
                 setError(err instanceof Error ? err.message : "Profil konnte nicht gespeichert werden.");
               }
             }}
-            className="mt-4 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
+            className="mt-4 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-700"
           >
             Profil speichern
           </button>
@@ -345,7 +345,7 @@ export default function AccountPage() {
                   setError(err instanceof Error ? err.message : "E-Mail konnte nicht aktualisiert werden.");
                 }
               }}
-              className="mt-4 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
+              className="mt-4 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-700"
             >
               E-Mail aktualisieren
             </button>
@@ -517,7 +517,7 @@ export default function AccountPage() {
                     setShowNewAddressForm(false);
                     setStatus("Adresse gespeichert.");
                   }}
-                  className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700 sm:col-span-2"
+                  className="press rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-700 sm:col-span-2"
                 >
                   Adresse speichern
                 </button>
@@ -538,7 +538,7 @@ export default function AccountPage() {
                 <span className="font-mono font-medium text-slate-800">{formatOrderNumber(order.orderNumber)}</span>
                 <span className="text-slate-500">{order.date}</span>
                 <span>{order.status}</span>
-                <span className="font-semibold text-sky-700">{formatChf(order.totalCents)}</span>
+                <span className="font-semibold text-neutral-700">{formatChf(order.totalCents)}</span>
               </div>
             ))}
           </div>

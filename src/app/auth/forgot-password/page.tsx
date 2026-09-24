@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
           placeholder="E-Mail"
           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
         />
-        <button type="submit" className="w-full rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white transition hover:bg-sky-700">
+        <button type="submit" className="press w-full rounded-lg bg-neutral-900 px-4 py-2 font-semibold text-white transition hover:bg-neutral-700">
           Reset-Link senden
         </button>
       </form>

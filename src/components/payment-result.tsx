@@ -37,11 +37,11 @@ export function PaymentResult({ variant }: PaymentResultProps) {
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           {isSuccess ? (
-            <Link href="/" className="rounded-lg bg-sky-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-sky-700">
+            <Link href="/" className="press rounded-lg bg-neutral-900 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-neutral-700">
               Weiter einkaufen
             </Link>
           ) : (
-            <Link href="/checkout" className="rounded-lg bg-sky-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-sky-700">
+            <Link href="/checkout" className="press rounded-lg bg-neutral-900 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-neutral-700">
               Erneut versuchen
             </Link>
           )}

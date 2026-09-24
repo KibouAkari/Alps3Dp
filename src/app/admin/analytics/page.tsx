@@ -89,7 +89,7 @@ export default async function AdminAnalyticsPage() {
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                     <div
-                      className="h-full rounded-full bg-sky-500 transition-all duration-700"
+                      className="h-full rounded-full bg-neutral-800 transition-all duration-700"
                       style={{ width: `${(product.sold / maxSales) * 100}%` }}
                     />
                   </div>

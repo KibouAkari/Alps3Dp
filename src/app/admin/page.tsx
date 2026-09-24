@@ -80,7 +80,7 @@ export default async function AdminHomePage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
           <div className="flex gap-2">
-            <Link href="/admin/products" className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 transition">
+            <Link href="/admin/products" className="press rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700 transition">
               Produkte verwalten
             </Link>
             <Link href={"/admin/stripe" as Route} className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition">
@@ -153,17 +153,17 @@ export default async function AdminHomePage() {
             <ul className="mt-3 space-y-2">
               <li>
                 <Link href="/admin/products" className="flex items-center gap-2 rounded-lg p-2 text-sm text-slate-700 hover:bg-slate-50 transition">
-                  <span className="text-violet-600">→</span> Produkte & Kategorien verwalten
+                  <span className="text-neutral-900">→</span> Produkte & Kategorien verwalten
                 </Link>
               </li>
               <li>
                 <Link href="/admin/analytics" className="flex items-center gap-2 rounded-lg p-2 text-sm text-slate-700 hover:bg-slate-50 transition">
-                  <span className="text-violet-600">→</span> Analytics & Monitoring
+                  <span className="text-neutral-900">→</span> Analytics & Monitoring
                 </Link>
               </li>
               <li>
                 <Link href="/" className="flex items-center gap-2 rounded-lg p-2 text-sm text-slate-700 hover:bg-slate-50 transition">
-                  <span className="text-violet-600">→</span> Shop-Ansicht öffnen
+                  <span className="text-neutral-900">→</span> Shop-Ansicht öffnen
                 </Link>
               </li>
             </ul>
