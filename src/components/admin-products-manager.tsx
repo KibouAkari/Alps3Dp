@@ -352,15 +352,15 @@ export function AdminProductsManager() {
           Umbenennen wirkt sich sofort auf alle zugehörigen Produkte aus. Löschen entfernt nur die Kategorie – betroffene Produkte bleiben erhalten und verlieren lediglich die Zuordnung.
         </p>
 
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 space-y-1">
           {categories.map((category) => {
             const busy = categoryBusyId === category.id;
             return (
-              <div key={category.id} className="field-box flex flex-wrap items-center gap-2 p-2">
+              <div key={category.id} className="flex flex-wrap items-center gap-2 border-b border-[var(--surface-border)] py-2 last:border-0">
                 <input
                   value={categoryEdits[category.id] ?? category.name}
                   onChange={(event) => setCategoryEdits((prev) => ({ ...prev, [category.id]: event.target.value }))}
-                  className="field-input flex-1 border-none bg-transparent"
+                  className="field-input flex-1"
                 />
                 <button
                   type="button"
