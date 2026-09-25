@@ -68,7 +68,12 @@ export async function POST(request: Request) {
     });
 
     const appUrl = getAppBaseUrl();
-    await sendPasswordResetEmail(email, `${appUrl}/auth/reset-password?token=${token}`);
+    try {
+      await sendPasswordResetEmail(email, `${appUrl}/auth/reset-password?token=${token}`);
+    } catch (error) {
+      // Never let a mail-provider failure leak whether the account exists.
+      console.error("[auth:forgot-password:mail]", error);
+    }
   }
 
   return NextResponse.json({ success: true });

@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
 
+import { getConfiguredAppBaseUrl } from "@/lib/app-url";
 import { formatOrderNumber } from "@/lib/order-number";
 
 type MailPayload = {
@@ -8,6 +9,7 @@ type MailPayload = {
   to: string;
   subject: string;
   html: string;
+  replyTo?: string;
 };
 
 type MailSender = {
@@ -35,6 +37,25 @@ function getResendClient() {
 
 function getMailFrom() {
   return process.env.MAIL_FROM?.trim() || process.env.SMTP_USER?.trim() || "Alps3Dp <noreply@alps3dp.ch>";
+}
+
+// Central branding config so the mail look & feel (logo, colors, texts) can
+// be changed via env vars alone, without touching template code.
+function getBrandConfig() {
+  const appUrl = getConfiguredAppBaseUrl().replace(/\/$/, "");
+  return {
+    name: process.env.MAIL_BRAND_NAME?.trim() || "Alps3Dp",
+    appUrl,
+    logoUrl: process.env.MAIL_LOGO_URL?.trim() || `${appUrl}/images/logo.jpeg`,
+    primaryColor: process.env.MAIL_PRIMARY_COLOR?.trim() || "#0ea5e9",
+    accentColor: process.env.MAIL_ACCENT_COLOR?.trim() || "#0369a1",
+    supportEmail:
+      process.env.MAIL_SUPPORT_EMAIL?.trim() ||
+      process.env.ADMIN_ORDER_EMAIL?.trim() ||
+      "support@alps3dp.ch",
+    footerText:
+      process.env.MAIL_FOOTER_TEXT?.trim() || "Alps3Dp · Handgefertigte 3D-gedruckte Produkte aus der Schweiz",
+  };
 }
 
 function parseBoolean(value: string | undefined, fallback: boolean) {
@@ -91,7 +112,7 @@ function getMailSender() {
   return cachedMailSender;
 }
 
-async function sendMail(to: string, subject: string, html: string) {
+async function sendMail(to: string, subject: string, html: string, options?: { replyTo?: string }) {
   const sender = getMailSender();
   if (!sender) {
     const message = "Mail-Versand ist nicht konfiguriert. RESEND_API_KEY oder SMTP-Zugangsdaten fehlen.";
@@ -107,10 +128,12 @@ async function sendMail(to: string, subject: string, html: string) {
     to,
     subject,
     html,
+    replyTo: options?.replyTo,
   });
 }
 
 function renderMailShell(params: { title: string; preview: string; contentHtml: string }) {
+  const brand = getBrandConfig();
   return `
     <div style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;color:#0f172a;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px;">
@@ -118,7 +141,16 @@ function renderMailShell(params: { title: string; preview: string; contentHtml: 
           <td align="center">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#ffffff;border:1px solid #cbd5e1;border-radius:16px;overflow:hidden;">
               <tr>
-                <td style="padding:18px 24px;background:linear-gradient(120deg,#0ea5e9,#0369a1);color:#e0f2fe;font-size:12px;letter-spacing:.08em;text-transform:uppercase;">Alps3Dp</td>
+                <td style="padding:18px 24px;background:linear-gradient(120deg,${brand.primaryColor},${brand.accentColor});">
+                  <table role="presentation" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="vertical-align:middle;padding-right:10px;">
+                        <img src="${escapeHtml(brand.logoUrl)}" alt="${escapeHtml(brand.name)}" width="28" height="28" style="display:block;border-radius:50%;border:0;" />
+                      </td>
+                      <td style="vertical-align:middle;color:#e0f2fe;font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;">${escapeHtml(brand.name)}</td>
+                    </tr>
+                  </table>
+                </td>
               </tr>
               <tr>
                 <td style="padding:24px;">
@@ -129,7 +161,10 @@ function renderMailShell(params: { title: string; preview: string; contentHtml: 
               </tr>
               <tr>
                 <td style="padding:16px 24px;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;line-height:1.5;">
-                  Alps3Dp · Handgefertigte 3D-gedruckte Produkte aus der Schweiz
+                  ${escapeHtml(brand.footerText)}<br />
+                  <a href="${escapeHtml(brand.appUrl)}" style="color:${brand.accentColor};text-decoration:none;">${escapeHtml(brand.appUrl.replace(/^https?:\/\//, ""))}</a>
+                  &nbsp;·&nbsp;
+                  <a href="mailto:${escapeHtml(brand.supportEmail)}" style="color:${brand.accentColor};text-decoration:none;">${escapeHtml(brand.supportEmail)}</a>
                 </td>
               </tr>
             </table>
@@ -140,55 +175,60 @@ function renderMailShell(params: { title: string; preview: string; contentHtml: 
   `;
 }
 
+function renderButton(url: string, label: string, brand: ReturnType<typeof getBrandConfig>) {
+  return `<p style="margin-top:18px;"><a href="${escapeHtml(url)}" style="display:inline-block;background:${brand.accentColor};color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:600;">${escapeHtml(label)}</a></p>`;
+}
+
 export async function sendVerifyEmail(to: string, verifyUrl: string) {
-  const safeUrl = escapeHtml(verifyUrl);
+  const brand = getBrandConfig();
   await sendMail(
     to,
     "Bitte bestätige deine E-Mail",
     renderMailShell({
       title: "Bitte bestätige deine E-Mail",
       preview: "Bestätige deine E-Mail-Adresse, um dein Konto zu aktivieren.",
-      contentHtml: `<p>Willkommen bei Alps3Dp.</p><p>Bitte bestätige deine E-Mail: <a href=\"${safeUrl}\" style=\"color:#0369a1;font-weight:600;\">E-Mail bestätigen</a></p>`,
+      contentHtml: `<p>Willkommen bei ${escapeHtml(brand.name)}.</p><p>Bitte bestätige deine E-Mail-Adresse, um dein Konto zu aktivieren.</p>${renderButton(verifyUrl, "E-Mail bestätigen", brand)}<p style="margin-top:18px;color:#64748b;font-size:13px;">Falls der Button nicht funktioniert, kopiere diesen Link: ${escapeHtml(verifyUrl)}</p>`,
     }),
   );
 }
 
 export async function sendWelcomeEmail(params: { to: string; name: string }) {
-  const safeName = escapeHtml(params.name || "bei Alps3Dp");
-  const appUrl = escapeHtml(process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://alps3dp.ch");
+  const brand = getBrandConfig();
+  const safeName = escapeHtml(params.name || brand.name);
   await sendMail(
     params.to,
-    "Willkommen bei Alps3Dp",
+    `Willkommen bei ${brand.name}`,
     renderMailShell({
       title: `Willkommen, ${safeName}`,
       preview: "Dein Konto wurde erfolgreich erstellt.",
       contentHtml:
-        `<p>Schön, dass du da bist.</p><p>Dein Konto ist bereit und du kannst direkt Produkte entdecken, bestellen und den Status deiner Bestellungen verfolgen.</p><p style=\"margin-top:18px;\"><a href=\"${appUrl}\" style=\"display:inline-block;background:#0369a1;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:10px;font-weight:600;\">Zum Shop</a></p>`,
+        `<p>Schön, dass du da bist.</p><p>Dein Konto ist bereit und du kannst direkt Produkte entdecken, bestellen und den Status deiner Bestellungen verfolgen.</p>${renderButton(brand.appUrl, "Zum Shop", brand)}`,
     }),
   );
 }
 
 export async function sendLoginSuccessEmail(to: string) {
+  const brand = getBrandConfig();
   await sendMail(
     to,
     "Login erfolgreich",
     renderMailShell({
       title: "Login erfolgreich",
       preview: "Dein Konto wurde soeben erfolgreich angemeldet.",
-      contentHtml: "<p>Dein Login war erfolgreich. Falls du das nicht warst, bitte Passwort sofort ändern.</p>",
+      contentHtml: `<p>Dein Login war erfolgreich. Falls du das nicht warst, ändere bitte sofort dein Passwort und kontaktiere uns unter <a href="mailto:${escapeHtml(brand.supportEmail)}" style="color:${brand.accentColor};">${escapeHtml(brand.supportEmail)}</a>.</p>`,
     }),
   );
 }
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
-  const safeUrl = escapeHtml(resetUrl);
+  const brand = getBrandConfig();
   await sendMail(
     to,
     "Passwort zurücksetzen",
     renderMailShell({
       title: "Passwort zurücksetzen",
       preview: "Setze dein Passwort sicher zurück.",
-      contentHtml: `<p>Klicke hier, um dein Passwort zurückzusetzen: <a href=\"${safeUrl}\" style=\"color:#0369a1;font-weight:600;\">Passwort zurücksetzen</a></p>`,
+      contentHtml: `<p>Wir haben eine Anfrage erhalten, dein Passwort zurückzusetzen.</p>${renderButton(resetUrl, "Passwort zurücksetzen", brand)}<p style="margin-top:18px;color:#64748b;font-size:13px;">Der Link ist 60 Minuten gültig. Falls du das nicht angefordert hast, kannst du diese E-Mail ignorieren.</p>`,
     }),
   );
 }
@@ -201,7 +241,8 @@ export async function sendOrderEmails(params: {
   totalCents: number;
   lines: Array<{ title: string; quantity: number; unitCents: number }>;
 }) {
-  const owner = process.env.ADMIN_ORDER_EMAIL;
+  const brand = getBrandConfig();
+  const owner = process.env.ADMIN_ORDER_EMAIL?.trim();
   const lineItemsHtml = params.lines
     .map(
       (line) =>
@@ -211,26 +252,33 @@ export async function sendOrderEmails(params: {
   const safeCustomerName = escapeHtml(params.customerName);
   const safeOrderNumber = escapeHtml(formatOrderNumber(params.orderNumber));
 
+  // Customer confirmation is business-critical, so its failure is propagated
+  // to the caller; the owner notification below is best-effort only.
   await sendMail(
     params.customerEmail,
-    "Bestellung erfolgreich",
+    `Bestellbestätigung ${safeOrderNumber}`,
     renderMailShell({
-      title: "Bestellung erfolgreich",
+      title: "Danke für deine Bestellung",
       preview: "Deine Bestellung wurde erfolgreich erfasst.",
-      contentHtml: `<p>Danke ${safeCustomerName}, deine Bestellung ${safeOrderNumber} war erfolgreich.</p><ul>${lineItemsHtml}</ul><p>Total: CHF ${(params.totalCents / 100).toFixed(2)}</p>`,
+      contentHtml: `<p>Hallo ${safeCustomerName}, danke für deine Bestellung <strong>${safeOrderNumber}</strong>.</p><ul style="padding-left:18px;margin:12px 0;">${lineItemsHtml}</ul><p><strong>Total: CHF ${(params.totalCents / 100).toFixed(2)}</strong></p>${renderButton(`${brand.appUrl}/account`, "Bestellstatus ansehen", brand)}`,
     }),
   );
 
   if (owner) {
-    await sendMail(
-      owner,
-      `Neue Bestellung ${safeOrderNumber}`,
-      renderMailShell({
-        title: `Neue Bestellung ${safeOrderNumber}`,
-        preview: "Neue Bestellung im Shop eingegangen.",
-        contentHtml: `<p>Bitte Bestellung bearbeiten und versenden.</p><ul>${lineItemsHtml}</ul><p>Einnahmen: CHF ${(params.totalCents / 100).toFixed(2)}</p>`,
-      }),
-    );
+    try {
+      await sendMail(
+        owner,
+        `Neue Bestellung ${safeOrderNumber}`,
+        renderMailShell({
+          title: `Neue Bestellung ${safeOrderNumber}`,
+          preview: "Neue Bestellung im Shop eingegangen.",
+          contentHtml: `<p>Von: ${safeCustomerName} (${escapeHtml(params.customerEmail)})</p><ul style="padding-left:18px;margin:12px 0;">${lineItemsHtml}</ul><p>Einnahmen: CHF ${(params.totalCents / 100).toFixed(2)}</p>`,
+        }),
+        { replyTo: params.customerEmail },
+      );
+    } catch (error) {
+      console.error("[mail:order-owner-notification]", error);
+    }
   }
 }
 
@@ -241,12 +289,14 @@ export async function sendContactMessage(params: {
   subject: string;
   message: string;
 }) {
-  const owner = process.env.ADMIN_ORDER_EMAIL || process.env.MAIL_FROM || "support@alps3dp.ch";
+  const brand = getBrandConfig();
+  const owner = brand.supportEmail;
   const safeName = escapeHtml(`${params.firstName} ${params.lastName}`.trim());
   const safeEmail = escapeHtml(params.email);
   const safeSubject = escapeHtml(params.subject);
   const safeMessage = escapeHtml(params.message).replaceAll("\n", "<br />");
 
+  // Notify the owner (critical path, reply-to the customer directly).
   await sendMail(
     owner,
     `Kontaktformular: ${params.subject}`,
@@ -255,6 +305,25 @@ export async function sendContactMessage(params: {
       preview: `Neue Nachricht von ${safeName}`,
       contentHtml: `<p><strong>Von:</strong> ${safeName} (${safeEmail})</p><p><strong>Betreff:</strong> ${safeSubject}</p><p>${safeMessage}</p>`,
     }),
+    { replyTo: params.email },
   );
+
+  // Confirmation to the person who submitted the form; failure here should
+  // not fail the whole request since the owner already received the message.
+  try {
+    await sendMail(
+      params.email,
+      "Wir haben deine Nachricht erhalten",
+      renderMailShell({
+        title: `Danke, ${safeName}`,
+        preview: "Wir melden uns so schnell wie möglich bei dir.",
+        contentHtml: `<p>Wir haben deine Nachricht zum Thema "${safeSubject}" erhalten und melden uns so schnell wie möglich.</p><p style="margin-top:14px;color:#64748b;font-size:13px;">Deine Nachricht:<br />${safeMessage}</p>`,
+      }),
+      { replyTo: owner },
+    );
+  } catch (error) {
+    console.error("[mail:contact-confirmation]", error);
+  }
 }
+
 

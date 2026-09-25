@@ -108,18 +108,24 @@ export async function POST(request: Request) {
         await db.cartItem.deleteMany({ where: { cartId: cart.id } });
       }
 
-      await sendOrderEmails({
-        customerEmail: order.customerEmail,
-        customerName: order.customerName,
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        totalCents: order.totalCents,
-        lines: order.items.map((item: { quantity: number; unitCents: number; product: { title: string } }) => ({
-          title: item.product.title,
-          quantity: item.quantity,
-          unitCents: item.unitCents,
-        })),
-      });
+      // Order is already marked PAID above; a mail failure must not make
+      // Stripe retry the webhook (retries are deduplicated via updateResult.count).
+      try {
+        await sendOrderEmails({
+          customerEmail: order.customerEmail,
+          customerName: order.customerName,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          totalCents: order.totalCents,
+          lines: order.items.map((item: { quantity: number; unitCents: number; product: { title: string } }) => ({
+            title: item.product.title,
+            quantity: item.quantity,
+            unitCents: item.unitCents,
+          })),
+        });
+      } catch (error) {
+        console.error("[webhook:payment:order-mail]", error);
+      }
     }
   }
 
