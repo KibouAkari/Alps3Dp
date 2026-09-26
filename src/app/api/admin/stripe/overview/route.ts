@@ -37,8 +37,8 @@ export async function GET(request: Request) {
 
   const [pendingOrders, paidOrders, latestPaidOrder] = await Promise.all([
     db.order.count({ where: { status: "PENDING" } }),
-    db.order.count({ where: { status: "PAID" } }),
-    db.order.findFirst({ where: { status: "PAID" }, orderBy: { paidAt: "desc" }, select: { paidAt: true } }),
+    db.order.count({ where: { status: { in: ["PAID", "SHIPPED"] } } }),
+    db.order.findFirst({ where: { status: { in: ["PAID", "SHIPPED"] } }, orderBy: { paidAt: "desc" }, select: { paidAt: true } }),
   ]);
 
   if (!stripe) {

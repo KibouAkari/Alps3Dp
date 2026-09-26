@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
       const existingOrder = await db.order.findUnique({
         where: { id: orderId },
-        select: { id: true, totalCents: true, customerEmail: true },
+        select: { id: true, totalCents: true },
       });
 
       if (!existingOrder) {
@@ -60,12 +60,6 @@ export async function POST(request: Request) {
 
       if (typeof session.amount_total === "number" && session.amount_total !== existingOrder.totalCents) {
         return NextResponse.json({ received: true, ignored: "amount-mismatch" });
-      }
-
-      const checkoutEmail = session.customer_details?.email?.trim().toLowerCase();
-      const expectedEmail = existingOrder.customerEmail.trim().toLowerCase();
-      if (checkoutEmail && checkoutEmail !== expectedEmail) {
-        return NextResponse.json({ received: true, ignored: "email-mismatch" });
       }
 
       // Conditioning the update on the current status makes this handler safe

@@ -145,7 +145,7 @@ export async function POST(request: Request) {
         subtotalCents: unitCents,
         shippingCents: 0,
         totalCents: unitCents,
-        paymentProvider: "stripe",
+        paymentProvider: "stripe-test",
         paymentMethod: "CARD",
         customerEmail: parsed.data.email || admin.email,
         customerName: admin.name,

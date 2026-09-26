@@ -246,20 +246,9 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
 
   return (
     <section className="fade-in-up space-y-4">
-      <div className={`grid gap-6 ${isFilterOpen ? "lg:grid-cols-[260px_minmax(0,1fr)]" : "lg:grid-cols-[auto_minmax(0,1fr)]"}`}>
+      <div className={`grid gap-6 ${isFilterOpen ? "lg:grid-cols-[260px_minmax(0,1fr)]" : "lg:grid-cols-1"}`}>
+        {isFilterOpen && (
         <div className="h-fit lg:sticky lg:top-6">
-          {!isFilterOpen ? (
-            <button
-              type="button"
-              onClick={() => setIsFilterOpen(true)}
-              className="filter-toggle-button inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-[var(--muted)]"
-              aria-expanded={false}
-            >
-              <FilterMenuIcon className="h-4 w-4" />
-              Filter
-              {hasActiveFilters && <span className="h-1.5 w-1.5 rounded-full bg-neutral-700" aria-hidden="true" />}
-            </button>
-          ) : (
           <aside className="filter-panel-enter panel-surface rounded-2xl p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <span className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--fg)]">
@@ -351,11 +340,24 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
           </FilterGroup>
         </div>
           </aside>
-          )}
         </div>
+        )}
 
         <div className="min-w-0 space-y-4">
-        <div className="relative z-20">
+        <div className={`flex gap-3 ${isFilterOpen ? "" : "flex-col sm:flex-row sm:items-center"}`}>
+          {!isFilterOpen && (
+            <button
+              type="button"
+              onClick={() => setIsFilterOpen(true)}
+              className="filter-toggle-button inline-flex h-11 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-medium text-[var(--muted)]"
+              aria-expanded={false}
+            >
+              <FilterMenuIcon className="h-4 w-4" />
+              Filter
+              {hasActiveFilters && <span className="h-1.5 w-1.5 rounded-full bg-neutral-700" aria-hidden="true" />}
+            </button>
+          )}
+        <div className="relative z-20 min-w-0 flex-1">
           <div className="shop-search-shell relative flex h-11 items-center rounded-xl border border-[var(--surface-border)] bg-[var(--surface)] px-3.5 shadow-sm">
             <span className="mr-3 text-[var(--muted)]"><SearchIcon /></span>
             <input
@@ -415,6 +417,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
               ))}
             </ul>
           )}
+        </div>
         </div>
         {loadError && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{loadError}</p>}
 

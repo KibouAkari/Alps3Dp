@@ -10,7 +10,7 @@ The main goal of this repository is to provide a clean foundation for a real onl
 
 | Area | What It Covers |
 | --- | --- |
-| Storefront | Product browsing, filters, detail pages, and cart actions |
+| Storefront | Product browsing, responsive filters, ranked live search suggestions, detail pages, and cart actions |
 | Checkout | Guest and account checkout with secure Stripe card payment |
 | Orders | Persistent order records, Stripe webhook confirmation, and email follow-up |
 | Admin | Product management, Stripe visibility, and controlled test utilities |
@@ -22,7 +22,7 @@ Alp3D Shop uses Next.js 15 with the App Router, React 19, and TypeScript. Data i
 
 ## How The System Is Structured
 
-The codebase is organized around clear responsibilities. `src/app` contains pages and API routes, `src/components` contains reusable UI building blocks, `src/lib` contains business logic and integration code, `prisma` contains schema and seed scripts, and `public` contains static assets, including the Alp3D Shop logo. In practice, this keeps the storefront, checkout, payments, and admin tooling separated without making the project hard to understand.
+The codebase is organized around clear responsibilities. `src/app` contains pages and API routes, `src/components` contains reusable UI building blocks, `src/lib` contains business logic and integration code, `prisma` contains schema and seed scripts, and `public` contains static assets, including the Alps3Dp logo used in the site navigation, browser favicon, and Apple touch icon. In practice, this keeps the storefront, checkout, payments, and admin tooling separated without making the project hard to understand.
 
 ## Local Setup
 
@@ -36,7 +36,9 @@ The app will be available at `http://localhost:3000`.
 
 Checkout is available to signed-in customers and to anonymous guests: guests keep their cart in the browser (`src/lib/guest-cart.ts`) and provide shipping details directly at checkout, while signed-in customers can reuse saved addresses. Payment is accepted securely through Stripe Checkout by credit or debit card; there is no manual invoice option.
 
-Checkout sessions are created server-side in `src/app/api/checkout/route.ts`. Payment completion is accepted only after Stripe webhook verification in `src/app/api/webhooks/payment/route.ts`, which cross-checks the paid amount, currency, and customer email before marking an order as paid. Stripe redirects the shopper to a dedicated `/success` or `/failed` page rather than back into the checkout form.
+Checkout sessions are created server-side in `src/app/api/checkout/route.ts`. Payment completion is accepted only after Stripe webhook verification in `src/app/api/webhooks/payment/route.ts`, which checks the paid amount and currency before marking an order as paid. A shopper returning from a cancelled Checkout has the matching open session expired server-side; admin pages also reconcile pending orders against Stripe if webhook delivery was missed. Revenue reports count paid Stripe orders (including orders later marked shipped), and do not mix in failed, pending, or test orders.
+
+The storefront search ranks live suggestions across product titles, descriptions, and categories as the customer types. Light and dark appearance follows the device setting until the customer explicitly chooses a theme; reduced-motion settings use a short static intro instead of suppressing the intro entirely.
 
 For environments that use both preview and production domains, Alp3D Shop now resolves Stripe redirect URLs from the active request host when possible. This reduces the risk of a working Stripe setup being misread as broken simply because `APP_URL` still points at an older Vercel or preview domain.
 

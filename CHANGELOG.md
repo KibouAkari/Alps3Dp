@@ -4,6 +4,14 @@
 
 All notable changes to Alp3D Shop are documented in this file.
 
+## 2026-09-26
+
+Storefront improvements: the product search now sits above the result grid, includes ranked live suggestions for product titles, descriptions, and categories, and supports keyboard navigation. Its suggestion panel uses an opaque theme surface. When filters are collapsed, the filter toggle shares a toolbar with search and the product grid expands to the full available width. The first three product-card images are requested eagerly at high priority; a theme-aware shimmer placeholder prevents a white flash while images load.
+
+Theme and branding updates: the saved light/dark choice is now limited to an explicit user selection, otherwise the site follows the device preference and live system changes. Previously saved automatic values are ignored. The intro plays a short static version for reduced-motion users, repeats on a fresh visit, and skips an ordinary refresh. The Alps3Dp logo is registered as both the browser favicon and Apple touch icon. The Bestellen, Drucken, and Liefern icons now use contrasting theme-aware colors.
+
+Admin payment reporting was corrected. A verified paid Checkout Session is no longer rejected solely because its customer email changed during Stripe Checkout. Admin-only dashboard and analytics requests reconcile batches of up to 20 oldest pending Stripe sessions when webhook delivery was missed, and the cancel return now expires its matching open session and marks the order failed. Checkout-session creation failures also mark their orders failed. Revenue and unit counts use paid Stripe orders and their payment timestamps, include shipped paid orders, and exclude manual/test orders; the dashboard separates paid and pending counts. Monitoring now sums clicks across all visible products rather than only the top four. Dashboard and monitoring data are checked against a server-side admin session before querying or reconciling orders.
+
 ## 2026-09-01
 
 TWINT support was removed from the customer checkout, account area, and Stripe administration view. Alp3D Shop now creates Stripe Checkout sessions with card payments only. The checkout API enforces this server-side, so TWINT cannot be re-enabled through a direct request. Existing historical order data remains unchanged.

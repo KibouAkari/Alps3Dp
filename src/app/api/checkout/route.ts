@@ -244,6 +244,7 @@ export async function POST(request: Request) {
   try {
     const stripe = getStripe();
     if (!stripe) {
+      await db.order.update({ where: { id: order.id }, data: { status: "FAILED" } });
       return NextResponse.json(
         { error: `Stripe ist nicht korrekt konfiguriert: ${getStripeConfigurationError()}` },
         { status: 503 },
@@ -283,6 +284,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ checkoutUrl: session.url, orderId: order.id });
   } catch (error) {
     console.error("[checkout:stripe]", error);
+    await db.order.updateMany({
+      where: { id: order.id, status: "PENDING" },
+      data: { status: "FAILED" },
+    });
     const stripeMessage = error instanceof Error ? error.message : "Unbekannter Stripe-Fehler";
     return NextResponse.json(
       {

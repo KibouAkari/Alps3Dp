@@ -5,14 +5,20 @@ import { db } from "@/lib/db";
 
 import { AdminGuard } from "@/components/admin-guard";
 import { ArrowLeftIcon } from "@/components/icons";
+import { reconcileRecentStripeOrders } from "@/lib/reconcile-stripe-orders";
+import { getSessionUser } from "@/lib/session";
 
 // Revenue and product-performance summary computed on the fly from paid
 // orders; always rendered fresh (force-dynamic) since it's an admin-only report.
 export const dynamic = "force-dynamic";
 
 export default async function AdminAnalyticsPage() {
+  const user = await getSessionUser();
+  if (!user || user.role !== "ADMIN") return <AdminGuard>{null}</AdminGuard>;
+
+  await reconcileRecentStripeOrders();
   const paidOrdersRaw = await db.order.findMany({
-    where: { status: "PAID" },
+    where: { status: { in: ["PAID", "SHIPPED"] }, paymentProvider: "stripe", paidAt: { not: null } },
     include: { items: { include: { product: true } } },
   });
   const paidOrders = paidOrdersRaw as Array<{
@@ -36,12 +42,18 @@ export default async function AdminAnalyticsPage() {
     .sort((a, b) => b.sold - a.sold)
     .slice(0, 4);
 
-  const clicksProductsRaw = await db.product.findMany({
-    where: { isHidden: false, deletedAt: null },
-    select: { id: true, title: true, clicks: true },
-    orderBy: { clicks: "desc" },
-    take: 4,
-  });
+  const [clicksProductsRaw, clickTotals] = await Promise.all([
+    db.product.findMany({
+      where: { isHidden: false, deletedAt: null },
+      select: { id: true, title: true, clicks: true },
+      orderBy: { clicks: "desc" },
+      take: 4,
+    }),
+    db.product.aggregate({
+      where: { isHidden: false, deletedAt: null },
+      _sum: { clicks: true },
+    }),
+  ]);
   const clicksProducts = clicksProductsRaw as Array<{ id: string; title: string; clicks: number }>;
 
   const topByClicks = clicksProducts.map((entry) => ({ title: entry.title, clicks: entry.clicks }));
@@ -73,7 +85,7 @@ export default async function AdminAnalyticsPage() {
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="text-sm text-slate-500">Produktklicks</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">{topByClicks.reduce((s: number, p: { clicks: number }) => s + p.clicks, 0)}</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">{clickTotals._sum.clicks || 0}</p>
           </div>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">

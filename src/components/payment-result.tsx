@@ -15,7 +15,17 @@ export function PaymentResult({ variant }: PaymentResultProps) {
   useEffect(() => {
     if (isSuccess) {
       clearGuestCart();
+      return;
     }
+
+    const orderId = new URLSearchParams(window.location.search).get("order");
+    if (!orderId) return;
+
+    void fetch("/api/checkout/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId }),
+    }).catch(() => undefined);
   }, [isSuccess]);
 
   return (

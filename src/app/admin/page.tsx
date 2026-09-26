@@ -8,6 +8,8 @@ import { AdminOpsTools } from "@/components/admin-ops-tools";
 import { formatChf } from "@/lib/data";
 import { db } from "@/lib/db";
 import { formatOrderNumber } from "@/lib/order-number";
+import { reconcileRecentStripeOrders } from "@/lib/reconcile-stripe-orders";
+import { getSessionUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -22,18 +24,31 @@ const statusColors: Record<string, string> = {
   CANCELLED: "status-pill-hidden",
 };
 
+const statusLabels: Record<string, string> = {
+  PAID: "Bezahlt",
+  PENDING: "Offen",
+  FAILED: "Fehlgeschlagen",
+  CANCELLED: "Abgebrochen",
+  SHIPPED: "Versendet",
+};
+
 export default async function AdminHomePage() {
-  const [paid30Days, orderCount, productsCount, latestOrdersRaw] = await Promise.all([
+  const user = await getSessionUser();
+  if (!user || user.role !== "ADMIN") return <AdminGuard>{null}</AdminGuard>;
+
+  await reconcileRecentStripeOrders();
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const [paid30Days, paidOrderCount, pendingOrderCount, productsCount, latestOrdersRaw] = await Promise.all([
     db.order.aggregate({
       where: {
-        status: "PAID",
-        createdAt: {
-          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        },
+        status: { in: ["PAID", "SHIPPED"] },
+        paymentProvider: "stripe",
+        paidAt: { gte: thirtyDaysAgo },
       },
       _sum: { totalCents: true },
     }),
-    db.order.count(),
+    db.order.count({ where: { status: { in: ["PAID", "SHIPPED"] }, paymentProvider: "stripe" } }),
+    db.order.count({ where: { status: "PENDING", paymentProvider: "stripe" } }),
     db.product.count(),
     db.order.findMany({
       orderBy: { createdAt: "desc" },
@@ -50,8 +65,8 @@ export default async function AdminHomePage() {
   ]);
 
   const stats = [
-    { label: "Umsatz (30 Tage)", value: formatChf(paid30Days._sum.totalCents || 0), change: `${orderCount} Bestellungen` },
-    { label: "Bestellungen", value: String(orderCount), change: "Live" },
+    { label: "Umsatz (30 Tage)", value: formatChf(paid30Days._sum.totalCents || 0), change: "Bezahlte Stripe-Bestellungen" },
+    { label: "Bezahlte Bestellungen", value: String(paidOrderCount), change: `${pendingOrderCount} offen` },
     { label: "Produkte", value: String(productsCount), change: "Live" },
     { label: "Conversion", value: "-", change: "Noch keine Tracking-Daten" },
   ];
@@ -136,7 +151,7 @@ export default async function AdminHomePage() {
                     <td className="px-4 py-3 font-medium text-slate-900">{order.amount}</td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[order.status] ?? "status-pill-hidden"}`}>
-                        {order.status}
+                        {statusLabels[order.status] ?? order.status}
                       </span>
                     </td>
                   </tr>
