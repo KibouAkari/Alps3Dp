@@ -401,11 +401,13 @@ body.theme-switching * {
 }
 
 .process-step-icon {
-  background: linear-gradient(160deg, var(--c-charcoal), var(--c-black));
+  color: var(--c-black);
+  background: linear-gradient(160deg, var(--c-gray-light), var(--c-white));
 }
 
 :root[data-theme="dark"] .process-step-icon {
-  background: linear-gradient(160deg, var(--c-gray-light), var(--c-white));
+  color: var(--c-white);
+  background: linear-gradient(160deg, var(--c-charcoal), var(--c-black));
 }
 
 .theme-pill {

@@ -62,7 +62,7 @@ export default function AboutPage() {
             { icon: TruckIcon, title: "Liefern", desc: "Schneller Versand innerhalb der Schweiz, in der Regel 3–5 Werktage." },
           ].map((item) => (
             <div key={item.title} className="panel-soft hover-lift rounded-xl p-4">
-              <span className="process-step-icon inline-flex h-10 w-10 items-center justify-center rounded-full text-white shadow-sm">
+              <span className="process-step-icon inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm">
                 <item.icon className="h-5 w-5" />
               </span>
               <h3 className="mt-3 font-semibold text-slate-900">{item.title}</h3>
