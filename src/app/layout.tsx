@@ -61,7 +61,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="de">
       <body className="antialiased transition-colors duration-300" suppressHydrationWarning>
         <Script id="theme-init" strategy="beforeInteractive">
-          {`(() => { try { const stored = localStorage.getItem('alps3dp.theme'); const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches; const theme = stored === 'light' || stored === 'dark' ? stored : (prefersDark ? 'dark' : 'light'); document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; } catch (error) {} })();`}
+          {`(() => { try { const stored = localStorage.getItem('alps3dp.theme.preference'); const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches; const theme = stored === 'light' || stored === 'dark' ? stored : (prefersDark ? 'dark' : 'light'); document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; } catch (error) {} })();`}
         </Script>
         <ThemeProvider>
           <IntroScreen />

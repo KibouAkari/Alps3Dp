@@ -14,7 +14,7 @@ type ThemeContextValue = {
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
-const THEME_STORAGE_KEY = "alps3dp.theme";
+const THEME_STORAGE_KEY = "alps3dp.theme.preference";
 
 function getPreferredTheme(): Theme {
   if (typeof window === "undefined") {
@@ -46,6 +46,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setTheme = (nextTheme: Theme) => {
     document.body.classList.add("theme-switching");
     setThemeState(nextTheme);
+    window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
     window.setTimeout(() => document.body.classList.remove("theme-switching"), 320);
   };
 
@@ -53,18 +54,40 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement;
     root.dataset.theme = theme;
     root.style.colorScheme = theme;
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
 
   useEffect(() => {
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === THEME_STORAGE_KEY && (event.newValue === "light" || event.newValue === "dark")) {
-        setThemeState(event.newValue);
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const onSystemThemeChange = (event: MediaQueryListEvent) => {
+      if (!window.localStorage.getItem(THEME_STORAGE_KEY)) {
+        setThemeState(event.matches ? "dark" : "light");
       }
     };
 
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === THEME_STORAGE_KEY) {
+        setThemeState(
+          event.newValue === "light" || event.newValue === "dark"
+            ? event.newValue
+            : getPreferredTheme()
+        );
+      }
+    };
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", onSystemThemeChange);
+    } else {
+      mediaQuery.addListener(onSystemThemeChange);
+    }
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener("change", onSystemThemeChange);
+      } else {
+        mediaQuery.removeListener(onSystemThemeChange);
+      }
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   const value = useMemo<ThemeContextValue>(

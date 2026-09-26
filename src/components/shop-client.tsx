@@ -37,6 +37,43 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4" aria-hidden="true">
+      <circle cx="10.8" cy="10.8" r="6.3" />
+      <path d="m15.5 15.5 4 4" />
+    </svg>
+  );
+}
+
+function normalizeSearchText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("de-CH")
+    .replace(/ß/g, "ss")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+function getSearchScore(product: Product, query: string) {
+  const normalizedQuery = normalizeSearchText(query);
+  const title = normalizeSearchText(product.title);
+  const searchableText = `${title} ${normalizeSearchText(product.description)} ${normalizeSearchText(product.category)}`;
+  const terms = normalizedQuery.split(/\s+/).filter(Boolean);
+
+  if (!terms.every((term) => searchableText.includes(term))) return -1;
+  if (title === normalizedQuery) return 0;
+  if (title.startsWith(normalizedQuery)) return 1;
+  if (title.includes(normalizedQuery)) return 2;
+  if (terms.every((term) => title.includes(term))) return 3;
+  return 4;
+}
+
+function matchesSearchQuery(product: Product, query: string) {
+  return getSearchScore(product, query) >= 0;
+}
+
 function FilterGroup({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -71,6 +108,8 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
   const [sortMode, setSortMode] = useState<SortMode>("relevance");
   const [onlySale, setOnlySale] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
 
   useEffect(() => {
     if (initialProducts.length > 0) {
@@ -105,6 +144,47 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
 
   const minSliderPrice = useMemo(() => Math.min(5, maxAvailablePrice), [maxAvailablePrice]);
 
+  const suggestions = useMemo(() => {
+    if (query.trim().length < 2) return [];
+
+    return visibleProducts
+      .filter((product) => {
+        const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
+        const matchesPrice = (product.salePriceCents ?? product.priceCents) <= maxPrice * 100;
+        const matchesSale = !onlySale || Boolean(product.salePriceCents && product.salePriceCents < product.priceCents);
+        return matchesCategory && matchesPrice && matchesSale;
+      })
+      .map((product) => ({ product, score: getSearchScore(product, query) }))
+      .filter((entry) => entry.score >= 0)
+      .sort((a, b) => a.score - b.score || a.product.title.localeCompare(b.product.title, "de-CH"))
+      .slice(0, 5)
+      .map((entry) => entry.product);
+  }, [maxPrice, onlySale, query, selectedCategory, visibleProducts]);
+
+  const showSuggestions = isSearchFocused && query.trim().length >= 2 && suggestions.length > 0;
+
+  const selectSuggestion = (product: Product) => {
+    setQuery(product.title);
+    setActiveSuggestionIndex(-1);
+    setIsSearchFocused(false);
+  };
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown" && suggestions.length > 0) {
+      event.preventDefault();
+      setActiveSuggestionIndex((index) => (index + 1) % suggestions.length);
+    } else if (event.key === "ArrowUp" && suggestions.length > 0) {
+      event.preventDefault();
+      setActiveSuggestionIndex((index) => (index <= 0 ? suggestions.length - 1 : index - 1));
+    } else if (event.key === "Enter" && activeSuggestionIndex >= 0 && suggestions[activeSuggestionIndex]) {
+      event.preventDefault();
+      selectSuggestion(suggestions[activeSuggestionIndex]);
+    } else if (event.key === "Escape") {
+      setIsSearchFocused(false);
+      setActiveSuggestionIndex(-1);
+    }
+  };
+
   useEffect(() => {
     setMaxPrice((current) => {
       if (current > maxAvailablePrice) {
@@ -123,9 +203,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
         return false;
       }
 
-      const matchesQuery =
-        product.title.toLowerCase().includes(query.toLowerCase()) ||
-        product.description.toLowerCase().includes(query.toLowerCase());
+      const matchesQuery = matchesSearchQuery(product, query);
       const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
       const matchesPrice = (product.salePriceCents ?? product.priceCents) <= maxPrice * 100;
       const matchesSale = !onlySale || Boolean(product.salePriceCents && product.salePriceCents < product.priceCents);
@@ -168,7 +246,7 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
 
   return (
     <section className="fade-in-up space-y-4">
-      <div className={`grid gap-6 ${isFilterOpen ? "lg:grid-cols-[260px_1fr]" : "lg:grid-cols-1"}`}>
+      <div className={`grid gap-6 ${isFilterOpen ? "lg:grid-cols-[260px_minmax(0,1fr)]" : "lg:grid-cols-[auto_minmax(0,1fr)]"}`}>
         <div className="h-fit lg:sticky lg:top-6">
           {!isFilterOpen ? (
             <button
@@ -207,15 +285,6 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
             </div>
 
         <div className="space-y-0">
-          <FilterGroup title="Suche">
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Produkt suchen..."
-              className="field-input"
-            />
-          </FilterGroup>
-
           <FilterGroup title="Kategorie">
             <div className="space-y-1">
               {availableCategories.map((category) => (
@@ -285,7 +354,68 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
           )}
         </div>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
+        <div className="relative z-20">
+          <div className="shop-search-shell relative flex h-11 items-center rounded-xl border border-[var(--surface-border)] bg-[var(--surface)] px-3.5 shadow-sm">
+            <span className="mr-3 text-[var(--muted)]"><SearchIcon /></span>
+            <input
+              id="shop-product-search"
+              type="search"
+              role="combobox"
+              aria-label="Produkte suchen"
+              aria-autocomplete="list"
+              aria-expanded={showSuggestions}
+              aria-controls="shop-product-suggestions"
+              aria-activedescendant={showSuggestions && activeSuggestionIndex >= 0 ? `shop-suggestion-${activeSuggestionIndex}` : undefined}
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setActiveSuggestionIndex(-1);
+              }}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => window.setTimeout(() => setIsSearchFocused(false), 120)}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Produkte suchen..."
+              autoComplete="off"
+              className="h-full min-w-0 flex-1 bg-transparent text-sm text-[var(--fg)] outline-none placeholder:text-[var(--muted)]"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  setActiveSuggestionIndex(-1);
+                }}
+                aria-label="Suche leeren"
+                className="press ml-2 grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm text-[var(--muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--fg)]"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          {showSuggestions && (
+            <ul id="shop-product-suggestions" role="listbox" className="shop-search-suggestions absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-[var(--surface-border)] bg-[var(--surface)] p-1.5 shadow-xl">
+              {suggestions.map((product, index) => (
+                <li key={product.id} role="presentation">
+                  <button
+                    id={`shop-suggestion-${index}`}
+                    type="button"
+                    role="option"
+                    aria-selected={activeSuggestionIndex === index}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onMouseEnter={() => setActiveSuggestionIndex(index)}
+                    onClick={() => selectSuggestion(product)}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${activeSuggestionIndex === index ? "bg-[var(--accent-soft)]" : "hover:bg-[var(--accent-soft)]"}`}
+                  >
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[var(--surface-soft)] text-[var(--muted)]"><SearchIcon /></span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--fg)]">{product.title}</span>
+                    <span className="hidden shrink-0 text-xs text-[var(--muted)] sm:inline">{product.category}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         {loadError && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{loadError}</p>}
 
         {hasActiveFilters && (
@@ -311,8 +441,8 @@ export function ShopClient({ initialProducts = [], initialCategories = [] }: Sho
 
         {filteredProducts.length > 0 && (
           <div className="stagger-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+            {filteredProducts.map((product, index) => (
+              <ProductCard key={product.id} product={product} priority={index < 3} />
             ))}
           </div>
         )}

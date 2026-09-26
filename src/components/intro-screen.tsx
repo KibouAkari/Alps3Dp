@@ -3,8 +3,7 @@
 // One-time splash intro on first load per browser session: a short sequence
 // of phrases blur/fade through one another, then the wordmark reveals with
 // a drawn underline, before the whole overlay fades to reveal the site.
-// Skipped entirely on repeat navigations within the same session and for
-// prefers-reduced-motion.
+// Replayed on a new visit, skipped on refresh, and shortened for reduced motion.
 import { useEffect, useState } from "react";
 
 const SESSION_KEY = "alps3dp.introShown";
@@ -26,14 +25,35 @@ export function IntroScreen() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    if (sessionStorage.getItem(SESSION_KEY) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    let hasPlayed = false;
+    try {
+      hasPlayed = sessionStorage.getItem(SESSION_KEY) === "1";
+    } catch {
+      // Storage may be unavailable in restricted browser contexts.
+    }
+
+    if (hasPlayed && navigation?.type === "reload") {
       return;
     }
 
-    sessionStorage.setItem(SESSION_KEY, "1");
-    setStage("phrases");
+    try {
+      sessionStorage.setItem(SESSION_KEY, "1");
+    } catch {
+      // The intro can still play when storage is unavailable.
+    }
 
     const scheduled: ReturnType<typeof setTimeout>[] = [];
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReducedMotion) {
+      setStage("logo");
+      scheduled.push(setTimeout(() => setStage("leaving"), 1500));
+      scheduled.push(setTimeout(() => setStage("hidden"), 1600));
+      return () => scheduled.forEach(clearTimeout);
+    }
+
+    setStage("phrases");
 
     PHRASES.forEach((_, index) => {
       if (index === 0) return;

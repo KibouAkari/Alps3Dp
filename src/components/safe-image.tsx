@@ -23,7 +23,7 @@ export function SafeImage({ src, fallbackSrc = "/images/placeholder-product.svg"
   }, [src, fallbackSrc]);
 
   const isExternalSource = typeof currentSrc === "string" && /^(data:image\/|https?:\/\/)/i.test(currentSrc);
-  const { fill, ...imageRest } = rest as ImageProps;
+  const { fill, priority, loading, fetchPriority, ...imageRest } = rest as ImageProps;
 
   if (isExternalSource) {
     return (
@@ -31,7 +31,8 @@ export function SafeImage({ src, fallbackSrc = "/images/placeholder-product.svg"
         {...imageRest}
         src={currentSrc}
         alt={alt}
-        loading={imageRest.loading || "lazy"}
+        loading={priority ? "eager" : loading || "lazy"}
+        fetchPriority={priority ? "high" : fetchPriority}
         decoding="async"
         onError={() => setCurrentSrc(fallbackSrc)}
         className={imageRest.className}
@@ -47,6 +48,9 @@ export function SafeImage({ src, fallbackSrc = "/images/placeholder-product.svg"
       alt={alt}
       onError={() => setCurrentSrc(fallbackSrc)}
       fill={fill}
+      priority={priority}
+      loading={priority ? "eager" : loading}
+      fetchPriority={priority ? "high" : fetchPriority}
       unoptimized={isExternalSource}
     />
   );
