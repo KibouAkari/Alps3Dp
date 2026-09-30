@@ -4,6 +4,8 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   images: {
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       {
         protocol: "https",
@@ -17,6 +19,17 @@ const nextConfig = {
   },
   async headers() {
     return [
+      {
+        // Static assets never change filename-to-content, so let browsers/CDN
+        // cache them for a year instead of re-fetching on every visit.
+        source: "/images/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
       {
         source: "/:path*",
         headers: [

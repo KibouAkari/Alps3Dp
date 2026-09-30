@@ -61,8 +61,42 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const baseUrl = getAppBaseUrl();
+  // Organization schema tells Google which logo to use for the brand/knowledge
+  // panel when someone searches "Alps3Dp" — this is what was missing.
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Alps3Dp",
+    url: baseUrl,
+    logo: `${baseUrl}/images/logo.jpeg`,
+    image: `${baseUrl}/images/logo.jpeg`,
+    description: "Handgefertigte 3D-gedruckte Produkte aus der Schweiz.",
+  };
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Alps3Dp",
+    url: baseUrl,
+  };
+
   return (
     <html lang="de">
+      <head>
+        {/* Speed up first paint of externally hosted product images. */}
+        <link rel="preconnect" href="https://images.unsplash.com" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        <link rel="preconnect" href="https://images.pexels.com" />
+        <link rel="dns-prefetch" href="https://images.pexels.com" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+      </head>
       <body className="antialiased transition-colors duration-300" suppressHydrationWarning>
         <Script id="theme-init" strategy="beforeInteractive">
           {`(() => { try { const stored = localStorage.getItem('alps3dp.theme.preference'); const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches; const theme = stored === 'light' || stored === 'dark' ? stored : (prefersDark ? 'dark' : 'light'); document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; } catch (error) {} })();`}
