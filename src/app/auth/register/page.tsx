@@ -16,6 +16,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   return (
     <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm soft-pop">
@@ -28,19 +29,25 @@ export default function RegisterPage() {
           event.preventDefault();
           setError(null);
           setStatus(null);
+          if (password.length < 8) {
+            setError("Das Passwort muss mindestens 8 Zeichen lang sein.");
+            return;
+          }
+          setSubmitting(true);
           try {
             await register({
               salutation: salutation || undefined,
               firstName: firstName || undefined,
               lastName: lastName || undefined,
               username: username || undefined,
-              email,
+              email: email.trim(),
               password,
             });
-            setStatus("Registrierung erfolgreich. Bitte bestätige deine E-Mail.");
-            router.push("/account");
+            setStatus(`Registrierung erfolgreich. Wir haben dir eine E-Mail an ${email.trim()} gesendet – bitte bestätige sie.`);
+            window.setTimeout(() => router.push("/account"), 2500);
           } catch (err) {
             setError(err instanceof Error ? err.message : "Registrierung fehlgeschlagen.");
+            setSubmitting(false);
           }
         }}
       >
@@ -76,6 +83,8 @@ export default function RegisterPage() {
         />
         <input
           type="email"
+          required
+          autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="E-Mail"
@@ -83,13 +92,16 @@ export default function RegisterPage() {
         />
         <input
           type="password"
+          required
+          minLength={8}
+          autoComplete="new-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          placeholder="Passwort"
+          placeholder="Passwort (mind. 8 Zeichen)"
           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
         />
-        <button type="submit" className="press w-full rounded-lg bg-neutral-900 px-4 py-2 font-semibold text-white transition hover:bg-neutral-700">
-          Registrieren
+        <button type="submit" disabled={submitting} className="press w-full rounded-lg bg-neutral-900 px-4 py-2 font-semibold text-white transition hover:bg-neutral-700 disabled:opacity-60">
+          {submitting ? "Bitte warten…" : "Registrieren"}
         </button>
       </form>
     </div>

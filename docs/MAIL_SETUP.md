@@ -11,7 +11,7 @@ go into your `.env` (local) or your hosting provider's environment settings
 
 ## 1. Choose a provider (5 minutes)
 
-You only need **one** of the two. Resend is recommended — it's simpler to set up.
+You only need **one** of the two. If `SMTP_HOST`, `SMTP_USER` and `SMTP_PASSWORD` are all set, SMTP is used; otherwise Resend (if `RESEND_API_KEY` is set).
 
 ### Option A — Resend (recommended)
 
@@ -25,9 +25,30 @@ You only need **one** of the two. Resend is recommended — it's simpler to set 
    RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxx
    ```
 
-### Option B — SMTP (e.g. your own mailbox, SES, Postmark, Mailgun, etc.)
+### Option B — SMTP (e.g. IONOS mailbox, SES, Postmark, Mailgun, etc.)
 
-Only used if `RESEND_API_KEY` is empty.
+#### IONOS (alps3dp.ch)
+
+Use the mailbox `order@alps3dp.ch` as the sender. IONOS only accepts mails whose
+`From` address equals the authenticated mailbox, so `MAIL_FROM` must match `SMTP_USER`.
+
+```
+SMTP_HOST=smtp.ionos.de
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=order@alps3dp.ch
+SMTP_PASSWORD=<mailbox password>
+MAIL_FROM=Alps3Dp <order@alps3dp.ch>
+ADMIN_ORDER_EMAIL=order@alps3dp.ch
+MAIL_SUPPORT_EMAIL=info@alps3dp.ch
+```
+
+(Port 465 with `SMTP_SECURE=true` also works.) Also make sure SPF (and ideally DKIM/DMARC)
+for alps3dp.ch is set in the IONOS DNS so mails do not land in spam. Set the same
+variables in Vercel → Settings → Environment Variables and redeploy.
+
+#### Generic SMTP
+
 
 ```
 SMTP_HOST=smtp.your-provider.com

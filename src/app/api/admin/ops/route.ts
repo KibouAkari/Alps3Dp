@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireAdminFromRequest } from "@/lib/admin-auth";
 import { getAppBaseUrl } from "@/lib/app-url";
 import { db } from "@/lib/db";
-import { sendOrderEmails } from "@/lib/mail";
+import { sendOrderEmailsForOrder } from "@/lib/mail";
 import { getStripe, getStripeConfigurationError } from "@/lib/payments";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
@@ -94,18 +94,7 @@ export async function POST(request: Request) {
       },
     });
 
-    await sendOrderEmails({
-      customerEmail: order.customerEmail,
-      customerName: order.customerName,
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      totalCents: order.totalCents,
-      lines: order.items.map((item: { quantity: number; unitCents: number; product: { title: string } }) => ({
-        title: item.product.title,
-        quantity: item.quantity,
-        unitCents: item.unitCents,
-      })),
-    });
+    await sendOrderEmailsForOrder(order);
 
     return NextResponse.json({
       success: true,

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { sendOrderEmails } from "@/lib/mail";
+import { sendOrderEmailsForOrder } from "@/lib/mail";
 import { getStripe } from "@/lib/payments";
 import { getSessionUser } from "@/lib/session";
 
@@ -46,18 +46,7 @@ export async function reconcileRecentStripeOrders() {
         if (cart) await db.cartItem.deleteMany({ where: { cartId: cart.id } });
 
         try {
-          await sendOrderEmails({
-            customerEmail: order.customerEmail,
-            customerName: order.customerName,
-            orderId: order.id,
-            orderNumber: order.orderNumber,
-            totalCents: order.totalCents,
-            lines: order.items.map((item) => ({
-              title: item.product.title,
-              quantity: item.quantity,
-              unitCents: item.unitCents,
-            })),
-          });
+          await sendOrderEmailsForOrder(order);
         } catch (error) {
           console.error("[admin:stripe:reconcile:order-mail]", error);
         }

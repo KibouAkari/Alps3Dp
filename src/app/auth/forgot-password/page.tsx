@@ -8,6 +8,7 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   return (
     <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm soft-pop">
@@ -22,16 +23,24 @@ export default function ForgotPasswordPage() {
           setStatus(null);
           setError(null);
 
-          const response = await fetch("/api/password/forgot", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email }),
-          });
+          setSubmitting(true);
+          try {
+            const response = await fetch("/api/password/forgot", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: email.trim() }),
+            });
 
-          const data = await parseJsonSafely(response);
-          if (!response.ok) {
-            setError((data.error as string | undefined) || "Fehler beim Versand des Reset-Links.");
+            const data = await parseJsonSafely(response);
+            if (!response.ok) {
+              setError((data.error as string | undefined) || "Fehler beim Versand des Reset-Links.");
+              return;
+            }
+          } catch {
+            setError("Netzwerkfehler. Bitte versuche es erneut.");
             return;
+          } finally {
+            setSubmitting(false);
           }
 
           setStatus("Wenn ein Konto existiert, wurde ein Reset-Link versendet.");
@@ -39,13 +48,15 @@ export default function ForgotPasswordPage() {
       >
         <input
           type="email"
+          required
+          autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="E-Mail"
           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
         />
-        <button type="submit" className="press w-full rounded-lg bg-neutral-900 px-4 py-2 font-semibold text-white transition hover:bg-neutral-700">
-          Reset-Link senden
+        <button type="submit" disabled={submitting} className="press w-full rounded-lg bg-neutral-900 px-4 py-2 font-semibold text-white transition hover:bg-neutral-700 disabled:opacity-60">
+          {submitting ? "Wird gesendet…" : "Reset-Link senden"}
         </button>
       </form>
     </div>

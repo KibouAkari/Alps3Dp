@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { getAppBaseUrl } from "@/lib/app-url";
-import { sendVerifyEmail, sendWelcomeEmail } from "@/lib/mail";
+import { sendWelcomeVerifyEmail } from "@/lib/mail";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { hashPassword, createOpaqueToken, hashOpaqueToken } from "@/lib/security";
 import { createSessionForUser, AUTH_COOKIE_NAME } from "@/lib/session";
@@ -42,7 +42,15 @@ export async function POST(request: Request) {
   const parsed = registerSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Ungueltige Eingaben." }, { status: 400 });
+    const fields = new Set(parsed.error.issues.map((issue) => issue.path[0]));
+    const message = fields.has("email")
+      ? "Bitte gib eine gültige E-Mail-Adresse ein."
+      : fields.has("password")
+        ? "Das Passwort muss mindestens 8 Zeichen lang sein."
+        : fields.has("username")
+          ? "Der Username muss 3–32 Zeichen lang sein (Buchstaben, Zahlen, . _ -)."
+          : "Ungültige Eingaben.";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   const email = parsed.data.email.trim().toLowerCase();
@@ -86,15 +94,14 @@ export async function POST(request: Request) {
     user.email.split("@")[0] ||
     "bei Alps3Dp";
 
-  const mailResults = await Promise.allSettled([
-    sendVerifyEmail(email, `${appUrl}/api/auth/verify-email?token=${verifyToken}`),
-    sendWelcomeEmail({ to: email, name: displayName }),
-  ]);
-
-  for (const result of mailResults) {
-    if (result.status === "rejected") {
-      console.error("[auth:register:mail]", result.reason);
-    }
+  try {
+    await sendWelcomeVerifyEmail({
+      to: email,
+      name: displayName,
+      verifyUrl: `${appUrl}/api/auth/verify-email?token=${verifyToken}`,
+    });
+  } catch (error) {
+    console.error("[auth:register:mail]", error);
   }
 
   const { token, expiresAt } = await createSessionForUser(user.id);

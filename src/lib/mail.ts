@@ -36,7 +36,11 @@ function getResendClient() {
 }
 
 function getMailFrom() {
-  return process.env.MAIL_FROM?.trim() || process.env.SMTP_USER?.trim() || "Alps3Dp <noreply@alps3dp.ch>";
+  return (
+    process.env.MAIL_FROM?.trim() ||
+    process.env.SMTP_USER?.trim() ||
+    "Alps3Dp <noreply@alps3dp.ch>"
+  );
 }
 
 // Central branding config so the mail look & feel (logo, colors, texts) can
@@ -54,7 +58,8 @@ function getBrandConfig() {
       process.env.ADMIN_ORDER_EMAIL?.trim() ||
       "support@alps3dp.ch",
     footerText:
-      process.env.MAIL_FOOTER_TEXT?.trim() || "Alps3Dp · Handgefertigte 3D-gedruckte Produkte aus der Schweiz",
+      process.env.MAIL_FOOTER_TEXT?.trim() ||
+      "Alps3Dp · Handgefertigte 3D-gedruckte Produkte aus der Schweiz",
   };
 }
 
@@ -112,10 +117,16 @@ function getMailSender() {
   return cachedMailSender;
 }
 
-async function sendMail(to: string, subject: string, html: string, options?: { replyTo?: string }) {
+async function sendMail(
+  to: string,
+  subject: string,
+  html: string,
+  options?: { replyTo?: string },
+) {
   const sender = getMailSender();
   if (!sender) {
-    const message = "Mail-Versand ist nicht konfiguriert. RESEND_API_KEY oder SMTP-Zugangsdaten fehlen.";
+    const message =
+      "Mail-Versand ist nicht konfiguriert. RESEND_API_KEY oder SMTP-Zugangsdaten fehlen.";
     console.error("[mail:disabled]", { to, subject, message });
     if (process.env.NODE_ENV === "production") {
       throw new Error(message);
@@ -132,35 +143,33 @@ async function sendMail(to: string, subject: string, html: string, options?: { r
   });
 }
 
-function renderMailShell(params: { title: string; preview: string; contentHtml: string }) {
+function renderMailShell(params: {
+  title: string;
+  preview: string;
+  contentHtml: string;
+}) {
   const brand = getBrandConfig();
   return `
-    <div style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;color:#0f172a;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px;">
+    <div style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;color:#0f172a;">
+      <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;">${escapeHtml(params.preview)}</span>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:28px 12px;">
         <tr>
           <td align="center">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#ffffff;border:1px solid #cbd5e1;border-radius:16px;overflow:hidden;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden;">
               <tr>
-                <td style="padding:18px 24px;background:linear-gradient(120deg,${brand.primaryColor},${brand.accentColor});">
-                  <table role="presentation" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td style="vertical-align:middle;padding-right:10px;">
-                        <img src="${escapeHtml(brand.logoUrl)}" alt="${escapeHtml(brand.name)}" width="28" height="28" style="display:block;border-radius:50%;border:0;" />
-                      </td>
-                      <td style="vertical-align:middle;color:#e0f2fe;font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;">${escapeHtml(brand.name)}</td>
-                    </tr>
-                  </table>
+                <td align="center" bgcolor="${brand.accentColor}" style="padding:28px 24px 24px;background-color:${brand.accentColor};background-image:linear-gradient(135deg,${brand.primaryColor},${brand.accentColor});">
+                  <img src="${escapeHtml(brand.logoUrl)}" alt="${escapeHtml(brand.name)}" width="76" height="76" style="display:block;margin:0 auto 10px;border-radius:50%;border:3px solid rgba(255,255,255,.85);background:#ffffff;" />
+                  <div style="color:#ffffff;font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;">${escapeHtml(brand.name)}</div>
                 </td>
               </tr>
               <tr>
-                <td style="padding:24px;">
-                  <p style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;">${escapeHtml(params.preview)}</p>
-                  <h1 style="margin:0 0 14px;font-size:24px;line-height:1.2;color:#0f172a;">${escapeHtml(params.title)}</h1>
-                  <div style="font-size:15px;line-height:1.6;color:#334155;">${params.contentHtml}</div>
+                <td style="padding:30px 28px 26px;">
+                  <h1 style="margin:0 0 16px;font-size:24px;line-height:1.25;color:#0f172a;">${escapeHtml(params.title)}</h1>
+                  <div style="font-size:15px;line-height:1.65;color:#334155;">${params.contentHtml}</div>
                 </td>
               </tr>
               <tr>
-                <td style="padding:16px 24px;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;line-height:1.5;">
+                <td align="center" style="padding:18px 24px;background:#f8fafc;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;line-height:1.6;">
                   ${escapeHtml(brand.footerText)}<br />
                   <a href="${escapeHtml(brand.appUrl)}" style="color:${brand.accentColor};text-decoration:none;">${escapeHtml(brand.appUrl.replace(/^https?:\/\//, ""))}</a>
                   &nbsp;·&nbsp;
@@ -175,8 +184,97 @@ function renderMailShell(params: { title: string; preview: string; contentHtml: 
   `;
 }
 
-function renderButton(url: string, label: string, brand: ReturnType<typeof getBrandConfig>) {
-  return `<p style="margin-top:18px;"><a href="${escapeHtml(url)}" style="display:inline-block;background:${brand.accentColor};color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:600;">${escapeHtml(label)}</a></p>`;
+function renderButton(
+  url: string,
+  label: string,
+  brand: ReturnType<typeof getBrandConfig>,
+) {
+  return `<p style="margin:22px 0 0;"><a href="${escapeHtml(url)}" style="display:inline-block;background:${brand.accentColor};color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:10px;font-weight:700;font-size:15px;">${escapeHtml(label)}</a></p>`;
+}
+
+function renderLinkFallback(url: string) {
+  return `<p style="margin-top:18px;color:#64748b;font-size:12px;word-break:break-all;">Falls der Button nicht funktioniert, kopiere diesen Link in deinen Browser:<br />${escapeHtml(url)}</p>`;
+}
+
+function formatChf(cents: number) {
+  return `CHF ${(cents / 100).toFixed(2)}`;
+}
+
+const PAYMENT_LABELS: Record<string, string> = {
+  CARD: "Kreditkarte",
+  TWINT: "TWINT",
+  INVOICE: "Rechnung",
+};
+
+export type OrderMailData = {
+  customerEmail: string;
+  customerName: string;
+  orderId: string;
+  orderNumber: number;
+  totalCents: number;
+  subtotalCents?: number;
+  shippingCents?: number;
+  paymentMethod?: string;
+  createdAt?: Date;
+  shipping?: {
+    address1: string;
+    address2?: string | null;
+    zip: string;
+    city: string;
+    country: string;
+  };
+  lines: Array<{ title: string; quantity: number; unitCents: number }>;
+};
+
+function renderOrderTable(data: OrderMailData) {
+  const rows = data.lines
+    .map(
+      (line) =>
+        `<tr>
+          <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;">${escapeHtml(line.title)}<br /><span style="color:#64748b;font-size:12px;">${line.quantity} × ${formatChf(line.unitCents)}</span></td>
+          <td align="right" style="padding:10px 0;border-bottom:1px solid #e2e8f0;white-space:nowrap;">${formatChf(line.unitCents * line.quantity)}</td>
+        </tr>`,
+    )
+    .join("");
+
+  const summaryRow = (label: string, value: string, bold = false) =>
+    `<tr><td style="padding:6px 0;${bold ? "font-weight:700;font-size:16px;color:#0f172a;" : "color:#64748b;"}">${label}</td><td align="right" style="padding:6px 0;white-space:nowrap;${bold ? "font-weight:700;font-size:16px;color:#0f172a;" : ""}">${value}</td></tr>`;
+
+  const shippingRow =
+    typeof data.shippingCents === "number"
+      ? summaryRow(
+          "Versand",
+          data.shippingCents === 0 ? "Gratis" : formatChf(data.shippingCents),
+        )
+      : "";
+
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0;font-size:14px;">${rows}<tr><td colspan="2" style="padding-top:8px;"></td></tr>${shippingRow}${summaryRow("Total", formatChf(data.totalCents), true)}</table>`;
+}
+
+function renderAddressBlock(data: OrderMailData) {
+  if (!data.shipping) {
+    return "";
+  }
+  const s = data.shipping;
+  const lines = [
+    data.customerName,
+    s.address1,
+    s.address2,
+    `${s.zip} ${s.city}`,
+    s.country,
+  ]
+    .filter(Boolean)
+    .map((line) => escapeHtml(String(line)))
+    .join("<br />");
+  return `<div style="margin:16px 0;padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;font-size:14px;line-height:1.6;"><div style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:4px;">Lieferadresse</div>${lines}</div>`;
+}
+
+function formatSwissDateTime(date: Date) {
+  return new Intl.DateTimeFormat("de-CH", {
+    dateStyle: "long",
+    timeStyle: "short",
+    timeZone: "Europe/Zurich",
+  }).format(date);
 }
 
 export async function sendVerifyEmail(to: string, verifyUrl: string) {
@@ -187,7 +285,28 @@ export async function sendVerifyEmail(to: string, verifyUrl: string) {
     renderMailShell({
       title: "Bitte bestätige deine E-Mail",
       preview: "Bestätige deine E-Mail-Adresse, um dein Konto zu aktivieren.",
-      contentHtml: `<p>Willkommen bei ${escapeHtml(brand.name)}.</p><p>Bitte bestätige deine E-Mail-Adresse, um dein Konto zu aktivieren.</p>${renderButton(verifyUrl, "E-Mail bestätigen", brand)}<p style="margin-top:18px;color:#64748b;font-size:13px;">Falls der Button nicht funktioniert, kopiere diesen Link: ${escapeHtml(verifyUrl)}</p>`,
+      contentHtml: `<p style="margin:0 0 10px;">Bitte bestätige deine E-Mail-Adresse, um dein Konto bei ${escapeHtml(brand.name)} zu aktivieren.</p>${renderButton(verifyUrl, "E-Mail bestätigen", brand)}${renderLinkFallback(verifyUrl)}`,
+    }),
+  );
+}
+
+// Sent right after registration: welcome + verification in a single mail so
+// new customers do not get two nearly identical messages at once.
+export async function sendWelcomeVerifyEmail(params: {
+  to: string;
+  name: string;
+  verifyUrl: string;
+}) {
+  const brand = getBrandConfig();
+  const safeName = escapeHtml(params.name || brand.name);
+  await sendMail(
+    params.to,
+    `Willkommen bei ${brand.name} – bitte E-Mail bestätigen`,
+    renderMailShell({
+      title: `Willkommen, ${safeName}!`,
+      preview:
+        "Dein Konto wurde erstellt. Bitte bestätige noch kurz deine E-Mail-Adresse.",
+      contentHtml: `<p style="margin:0 0 10px;">Schön, dass du da bist! Dein Konto ist bereit – bestätige nur noch kurz deine E-Mail-Adresse, damit du bestellen kannst.</p>${renderButton(params.verifyUrl, "E-Mail bestätigen", brand)}${renderLinkFallback(params.verifyUrl)}<p style="margin-top:22px;">Danach kannst du direkt unsere Produkte entdecken und den Status deiner Bestellungen verfolgen.</p>`,
     }),
   );
 }
@@ -199,10 +318,9 @@ export async function sendWelcomeEmail(params: { to: string; name: string }) {
     params.to,
     `Willkommen bei ${brand.name}`,
     renderMailShell({
-      title: `Willkommen, ${safeName}`,
+      title: `Willkommen, ${safeName}!`,
       preview: "Dein Konto wurde erfolgreich erstellt.",
-      contentHtml:
-        `<p>Schön, dass du da bist.</p><p>Dein Konto ist bereit und du kannst direkt Produkte entdecken, bestellen und den Status deiner Bestellungen verfolgen.</p>${renderButton(brand.appUrl, "Zum Shop", brand)}`,
+      contentHtml: `<p style="margin:0 0 10px;">Schön, dass du da bist.</p><p style="margin:0;">Dein Konto ist bereit und du kannst direkt Produkte entdecken, bestellen und den Status deiner Bestellungen verfolgen.</p>${renderButton(brand.appUrl, "Zum Shop", brand)}`,
     }),
   );
 }
@@ -211,11 +329,11 @@ export async function sendLoginSuccessEmail(to: string) {
   const brand = getBrandConfig();
   await sendMail(
     to,
-    "Login erfolgreich",
+    "Neue Anmeldung bei deinem Konto",
     renderMailShell({
-      title: "Login erfolgreich",
-      preview: "Dein Konto wurde soeben erfolgreich angemeldet.",
-      contentHtml: `<p>Dein Login war erfolgreich. Falls du das nicht warst, ändere bitte sofort dein Passwort und kontaktiere uns unter <a href="mailto:${escapeHtml(brand.supportEmail)}" style="color:${brand.accentColor};">${escapeHtml(brand.supportEmail)}</a>.</p>`,
+      title: "Anmeldung erfolgreich",
+      preview: "Dein Konto wurde soeben angemeldet.",
+      contentHtml: `<p style="margin:0;">Dein Konto wurde soeben angemeldet. Falls du das nicht warst, ändere bitte sofort dein Passwort und kontaktiere uns unter <a href="mailto:${escapeHtml(brand.supportEmail)}" style="color:${brand.accentColor};">${escapeHtml(brand.supportEmail)}</a>.</p>`,
     }),
   );
 }
@@ -228,51 +346,96 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
     renderMailShell({
       title: "Passwort zurücksetzen",
       preview: "Setze dein Passwort sicher zurück.",
-      contentHtml: `<p>Wir haben eine Anfrage erhalten, dein Passwort zurückzusetzen.</p>${renderButton(resetUrl, "Passwort zurücksetzen", brand)}<p style="margin-top:18px;color:#64748b;font-size:13px;">Der Link ist 60 Minuten gültig. Falls du das nicht angefordert hast, kannst du diese E-Mail ignorieren.</p>`,
+      contentHtml: `<p style="margin:0 0 10px;">Wir haben eine Anfrage erhalten, dein Passwort zurückzusetzen.</p>${renderButton(resetUrl, "Neues Passwort festlegen", brand)}${renderLinkFallback(resetUrl)}<p style="margin-top:18px;color:#64748b;font-size:13px;">Der Link ist 60 Minuten gültig. Falls du das nicht angefordert hast, kannst du diese E-Mail ignorieren.</p>`,
     }),
   );
 }
 
-export async function sendOrderEmails(params: {
+type OrderWithItems = {
+  id: string;
+  orderNumber: number;
   customerEmail: string;
   customerName: string;
-  orderId: string;
-  orderNumber: number;
   totalCents: number;
-  lines: Array<{ title: string; quantity: number; unitCents: number }>;
-}) {
+  subtotalCents: number;
+  shippingCents: number;
+  paymentMethod: string;
+  createdAt: Date;
+  shippingAddress1: string;
+  shippingAddress2: string | null;
+  shippingZip: string;
+  shippingCity: string;
+  shippingCountry: string;
+  items: Array<{
+    quantity: number;
+    unitCents: number;
+    product: { title: string };
+  }>;
+};
+
+// Single entry point so every code path (webhook, reconcile, admin test)
+// sends identical, complete order mails.
+export async function sendOrderEmailsForOrder(order: OrderWithItems) {
+  await sendOrderEmails({
+    customerEmail: order.customerEmail,
+    customerName: order.customerName,
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    totalCents: order.totalCents,
+    subtotalCents: order.subtotalCents,
+    shippingCents: order.shippingCents,
+    paymentMethod: order.paymentMethod,
+    createdAt: order.createdAt,
+    shipping: {
+      address1: order.shippingAddress1,
+      address2: order.shippingAddress2,
+      zip: order.shippingZip,
+      city: order.shippingCity,
+      country: order.shippingCountry,
+    },
+    lines: order.items.map((item) => ({
+      title: item.product.title,
+      quantity: item.quantity,
+      unitCents: item.unitCents,
+    })),
+  });
+}
+
+export async function sendOrderEmails(params: OrderMailData) {
   const brand = getBrandConfig();
   const owner = process.env.ADMIN_ORDER_EMAIL?.trim();
-  const lineItemsHtml = params.lines
-    .map(
-      (line) =>
-        `<li>${line.quantity}x ${escapeHtml(line.title)} - CHF ${(line.unitCents * line.quantity / 100).toFixed(2)}</li>`,
-    )
-    .join("");
   const safeCustomerName = escapeHtml(params.customerName);
-  const safeOrderNumber = escapeHtml(formatOrderNumber(params.orderNumber));
+  const orderNumber = formatOrderNumber(params.orderNumber);
+  const safeOrderNumber = escapeHtml(orderNumber);
+  const paymentLabel = params.paymentMethod
+    ? PAYMENT_LABELS[params.paymentMethod] || params.paymentMethod
+    : null;
+  const orderedAt = formatSwissDateTime(params.createdAt ?? new Date());
+  const table = renderOrderTable(params);
+  const address = renderAddressBlock(params);
 
   // Customer confirmation is business-critical, so its failure is propagated
   // to the caller; the owner notification below is best-effort only.
   await sendMail(
     params.customerEmail,
-    `Bestellbestätigung ${safeOrderNumber}`,
+    `Bestellbestätigung ${orderNumber}`,
     renderMailShell({
-      title: "Danke für deine Bestellung",
-      preview: "Deine Bestellung wurde erfolgreich erfasst.",
-      contentHtml: `<p>Hallo ${safeCustomerName}, danke für deine Bestellung <strong>${safeOrderNumber}</strong>.</p><ul style="padding-left:18px;margin:12px 0;">${lineItemsHtml}</ul><p><strong>Total: CHF ${(params.totalCents / 100).toFixed(2)}</strong></p>${renderButton(`${brand.appUrl}/account`, "Bestellstatus ansehen", brand)}`,
+      title: "Danke für deine Bestellung!",
+      preview: `Deine Bestellung ${orderNumber} ist bei uns eingegangen.`,
+      contentHtml: `<p style="margin:0 0 6px;">Hallo ${safeCustomerName}</p><p style="margin:0;">Vielen Dank für deine Bestellung <strong>${safeOrderNumber}</strong> vom ${escapeHtml(orderedAt)}. Wir bereiten sie nun für dich vor und melden uns, sobald sie unterwegs ist.</p>${table}${address}${paymentLabel ? `<p style="margin:0;color:#64748b;font-size:13px;">Zahlungsart: ${escapeHtml(paymentLabel)}</p>` : ""}${renderButton(`${brand.appUrl}/account`, "Bestellstatus ansehen", brand)}<p style="margin-top:22px;color:#64748b;font-size:13px;">Fragen? Antworte einfach auf diese E-Mail.</p>`,
     }),
+    { replyTo: brand.supportEmail },
   );
 
   if (owner) {
     try {
       await sendMail(
         owner,
-        `Neue Bestellung ${safeOrderNumber}`,
+        `Neue Bestellung ${orderNumber} – ${params.customerName} – ${formatChf(params.totalCents)}`,
         renderMailShell({
           title: `Neue Bestellung ${safeOrderNumber}`,
-          preview: "Neue Bestellung im Shop eingegangen.",
-          contentHtml: `<p>Von: ${safeCustomerName} (${escapeHtml(params.customerEmail)})</p><ul style="padding-left:18px;margin:12px 0;">${lineItemsHtml}</ul><p>Einnahmen: CHF ${(params.totalCents / 100).toFixed(2)}</p>`,
+          preview: `${params.customerName} hat für ${formatChf(params.totalCents)} bestellt.`,
+          contentHtml: `<p style="margin:0;"><strong>Bestellt am:</strong> ${escapeHtml(orderedAt)}<br /><strong>Kunde:</strong> ${safeCustomerName}<br /><strong>E-Mail:</strong> <a href="mailto:${escapeHtml(params.customerEmail)}" style="color:${brand.accentColor};">${escapeHtml(params.customerEmail)}</a>${paymentLabel ? `<br /><strong>Zahlungsart:</strong> ${escapeHtml(paymentLabel)}` : ""}</p>${table}${address}${renderButton(`${brand.appUrl}/admin`, "Im Admin öffnen", brand)}`,
         }),
         { replyTo: params.customerEmail },
       );
@@ -325,5 +488,3 @@ export async function sendContactMessage(params: {
     console.error("[mail:contact-confirmation]", error);
   }
 }
-
-
