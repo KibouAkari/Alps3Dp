@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import type { ReactNode } from "react";
+import { Analytics } from "@vercel/analytics/next";
 
 import { SiteSidebar } from "@/components/site-sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -112,6 +113,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <PageTransition>{children}</PageTransition>
             </div>
           </main>
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>

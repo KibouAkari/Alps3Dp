@@ -64,7 +64,7 @@ const nextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; img-src 'self' data: blob: https:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://js.stripe.com; connect-src 'self' https://api.stripe.com https://checkout.stripe.com; frame-src https://js.stripe.com https://checkout.stripe.com; object-src 'none'; upgrade-insecure-requests",
+              "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; img-src 'self' data: blob: https:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://va.vercel-scripts.com; connect-src 'self' https://api.stripe.com https://checkout.stripe.com https://vitals.vercel-insights.com; frame-src https://js.stripe.com https://checkout.stripe.com; object-src 'none'; upgrade-insecure-requests",
           },
         ],
       },
