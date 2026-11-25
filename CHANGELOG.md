@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased (25 November 2026)
+This file records notable product, infrastructure, security and operational changes. Routine changes are grouped by feature rather than duplicated commit by commit; historical entries remain below.
+
+## Unreleased · Shop manager mail routing and transactional presentation (PR #4, 25 November 2026)
+
+- New operations-only recipient policy: each paid order and support enquiry is **always attempted** to `Alp.Kasemi@alps3Dp.ch`, independent of configured `ADMIN_ORDER_EMAIL` or `MAIL_SUPPORT_EMAIL`. Optional addresses receive their own deduplicated copies; the manager is also the support fallback when no additional mailbox is configured. Customer account, login, reset and verification links remain private.
+- Per-recipient SHA-256-derived idempotency keys for Resend operator order notices prevent different operator recipients from sharing one deduplication key. Individual delivery attempts continue after failures, with sanitized partial-failure logging. A failed *optional* support copy does not make an enquiry already accepted for the designated manager appear unsent to the customer; a manager failure is reported.
+- Reworked every HTML mail around the original website logo, a restrained white layout, compact typography, subtle separators and no oversized gradients. Subjects and copy are concise, with essential order number, purchased items, subtotal, shipping, total, delivery address, date, payment method and relevant account links. Plain-text alternatives remain available.
+- Removed obsolete environment-based logo and gradient overrides to keep mail branding aligned with the website. Updated recipient regression tests, documentation, configuration examples, deployment checklist and mail deliverability recommendations.
+- Mailbox/inbox placement and production sender authentication cannot be proven by repository tests. A persistent outbox/retry mechanism for post-payment mail remains outstanding.
+
+## 2026-11-25 · Resend transport and account recovery (merged PR #2 and PR #3)
 
 ### Verification and account recovery hardening (PR #3)
 
@@ -12,11 +22,10 @@
 - Added safe simulated transport tests and route-level integration checks for registration, verification, reset, contact and signed Stripe webhook paths. No real recipient or live payment was used.
 - Fixed double HTML escaping of display names in welcome and support messages.
 - Registration now reports whether Resend accepted its verification message instead of always claiming mail was sent. Email address changes similarly explain when the new verification email could not be sent, while correctly reporting that the address was already changed.
-- **Important:** True production provider acceptance, DNS verification and recipient inbox placement are separate, unverified checks until controlled live tests pass. A durable order-mail retry queue is still outstanding.
+- **Copilot review fixes:** Two concurrency races were closed after PR #3 review. User-row locking (`SELECT ... FOR UPDATE` within Prisma transactions) serializes email changes, verification resends and consumption, preventing stale links from verifying a changed address; the same lock serializes replacement of password-reset tokens across concurrent requests. Expanded integration tests exercise those races. This fix was merged in commit `6ed8f959`.
+- **Important:** Provider acceptance, DNS authentication, recipient inbox placement and a durable order-mail retry queue remain separate external release requirements.
 
-## Previously merged mail transport fixes
-
-### Fixed
+### Resend transport fixes (PR #2)
 
 - Corrected transactional-mail provider selection: Resend now wins when `RESEND_API_KEY` is configured, with an explicit `MAIL_PROVIDER` override for SMTP.
 - Handle Resend SDK `{ data, error }` results; rejected sends are no longer silently counted as successes. Sanitize error logging to avoid exposing customer addresses and reset links.
@@ -24,6 +33,17 @@
 - Add Resend idempotency keys for Stripe customer and operator order notifications to reduce accidental duplicate provider sends within the documented 24-hour window.
 - Document sender/domain verification, real mailbox destinations, contact and checkout tests, and the remaining lack of a durable post-payment email retry queue.
 - Add isolated mail-provider regression tests and a GitHub Actions workflow for TypeScript and mail checks.
+
+## 2026-11-24 · Vercel Web Analytics (merged PR #1)
+
+- Integrated Vercel Web Analytics into the Next.js App Router root layout.
+- Updated the analytics dependency and lockfile and restricted the Content Security Policy to allow the required Vercel analytics script and network endpoints.
+
+## 2026-10-14 · Registration and order email consolidation
+
+- Consolidated registration onboarding and verification into one customer email rather than sending two near-duplicate registration messages.
+- Standardized order email composition through `sendOrderEmailsForOrder` across the Stripe webhook, admin test orders and Stripe reconciliation, including complete order line items and shipping details.
+- Improved registration and password reset form feedback and extended the IONOS/SMTP setup notes. The earlier provider-precedence behavior was subsequently corrected in PR #2.
 
 ---
 

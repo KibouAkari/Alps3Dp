@@ -2,10 +2,13 @@ name: Mail delivery checks
 
 on:
   push:
-    branches: [main, fix/resend-mail-delivery-20261125]
+    branches: [main]
   pull_request:
     paths:
       - "src/lib/mail*"
+      - "src/lib/db.ts"
+      - "src/lib/reconcile-stripe-orders.ts"
+      - "src/app/api/contact/**"
       - "tests/mail-delivery.test.ts"
       - "tests/mail-flows.test.ts"
       - "tests/mail-route-integration.test.ts"
@@ -17,6 +20,11 @@ on:
       - "package.json"
       - "package-lock.json"
       - "docs/MAIL_SETUP.md"
+      - "docs/MAIL_VERIFICATION.md"
+      - "PRODUCTION_CHECKLIST.md"
+      - "README.md"
+      - "CHANGELOG.md"
+      - ".env.example"
       - ".github/workflows/mail-ci.yml"
 
 permissions:

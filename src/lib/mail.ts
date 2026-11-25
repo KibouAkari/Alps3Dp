@@ -1,8 +1,10 @@
+import { createHash } from "node:crypto";
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
 
 import { getConfiguredAppBaseUrl } from "@/lib/app-url";
 import { formatOrderNumber } from "@/lib/order-number";
+import { getShopOperatorRecipients, SHOP_MANAGER_EMAIL } from "@/lib/mail-recipients";
 import { assertResendAccepted, htmlToPlainText, selectMailProvider } from "@/lib/mail-delivery";
 
 type MailPayload = {
@@ -63,16 +65,14 @@ function getBrandConfig() {
   return {
     name: process.env.MAIL_BRAND_NAME?.trim() || "Alps3Dp",
     appUrl,
-    logoUrl: process.env.MAIL_LOGO_URL?.trim() || `${appUrl}/images/logo.jpeg`,
-    primaryColor: process.env.MAIL_PRIMARY_COLOR?.trim() || "#0ea5e9",
+    logoUrl: `${appUrl}/images/logo.jpeg`,
     accentColor: process.env.MAIL_ACCENT_COLOR?.trim() || "#0369a1",
     supportEmail:
       process.env.MAIL_SUPPORT_EMAIL?.trim() ||
-      process.env.ADMIN_ORDER_EMAIL?.trim() ||
-      "support@alps3dp.ch",
+      SHOP_MANAGER_EMAIL,
     footerText:
       process.env.MAIL_FOOTER_TEXT?.trim() ||
-      "Alps3Dp · Handgefertigte 3D-gedruckte Produkte aus der Schweiz",
+      "Alps3Dp · Schweiz",
   };
 }
 
@@ -175,35 +175,33 @@ function renderMailShell(params: {
 }) {
   const brand = getBrandConfig();
   return `
-    <div style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;color:#0f172a;">
+    <div style="margin:0;padding:0;background:#f7f9fb;color:#1f2937;font-family:Arial,Helvetica,sans-serif;">
       <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;">${escapeHtml(params.preview)}</span>
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:28px 12px;">
-        <tr>
-          <td align="center">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden;">
-              <tr>
-                <td align="center" bgcolor="${brand.accentColor}" style="padding:28px 24px 24px;background-color:${brand.accentColor};background-image:linear-gradient(135deg,${brand.primaryColor},${brand.accentColor});">
-                  <img src="${escapeHtml(brand.logoUrl)}" alt="${escapeHtml(brand.name)}" width="76" height="76" style="display:block;margin:0 auto 10px;border-radius:50%;border:3px solid rgba(255,255,255,.85);background:#ffffff;" />
-                  <div style="color:#ffffff;font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;">${escapeHtml(brand.name)}</div>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:30px 28px 26px;">
-                  <h1 style="margin:0 0 16px;font-size:24px;line-height:1.25;color:#0f172a;">${escapeHtml(params.title)}</h1>
-                  <div style="font-size:15px;line-height:1.65;color:#334155;">${params.contentHtml}</div>
-                </td>
-              </tr>
-              <tr>
-                <td align="center" style="padding:18px 24px;background:#f8fafc;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;line-height:1.6;">
-                  ${escapeHtml(brand.footerText)}<br />
-                  <a href="${escapeHtml(brand.appUrl)}" style="color:${brand.accentColor};text-decoration:none;">${escapeHtml(brand.appUrl.replace(/^https?:\/\//, ""))}</a>
-                  &nbsp;·&nbsp;
-                  <a href="mailto:${escapeHtml(brand.supportEmail)}" style="color:${brand.accentColor};text-decoration:none;">${escapeHtml(brand.supportEmail)}</a>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;background:#f7f9fb;">
+        <tr><td align="center" style="padding:24px 12px 32px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:600px;background:#ffffff;border:1px solid #e5e7eb;border-collapse:separate;border-spacing:0;border-radius:10px;">
+            <tr><td style="padding:22px 28px 18px;border-bottom:1px solid #e5e7eb;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td valign="middle" style="padding-right:12px;">
+                    <img src="${escapeHtml(brand.logoUrl)}" alt="${escapeHtml(brand.name)} Logo" width="48" height="48" style="display:block;width:48px;height:48px;border:0;border-radius:6px;" />
+                  </td>
+                  <td valign="middle" style="font-size:20px;line-height:26px;font-weight:700;color:#1f2937;">${escapeHtml(brand.name)}</td>
+                </tr>
+              </table>
+            </td></tr>
+            <tr><td style="padding:26px 28px 28px;">
+              <h1 style="margin:0 0 16px;font-size:23px;line-height:1.3;font-weight:700;color:#111827;">${escapeHtml(params.title)}</h1>
+              <div style="font-size:15px;line-height:1.65;color:#374151;">${params.contentHtml}</div>
+            </td></tr>
+            <tr><td style="padding:18px 28px;border-top:1px solid #e5e7eb;background:#fafbfc;color:#6b7280;font-size:12px;line-height:1.7;">
+              ${escapeHtml(brand.footerText)}<br />
+              <a href="${escapeHtml(brand.appUrl)}" style="color:${brand.accentColor};text-decoration:underline;">${escapeHtml(brand.appUrl.replace(/^https?:\/\//, ""))}</a>
+              &nbsp;·&nbsp;
+              <a href="mailto:${escapeHtml(brand.supportEmail)}" style="color:${brand.accentColor};text-decoration:underline;">${escapeHtml(brand.supportEmail)}</a>
+            </td></tr>
+          </table>
+        </td></tr>
       </table>
     </div>
   `;
@@ -214,7 +212,7 @@ function renderButton(
   label: string,
   brand: ReturnType<typeof getBrandConfig>,
 ) {
-  return `<p style="margin:22px 0 0;"><a href="${escapeHtml(url)}" style="display:inline-block;background:${brand.accentColor};color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:10px;font-weight:700;font-size:15px;">${escapeHtml(label)}</a></p>`;
+  return `<p style="margin:22px 0 0;"><a href="${escapeHtml(url)}" style="display:inline-block;background:${brand.accentColor};color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:6px;font-weight:700;font-size:15px;">${escapeHtml(label)}</a></p>`;
 }
 
 function renderLinkFallback(url: string) {
@@ -265,6 +263,10 @@ function renderOrderTable(data: OrderMailData) {
   const summaryRow = (label: string, value: string, bold = false) =>
     `<tr><td style="padding:6px 0;${bold ? "font-weight:700;font-size:16px;color:#0f172a;" : "color:#64748b;"}">${label}</td><td align="right" style="padding:6px 0;white-space:nowrap;${bold ? "font-weight:700;font-size:16px;color:#0f172a;" : ""}">${value}</td></tr>`;
 
+  const subtotalRow =
+    typeof data.subtotalCents === "number"
+      ? summaryRow("Zwischensumme", formatChf(data.subtotalCents))
+      : "";
   const shippingRow =
     typeof data.shippingCents === "number"
       ? summaryRow(
@@ -273,7 +275,7 @@ function renderOrderTable(data: OrderMailData) {
         )
       : "";
 
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0;font-size:14px;">${rows}<tr><td colspan="2" style="padding-top:8px;"></td></tr>${shippingRow}${summaryRow("Total", formatChf(data.totalCents), true)}</table>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0;font-size:14px;">${rows}<tr><td colspan="2" style="padding-top:8px;"></td></tr>${subtotalRow}${shippingRow}${summaryRow("Total", formatChf(data.totalCents), true)}</table>`;
 }
 
 function renderAddressBlock(data: OrderMailData) {
@@ -291,7 +293,7 @@ function renderAddressBlock(data: OrderMailData) {
     .filter(Boolean)
     .map((line) => escapeHtml(String(line)))
     .join("<br />");
-  return `<div style="margin:16px 0;padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;font-size:14px;line-height:1.6;"><div style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:4px;">Lieferadresse</div>${lines}</div>`;
+  return `<div style="margin:16px 0;padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;font-size:14px;line-height:1.6;"><div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:4px;">Lieferadresse</div>${lines}</div>`;
 }
 
 function formatSwissDateTime(date: Date) {
@@ -331,7 +333,7 @@ export async function sendWelcomeVerifyEmail(params: {
       title: `Willkommen, ${params.name || brand.name}!`,
       preview:
         "Dein Konto wurde erstellt. Bitte bestätige noch kurz deine E-Mail-Adresse.",
-      contentHtml: `<p style="margin:0 0 10px;">Schön, dass du da bist! Dein Konto ist bereit – bestätige noch kurz deine E-Mail-Adresse, um dein Konto vollständig einzurichten.</p>${renderButton(params.verifyUrl, "E-Mail bestätigen", brand)}${renderLinkFallback(params.verifyUrl)}<p style="margin-top:22px;">Danach kannst du direkt unsere Produkte entdecken und den Status deiner Bestellungen verfolgen.</p>`,
+      contentHtml: `<p style="margin:0 0 10px;">Schön, dass du da bist! Dein Kundenkonto wurde erstellt. Bitte bestätige deine E-Mail-Adresse.</p>${renderButton(params.verifyUrl, "E-Mail bestätigen", brand)}${renderLinkFallback(params.verifyUrl)}<p style="margin-top:22px;">Danach kannst du Bestellungen und Lieferadressen in deinem Konto verwalten.</p>`,
     }),
   );
 }
@@ -345,7 +347,7 @@ export async function sendWelcomeEmail(params: { to: string; name: string }) {
     renderMailShell({
       title: `Willkommen, ${params.name || brand.name}!`,
       preview: "Dein Konto wurde erfolgreich erstellt.",
-      contentHtml: `<p style="margin:0 0 10px;">Schön, dass du da bist.</p><p style="margin:0;">Dein Konto ist bereit und du kannst direkt Produkte entdecken, bestellen und den Status deiner Bestellungen verfolgen.</p>${renderButton(brand.appUrl, "Zum Shop", brand)}`,
+      contentHtml: `<p style="margin:0 0 10px;">Dein Kundenkonto wurde erstellt.</p><p style="margin:0;">Du kannst deine Bestellungen und Lieferadressen im Konto verwalten.</p>${renderButton(brand.appUrl, "Zum Shop", brand)}`,
     }),
   );
 }
@@ -428,7 +430,7 @@ export async function sendOrderEmailsForOrder(order: OrderWithItems) {
 
 export async function sendOrderEmails(params: OrderMailData) {
   const brand = getBrandConfig();
-  const owner = process.env.ADMIN_ORDER_EMAIL?.trim();
+  const operatorRecipients = getShopOperatorRecipients([process.env.ADMIN_ORDER_EMAIL]);
   const safeCustomerName = escapeHtml(params.customerName);
   const orderNumber = formatOrderNumber(params.orderNumber);
   const safeOrderNumber = escapeHtml(orderNumber);
@@ -442,15 +444,15 @@ export async function sendOrderEmails(params: OrderMailData) {
   // Customer and operator sends are independent. An outage for one
   // recipient must not prevent attempting the other notification.
   let customerFailed = false;
-  let ownerFailed = false;
+  let operatorFailed = false;
   try {
     await sendMail(
       params.customerEmail,
       `Bestellbestätigung ${orderNumber}`,
       renderMailShell({
-        title: "Danke für deine Bestellung!",
+        title: "Bestellbestätigung",
         preview: `Deine Bestellung ${orderNumber} ist bei uns eingegangen.`,
-        contentHtml: `<p style="margin:0 0 6px;">Hallo ${safeCustomerName}</p><p style="margin:0;">Vielen Dank für deine Bestellung <strong>${safeOrderNumber}</strong> vom ${escapeHtml(orderedAt)}. Wir bereiten sie nun für dich vor und melden uns, sobald sie unterwegs ist.</p>${table}${address}${paymentLabel ? `<p style="margin:0;color:#64748b;font-size:13px;">Zahlungsart: ${escapeHtml(paymentLabel)}</p>` : ""}${renderButton(`${brand.appUrl}/account`, "Bestellstatus ansehen", brand)}<p style="margin-top:22px;color:#64748b;font-size:13px;">Fragen? Antworte einfach auf diese E-Mail.</p>`,
+        contentHtml: `<p style="margin:0 0 6px;">Hallo ${safeCustomerName}</p><p style="margin:0;">Wir haben deine Bestellung <strong>${safeOrderNumber}</strong> vom ${escapeHtml(orderedAt)} erhalten.</p>${table}${address}${paymentLabel ? `<p style="margin:0;color:#64748b;font-size:13px;">Zahlungsart: ${escapeHtml(paymentLabel)}</p>` : ""}${renderButton(`${brand.appUrl}/account`, "Bestellung ansehen", brand)}<p style="margin-top:22px;color:#64748b;font-size:13px;">Bei Fragen kannst du auf diese E-Mail antworten.</p>`,
       }),
       { replyTo: brand.supportEmail, idempotencyKey: `order-confirmation/${params.orderId}` },
     );
@@ -459,24 +461,31 @@ export async function sendOrderEmails(params: OrderMailData) {
     customerFailed = true;
   }
 
-  if (owner) {
+  // Every new order is sent to the shop manager, even when a different
+  // administrative mailbox is configured. Attempt each recipient independently.
+  for (const recipient of operatorRecipients) {
     try {
       await sendMail(
-        owner,
-        `Neue Bestellung ${orderNumber} – ${params.customerName} – ${formatChf(params.totalCents)}`,
+        recipient,
+        `Neue Bestellung ${orderNumber}`,
         renderMailShell({
           title: `Neue Bestellung ${safeOrderNumber}`,
-          preview: `${params.customerName} hat für ${formatChf(params.totalCents)} bestellt.`,
-          contentHtml: `<p style="margin:0;"><strong>Bestellt am:</strong> ${escapeHtml(orderedAt)}<br /><strong>Kunde:</strong> ${safeCustomerName}<br /><strong>E-Mail:</strong> <a href="mailto:${escapeHtml(params.customerEmail)}" style="color:${brand.accentColor};">${escapeHtml(params.customerEmail)}</a>${paymentLabel ? `<br /><strong>Zahlungsart:</strong> ${escapeHtml(paymentLabel)}` : ""}</p>${table}${address}${renderButton(`${brand.appUrl}/admin`, "Im Admin öffnen", brand)}`,
+          preview: `Neue Bestellung ${orderNumber} im Shop.`,
+          contentHtml: `<p style="margin:0 0 6px;"><strong>Bestellt am:</strong> ${escapeHtml(orderedAt)}<br /><strong>Kunde:</strong> ${safeCustomerName}<br /><strong>E-Mail:</strong> <a href="mailto:${escapeHtml(params.customerEmail)}" style="color:${brand.accentColor};">${escapeHtml(params.customerEmail)}</a>${paymentLabel ? `<br /><strong>Zahlungsart:</strong> ${escapeHtml(paymentLabel)}` : ""}</p>${table}${address}${renderButton(`${brand.appUrl}/admin`, "Bestellung verwalten", brand)}`,
         }),
-        { replyTo: params.customerEmail, idempotencyKey: `order-owner/${params.orderId}` },
+        {
+          replyTo: params.customerEmail,
+          // Different recipients need different deduplication keys. Hash
+          // sensitive values before exposing metadata to the provider.
+          idempotencyKey: `order-operator/${createHash("sha256").update(params.orderId + "\0" + recipient.toLowerCase()).digest("hex")}`,
+        },
       );
     } catch {
-      console.error("[mail:order-owner-notification] Provider rejected operator notification");
-      ownerFailed = true;
+      console.error("[mail:order-operator] Provider rejected operator notification");
+      operatorFailed = true;
     }
   }
-  if (customerFailed || ownerFailed) {
+  if (customerFailed || operatorFailed) {
     throw new Error("One or more order notifications were not accepted by the mail provider");
   }
 }
@@ -489,23 +498,34 @@ export async function sendContactMessage(params: {
   message: string;
 }) {
   const brand = getBrandConfig();
-  const owner = brand.supportEmail;
   const safeName = escapeHtml(`${params.firstName} ${params.lastName}`.trim());
   const safeEmail = escapeHtml(params.email);
   const safeSubject = escapeHtml(params.subject);
   const safeMessage = escapeHtml(params.message).replaceAll("\n", "<br />");
 
-  // Notify the owner (critical path, reply-to the customer directly).
-  await sendMail(
-    owner,
-    `Kontaktformular: ${params.subject}`,
-    renderMailShell({
-      title: "Neue Kontaktanfrage",
-      preview: `Neue Nachricht von ${params.firstName} ${params.lastName}`, 
-      contentHtml: `<p><strong>Von:</strong> ${safeName} (${safeEmail})</p><p><strong>Betreff:</strong> ${safeSubject}</p><p>${safeMessage}</p>`,
-    }),
-    { replyTo: params.email },
-  );
+  // Send the customer's enquiry to the manager and any distinct support inbox.
+  // These are separate sends so the manager still receives an attempt if
+  // support's mailbox is temporarily unavailable.
+  let managerFailed = false;
+  for (const recipient of getShopOperatorRecipients([brand.supportEmail])) {
+    try {
+      await sendMail(
+        recipient,
+        "Neue Kontaktanfrage",
+        renderMailShell({
+          title: "Neue Kontaktanfrage",
+          preview: `Kontaktanfrage von ${params.firstName} ${params.lastName}`,
+          contentHtml: `<p style="margin:0 0 8px;"><strong>Absender:</strong> ${safeName}<br /><strong>E-Mail:</strong> <a href="mailto:${safeEmail}" style="color:${brand.accentColor};">${safeEmail}</a><br /><strong>Betreff:</strong> ${safeSubject}</p><p style="margin:14px 0 0;"><strong>Nachricht</strong></p><p style="margin:6px 0 0;">${safeMessage}</p>`,
+        }),
+        { replyTo: params.email },
+      );
+    } catch {
+      console.error("[mail:contact-operator] Provider rejected operator notification");
+      if (recipient.toLowerCase() === SHOP_MANAGER_EMAIL.toLowerCase()) {
+        managerFailed = true;
+      }
+    }
+  }
 
   // Confirmation to the person who submitted the form; failure here should
   // not fail the whole request since the owner already received the message.
@@ -518,9 +538,14 @@ export async function sendContactMessage(params: {
         preview: "Wir melden uns so schnell wie möglich bei dir.",
         contentHtml: `<p>Wir haben deine Nachricht zum Thema "${safeSubject}" erhalten und melden uns so schnell wie möglich.</p><p style="margin-top:14px;color:#64748b;font-size:13px;">Deine Nachricht:<br />${safeMessage}</p>`,
       }),
-      { replyTo: owner },
+      { replyTo: brand.supportEmail },
     );
-  } catch (error) {
-    console.error("[mail:contact-confirmation]", error);
+  } catch {
+    console.error("[mail:contact-confirmation] Provider rejected customer acknowledgement");
+  }
+  if (managerFailed) {
+    // A failed optional support copy does not make the customer retry a
+    // request already received by the designated shop manager.
+    throw new Error("Shop manager did not receive a provider acceptance");
   }
 }

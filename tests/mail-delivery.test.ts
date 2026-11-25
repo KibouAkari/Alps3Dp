@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { assertResendAccepted, htmlToPlainText, selectMailProvider } from "../src/lib/mail-delivery";
+import { getShopOperatorRecipients, SHOP_MANAGER_EMAIL } from "../src/lib/mail-recipients";
 
 test("Resend is preferred when both mail providers have credentials", () => {
   assert.equal(selectMailProvider({ resendKey: "re_example", smtpReady: true }), "resend");
@@ -65,4 +66,13 @@ test("Plain-text output doesn't render user-generated markup as HTML", () => {
   const text = htmlToPlainText('<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>');
   assert.equal(text.trim(), "<script>alert(1)</script>");
   // Text isn't interpreted as HTML by clients; no raw <script> is in the HTML template.
+});
+
+test("Shop manager receives independent notifications regardless of config", () => {
+  assert.equal(SHOP_MANAGER_EMAIL, "Alp.Kasemi@alps3Dp.ch");
+  assert.deepEqual(getShopOperatorRecipients(), [SHOP_MANAGER_EMAIL]);
+  assert.deepEqual(getShopOperatorRecipients(["other@example.test"]),
+    [SHOP_MANAGER_EMAIL, "other@example.test"]);
+  assert.deepEqual(getShopOperatorRecipients(["alp.kasemi@ALPS3DP.CH", "bad-address"]),
+    [SHOP_MANAGER_EMAIL]);
 });

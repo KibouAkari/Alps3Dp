@@ -272,10 +272,10 @@ test("Support form generates both owner enquiry and customer acknowledgment",asy
     subject:"Frage zum Shop",message:"Könnt ihr mir helfen?",
   },"192.0.2.27"));
   assert.equal(result.status,200);
-  assert.deepEqual(messages.map(m=>m.to),["support@example.test","changed@example.test"]);
+  assert.deepEqual(messages.map(m=>m.to),["Alp.Kasemi@alps3Dp.ch","support@example.test","changed@example.test"]);
 });
 
-test("Signed Stripe paid event sends two order emails and replay is deduplicated",async()=>{
+test("Signed Stripe paid event sends customer and both operator emails, replay is deduplicated",async()=>{
   messages.length=0;
   order={
     id:"test-order-123",status:"PENDING",totalCents:4990,orderNumber:123,
@@ -302,9 +302,9 @@ test("Signed Stripe paid event sends two order emails and replay is deduplicated
   const first=await routes.webhook.POST(request());
   assert.equal(first.status,200);
   assert.equal(order.status,"PAID");
-  assert.deepEqual(messages.map(m=>m.to),["buyer@example.test","owner@example.test"]);
+  assert.deepEqual(messages.map(m=>m.to),["buyer@example.test","Alp.Kasemi@alps3Dp.ch","owner@example.test"]);
   const second=await routes.webhook.POST(request());
   assert.equal(second.status,200);
   assert.equal((await second.json()).deduplicated,true);
-  assert.equal(messages.length,2);
+  assert.equal(messages.length,3);
 });
