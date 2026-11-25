@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased (25 November 2026)
+
+### Fixed
+
+- Corrected transactional-mail provider selection: Resend now wins when `RESEND_API_KEY` is configured, with an explicit `MAIL_PROVIDER` override for SMTP.
+- Handle Resend SDK `{ data, error }` results; rejected sends are no longer silently counted as successes. Sanitize error logging to avoid exposing customer addresses and reset links.
+- Include a readable plain-text alternative for all transactional messages while retaining the existing site logo and branded HTML.
+- Add Resend idempotency keys for Stripe customer and operator order notifications to reduce accidental duplicate provider sends within the documented 24-hour window.
+- Document sender/domain verification, real mailbox destinations, contact and checkout tests, and the remaining lack of a durable post-payment email retry queue.
+- Add isolated mail-provider regression tests and a GitHub Actions workflow for TypeScript and mail checks.
+
+---
+
 <p align="center"><img src="public/images/logo.jpeg" alt="Alp3D Shop Logo" width="72"></p>
 
 All notable changes to Alp3D Shop are documented in this file.
