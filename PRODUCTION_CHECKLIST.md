@@ -32,11 +32,17 @@ Use this checklist before launching to production.
 - [ ] Sender domain is verified
 - [ ] Customer order email is delivered
 - [ ] A failed customer order email still triggers the operator notification attempt
-- [ ] Admin order email is delivered
-- [ ] SPF/DKIM/DMARC are configured for the actual sending domain and Resend reports Verified
-- [ ] `MAIL_FROM`, `ADMIN_ORDER_EMAIL`, `MAIL_SUPPORT_EMAIL` use valid sender/recipient mailboxes
-- [ ] Both customer and owner test emails appear in Resend delivery logs and controlled mailboxes
-- [ ] `NEXT_PUBLIC_APP_URL` and `APP_URL` point at the canonical site; logo and links work
+- [ ] Shop-manager order email is delivered to `Alp.Kasemi@alps3Dp.ch`
+- [ ] If a separate `ADMIN_ORDER_EMAIL` is set, it independently receives an order copy without duplicates when equal to manager
+- [ ] Support enquiry goes to the manager and any different support inbox; customer receives acknowledgement
+- [ ] SPF/DKIM/DMARC pass and align for the actual sending domain; Resend reports Verified
+- [ ] Test delivery in Gmail and Outlook or other actual recipient providers with raw headers showing SPF/DKIM/DMARC pass and no junk/quarantine
+- [ ] Check spam/junk, Resend bounce/suppression history and message content; inbox placement is not guaranteed by passing DNS checks
+- [ ] `MAIL_FROM` is a verified, replyable sending address and all configured operational recipients are real mailboxes
+- [ ] Manager mailbox `Alp.Kasemi@alps3Dp.ch` exists, receives mail and is checked by the operator
+- [ ] Customer and manager test emails appear in Resend delivery logs and controlled mailboxes
+- [ ] Duplicate Stripe webhook creates no additional order notifications, and each configured operator destination has a distinct Resend idempotency key
+- [ ] `NEXT_PUBLIC_APP_URL` and `APP_URL` point at the canonical site; first-party logo `/images/logo.jpeg` and links work, including when images are blocked
 - [ ] Order-email failure recovery is documented; no durable retry queue exists yet
 
 ## 5. Security

@@ -42,19 +42,23 @@ The storefront search ranks live suggestions across product titles, descriptions
 
 For environments that use both preview and production domains, Alp3D Shop now resolves Stripe redirect URLs from the active request host when possible. This reduces the risk of a working Stripe setup being misread as broken simply because `APP_URL` still points at an older Vercel or preview domain.
 
-Email delivery is handled in `src/lib/mail.ts`. Resend is the default whenever `RESEND_API_KEY` is present. SMTP can be selected explicitly with `MAIL_PROVIDER=smtp`, or is used when no Resend key is configured. The mailer checks Resend SDK responses for rejected messages and sends branded HTML **plus a plain-text alternative**. Missing provider configuration raises an error instead of silently reporting success. See [Mail setup](docs/MAIL_SETUP.md) for DNS, sender addresses, safe testing and order-email reliability limitations.
+Email delivery is handled in `src/lib/mail.ts` using Resend (preferred with `RESEND_API_KEY`) or explicitly configured SMTP. The shared template is intentionally minimal, using the **same Alps3Dp logo as the website** (`/images/logo.jpeg`), a white layout, readable typography and concise order/account details. Every message includes HTML and plain text. Provider rejections are detected rather than treated as successful sends.
+
+**Shop notifications:** Customer order confirmations go to the purchasing customer. Every paid-order notification and submitted contact enquiry is also independently sent to the designated shop manager, **`Alp.Kasemi@alps3Dp.ch`**, even if `ADMIN_ORDER_EMAIL` or `MAIL_SUPPORT_EMAIL` is unset or different. Distinct configured operations/support mailboxes receive their own copies; duplicate addresses are suppressed. Password reset, login security and verification links are **never copied** to the manager.
+
+See [Mail setup](docs/MAIL_SETUP.md) for DNS, verified sender addresses, provider diagnostics, safe delivery tests and current reliability limitations.
 
 ## Email verification and delivery
 
-The transactional flows include branded registration welcome + verification, login security notices, password reset, account email verification, customer and operator order confirmations, and contact-form notifications. Verification links can be requested again by signed-in users whose email is not confirmed. Password reset links are one-time and replace earlier pending reset links.
+The transactional flows include registration welcome + verification, login security notices, password reset, account email verification, customer order confirmations, shop-manager order notifications, and contact-form requests and acknowledgments. Verification links can be requested again by signed-in users whose email is not confirmed. Password reset links are one-time and replace earlier pending reset links.
 
 Source tests simulate these complete routes with in-memory fixtures and intercepted Resend responses; they never send real email or charge a card. Passing CI **does not prove** the custom sender domain is verified, Vercel has the correct secrets, Resend accepted live messages or the receiving mailbox delivered them.
 
-See [mail configuration](docs/MAIL_SETUP.md), [verification report](docs/MAIL_VERIFICATION.md) and [release checklist](PRODUCTION_CHECKLIST.md).
+See [mail configuration](docs/MAIL_SETUP.md), [verification report](docs/MAIL_VERIFICATION.md) and [release checklist](PRODUCTION_CHECKLIST.md). The two Copilot findings from PR #3 (concurrent verification replacement and concurrent password-reset token creation) were fixed using database transactions and per-user row locks. Current tests cover both types of token serialization; see [changelog](CHANGELOG.md).
 
 ## Production Readiness
 
-Alp3D Shop includes rate limiting, input validation, role checks for admin routes, and Stripe webhook signature verification. Recent hardening work also added stricter checkout email validation, stronger webhook checks for amount and payment status, safer upload file validation based on binary signatures, and better Stripe diagnostics when a webhook is registered on the correct endpoint path but a different domain.
+Alp3D Shop includes rate limiting, input validation, role checks for admin routes, and Stripe webhook signature verification. Recent hardening work also added input validation for checkout email addresses, stronger webhook checks for amount and payment status, safer upload file validation based on binary signatures, and better Stripe diagnostics when a webhook is registered on the correct endpoint path but a different domain. **Email verification is currently not enforced at checkout**; the former check is commented out in the checkout route.
 
 For production rollout, secrets must stay in Vercel environment settings and never be committed to Git. Database migrations should be run intentionally, and deployment builds should not silently seed production data.
 
@@ -62,11 +66,11 @@ A practical release checklist is available in `PRODUCTION_CHECKLIST.md`.
 
 ## Scripts
 
-The most relevant scripts are `npm run dev`, `npm run build`, `npm run start`, `npm run typecheck`, `npm run db:generate`, `npm run db:migrate`, and `npm run db:seed`.
+The most relevant scripts are `npm run dev`, `npm run build`, `npm run start`, `npm run typecheck`, `npm run test:mail`, `npm run db:generate`, `npm run db:migrate`, and `npm run db:seed`. GitHub Actions runs mail tests, typechecking and an isolated production build on affected pull requests.
 
 ## Repository Documents
 
-Project behavior and collaboration standards are documented in `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, and `CHANGELOG.md`.
+Project behavior and collaboration standards are documented in `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md` and `CHANGELOG.md`. Email-specific references are `docs/MAIL_SETUP.md` and `docs/MAIL_VERIFICATION.md` with the end-to-end checklist in `PRODUCTION_CHECKLIST.md`.
 
 ## License
 
