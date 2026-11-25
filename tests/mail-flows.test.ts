@@ -16,6 +16,7 @@ process.env.NEXT_PUBLIC_APP_URL = "https://www.alps3dp.ch";
 // All fetches to Resend are intercepted. No credentials, emails or test orders
 // are sent to any external provider or production services.
 let rejected = false;
+let rejectedRecipient: string | null = null;
 globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = typeof input === "string" ? input : input.toString();
   assert.match(url, /^https:\/\/api\.resend\.com\/emails/);
@@ -23,11 +24,12 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const data = JSON.parse(String(init.body)) as Sent;
   sent.push(data);
   idempotencyKeys.push(new Headers(init.headers).get("idempotency-key"));
+  const fail = rejected || rejectedRecipient === data.to;
   return new Response(
-    JSON.stringify(rejected
+    JSON.stringify(fail
       ? { name: "validation_error", message: "Domain not verified" }
       : { id: `mock_${sent.length}` }),
-    { status: rejected ? 403 : 200, headers: { "content-type": "application/json" } },
+    { status: fail ? 403 : 200, headers: { "content-type": "application/json" } },
   );
 }) as typeof fetch;
 
@@ -35,7 +37,7 @@ let mail: typeof import("../src/lib/mail");
 test.before(async () => { mail = await import("../src/lib/mail"); });
 
 test.after(() => { globalThis.fetch = originalFetch; });
-test.beforeEach(() => { sent.length = 0; idempotencyKeys.length = 0; rejected = false; });
+test.beforeEach(() => { sent.length = 0; idempotencyKeys.length = 0; rejected = false; rejectedRecipient = null; });
 
 function assertBrandAndFallback(message: Sent) {
   assert.equal(message.from, "Alps3Dp <order@alps3dp.ch>");
@@ -174,4 +176,45 @@ test("Operator and support recipient equal to manager are not sent twice", async
   } finally {
     process.env.MAIL_SUPPORT_EMAIL = oldSupport;
   }
+});
+
+test("When no separate support mailbox exists, only the shop manager is notified", async () => {
+  const oldSupport = process.env.MAIL_SUPPORT_EMAIL;
+  const oldAdmin = process.env.ADMIN_ORDER_EMAIL;
+  delete process.env.MAIL_SUPPORT_EMAIL;
+  delete process.env.ADMIN_ORDER_EMAIL;
+  try {
+    await mail.sendContactMessage({
+      firstName: "Test", lastName: "Person", email: "customer@example.test",
+      subject: "Frage", message: "Hallo",
+    });
+    assert.deepEqual(sent.map(s => s.to),
+      ["Alp.Kasemi@alps3Dp.ch", "customer@example.test"]);
+  } finally {
+    process.env.MAIL_SUPPORT_EMAIL = oldSupport;
+    process.env.ADMIN_ORDER_EMAIL = oldAdmin;
+  }
+});
+
+test("A failed optional support copy does not force the customer to resubmit", async () => {
+  rejectedRecipient = "support@example.test";
+  await mail.sendContactMessage({
+    firstName: "Test", lastName: "Person", email: "customer@example.test",
+    subject: "Frage", message: "Hallo",
+  });
+  assert.deepEqual(sent.map(s => s.to),
+    ["Alp.Kasemi@alps3Dp.ch", "support@example.test", "customer@example.test"]);
+});
+
+test("A failed primary shop-manager copy is reported even if support receives it", async () => {
+  rejectedRecipient = "Alp.Kasemi@alps3Dp.ch";
+  await assert.rejects(
+    mail.sendContactMessage({
+      firstName: "Test", lastName: "Person", email: "customer@example.test",
+      subject: "Frage", message: "Hallo",
+    }),
+    /Shop manager did not receive/,
+  );
+  assert.deepEqual(sent.map(s => s.to),
+    ["Alp.Kasemi@alps3Dp.ch", "support@example.test", "customer@example.test"]);
 });
