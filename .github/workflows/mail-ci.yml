@@ -8,6 +8,7 @@ on:
       - "src/lib/mail*"
       - "tests/mail-delivery.test.ts"
       - "tests/mail-flows.test.ts"
+      - "tests/mail-route-integration.test.ts"
       - "src/app/api/auth/**"
       - "src/app/api/password/**"
       - "src/app/api/account/email/**"
