@@ -69,7 +69,6 @@ function getBrandConfig() {
     accentColor: process.env.MAIL_ACCENT_COLOR?.trim() || "#0369a1",
     supportEmail:
       process.env.MAIL_SUPPORT_EMAIL?.trim() ||
-      process.env.ADMIN_ORDER_EMAIL?.trim() ||
       SHOP_MANAGER_EMAIL,
     footerText:
       process.env.MAIL_FOOTER_TEXT?.trim() ||
