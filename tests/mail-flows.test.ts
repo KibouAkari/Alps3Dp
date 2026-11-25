@@ -29,7 +29,8 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   );
 }) as typeof fetch;
 
-const mail = await import("../src/lib/mail");
+let mail: typeof import("../src/lib/mail");
+test.before(async () => { mail = await import("../src/lib/mail"); });
 
 test.after(() => { globalThis.fetch = originalFetch; });
 test.beforeEach(() => { sent.length = 0; rejected = false; });
