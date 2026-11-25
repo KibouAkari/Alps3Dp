@@ -41,3 +41,11 @@ jobs:
         env:
           DATABASE_URL: postgresql://local:local@127.0.0.1:5432/mail_ci
       - run: npm run test:mail
+      - name: Verify Next.js production build without external services
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://local:local@127.0.0.1:5432/mail_ci
+          NEXT_PUBLIC_APP_URL: https://www.alps3dp.ch
+          APP_URL: https://www.alps3dp.ch
+          NEXTAUTH_SECRET: CI_ONLY_FAKE_SECRET_DO_NOT_USE_IN_PRODUCTION_123456789
+          NEXT_TELEMETRY_DISABLED: "1"
