@@ -9,6 +9,9 @@ const originalFetch = globalThis.fetch;
 process.env.RESEND_API_KEY = "re_local_fictional_test_only";
 process.env.MAIL_PROVIDER = "resend";
 process.env.MAIL_FROM = "Alps3Dp <order@alps3dp.ch>";
+process.env.MAIL_FROM_ACCOUNT = "Alps3Dp <info@alps3dp.ch>";
+process.env.MAIL_FROM_SUPPORT = "Alps3Dp <info@alps3dp.ch>";
+process.env.MAIL_FROM_ORDER = "Alps3Dp <order@alps3dp.ch>";
 process.env.ADMIN_ORDER_EMAIL = "owner@example.test";
 process.env.MAIL_SUPPORT_EMAIL = "support@example.test";
 process.env.NEXT_PUBLIC_APP_URL = "https://www.alps3dp.ch";
@@ -40,7 +43,7 @@ test.after(() => { globalThis.fetch = originalFetch; });
 test.beforeEach(() => { sent.length = 0; idempotencyKeys.length = 0; rejected = false; rejectedRecipient = null; });
 
 function assertBrandAndFallback(message: Sent) {
-  assert.equal(message.from, "Alps3Dp <order@alps3dp.ch>");
+  assert.equal(message.from, message.subject.includes("Bestell") ? "Alps3Dp <order@alps3dp.ch>" : "Alps3Dp <info@alps3dp.ch>");
   assert.match(message.html, /https:\/\/www\.alps3dp\.ch\/images\/logo\.jpeg/);
   assert.match(message.html, /Alps3Dp/);
   assert.doesNotMatch(message.html, /linear-gradient|text-transform:uppercase|float|animation:/);
@@ -48,6 +51,57 @@ function assertBrandAndFallback(message: Sent) {
   assert.ok(message.text.length > 50, "Plain text missing");
   assert.doesNotMatch(message.text, /<table|<img|style=/);
 }
+
+test("Each mail flow uses the intended sender, independently of legacy MAIL_FROM", async () => {
+  const keys = ["MAIL_FROM", "MAIL_FROM_ACCOUNT", "MAIL_FROM_SUPPORT", "MAIL_FROM_ORDER"] as const;
+  const previous = keys.map(key => process.env[key]);
+  const legacy = "Alps3Dp <legacy@example.test>";
+  const account = "Alps3Dp <account@example.test>";
+  const support = "Alps3Dp <support-sender@example.test>";
+  const order = "Alps3Dp <orders@example.test>";
+  const defaultInfo = "Alps3Dp <info@alps3dp.ch>";
+  const defaultOrder = "Alps3Dp <order@alps3dp.ch>";
+  const cases = [
+    { values: [legacy, account, support, order], expected: [account, support, order] },
+    { values: [legacy, undefined, undefined, undefined], expected: [defaultInfo, defaultInfo, legacy] },
+    { values: [undefined, undefined, undefined, undefined], expected: [defaultInfo, defaultInfo, defaultOrder] },
+  ];
+
+  try {
+    for (const { values, expected } of cases) {
+      keys.forEach((key, index) => {
+        const value = values[index];
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      });
+      sent.length = 0;
+      idempotencyKeys.length = 0;
+      await mail.sendWelcomeVerifyEmail({
+        to: "new@example.test", name: "New customer",
+        verifyUrl: "https://www.alps3dp.ch/api/auth/verify-email?token=example",
+      });
+      await mail.sendContactMessage({
+        firstName: "Alex", lastName: "Test", email: "contact@example.test",
+        subject: "Question", message: "Hello",
+      });
+      await mail.sendOrderEmails({
+        orderId: "sender-test-order", orderNumber: 777,
+        customerName: "Buyer", customerEmail: "buyer@example.test",
+        totalCents: 1000, lines: [{ title: "Part", quantity: 1, unitCents: 1000 }],
+      });
+      const [accountFrom, supportFrom, orderFrom] = expected;
+      assert.deepEqual(sent.map(message => message.from), [
+        accountFrom, supportFrom, supportFrom, supportFrom, orderFrom, orderFrom, orderFrom,
+      ]);
+    }
+  } finally {
+    keys.forEach((key, index) => {
+      const value = previous[index];
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    });
+  }
+});
 
 test("Registration combines welcome and verifiable link into one email", async () => {
   await mail.sendWelcomeVerifyEmail({

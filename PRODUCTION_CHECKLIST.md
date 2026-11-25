@@ -30,6 +30,9 @@ Use this checklist before launching to production.
 
 - [ ] Mail provider is configured (SMTP or Resend)
 - [ ] Sender domain is verified
+- [ ] Welcome, email verification, password reset and login notices display info@alps3dp.ch (or configured MAIL_FROM_ACCOUNT) as From
+- [ ] Contact enquiries and acknowledgments display info@alps3dp.ch (or configured MAIL_FROM_SUPPORT) as From
+- [ ] Customer and operator order emails display order@alps3dp.ch (or configured MAIL_FROM_ORDER) as From; test replies and SMTP send-as permission
 - [ ] Customer order email is delivered
 - [ ] A failed customer order email still triggers the operator notification attempt
 - [ ] Shop-manager order email is delivered to `Alp.Kasemi@alps3Dp.ch`

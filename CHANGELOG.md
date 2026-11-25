@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased · Separate account, support and order mail senders (25 November 2026)
+
+- Split transactional `From` addresses by purpose: account/welcome/security notifications use `MAIL_FROM_ACCOUNT` (info@ default), contact enquiries and acknowledgements use `MAIL_FROM_SUPPORT` (info@ default), and paid-order/customer and operator notifications use `MAIL_FROM_ORDER` (order@ default). The legacy `MAIL_FROM` is an order-only fallback.
+- Keep operator recipient routing and reply-to handling unchanged; add regression tests for all three sender categories, update environment examples and setup/production instructions.
+- Sending domain must be verified and SMTP aliases authorized; separate From addresses do not themselves guarantee inbox delivery.
+
 This file records notable product, infrastructure, security and operational changes. Routine changes are grouped by feature rather than duplicated commit by commit; historical entries remain below.
 
 ## Unreleased · Shop manager mail routing and transactional presentation (PR #4, 25 November 2026)
