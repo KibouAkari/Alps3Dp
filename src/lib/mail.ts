@@ -47,7 +47,7 @@ function getMailFrom(category: MailCategory) {
   const configured = {
     account: process.env.MAIL_FROM_ACCOUNT,
     support: process.env.MAIL_FROM_SUPPORT,
-    order: process.env.MAIL_FROM_ORDER || process.env.MAIL_FROM,
+    order: process.env.MAIL_FROM_ORDER?.trim() || process.env.MAIL_FROM,
   }[category]?.trim();
   if (configured) return configured;
 
