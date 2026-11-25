@@ -180,9 +180,9 @@ test("Operator and support recipient equal to manager are not sent twice", async
 
 test("When no separate support mailbox exists, only the shop manager is notified", async () => {
   const oldSupport = process.env.MAIL_SUPPORT_EMAIL;
-  const oldAdmin = process.env.ADMIN_ORDER_EMAIL;
+  // Keep the distinct ADMIN_ORDER_EMAIL set: it must not silently become
+  // the customer's Reply-To address or the default contact recipient.
   delete process.env.MAIL_SUPPORT_EMAIL;
-  delete process.env.ADMIN_ORDER_EMAIL;
   try {
     await mail.sendContactMessage({
       firstName: "Test", lastName: "Person", email: "customer@example.test",
@@ -192,7 +192,6 @@ test("When no separate support mailbox exists, only the shop manager is notified
       ["Alp.Kasemi@alps3Dp.ch", "customer@example.test"]);
   } finally {
     process.env.MAIL_SUPPORT_EMAIL = oldSupport;
-    process.env.ADMIN_ORDER_EMAIL = oldAdmin;
   }
 });
 
