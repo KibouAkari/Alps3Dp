@@ -7,6 +7,12 @@ on:
     paths:
       - "src/lib/mail*"
       - "tests/mail-delivery.test.ts"
+      - "tests/mail-flows.test.ts"
+      - "src/app/api/auth/**"
+      - "src/app/api/password/**"
+      - "src/app/api/account/email/**"
+      - "src/app/api/webhooks/payment/**"
+      - "src/app/account/page.tsx"
       - "package.json"
       - "package-lock.json"
       - "docs/MAIL_SETUP.md"

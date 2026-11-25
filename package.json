@@ -14,7 +14,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev --name init",
     "db:seed": "prisma db seed",
-    "test:mail": "tsx --test tests/mail-delivery.test.ts"
+    "test:mail": "tsx --test tests/mail-delivery.test.ts tests/mail-flows.test.ts"
   },
   "private": true,
   "dependencies": {
