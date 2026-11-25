@@ -3,16 +3,20 @@ import { Resend } from "resend";
 
 import { getConfiguredAppBaseUrl } from "@/lib/app-url";
 import { formatOrderNumber } from "@/lib/order-number";
+import { assertResendAccepted, htmlToPlainText, selectMailProvider } from "@/lib/mail-delivery";
 
 type MailPayload = {
   from: string;
   to: string;
   subject: string;
   html: string;
+  text: string;
   replyTo?: string;
+  idempotencyKey?: string;
 };
 
 type MailSender = {
+  provider: "resend" | "smtp";
   sendMail: (payload: MailPayload) => Promise<void>;
 };
 
@@ -36,11 +40,20 @@ function getResendClient() {
 }
 
 function getMailFrom() {
-  return (
-    process.env.MAIL_FROM?.trim() ||
-    process.env.SMTP_USER?.trim() ||
-    "Alps3Dp <noreply@alps3dp.ch>"
-  );
+  const configured = process.env.MAIL_FROM?.trim();
+  if (configured) return configured;
+
+  // Use a human-replyable default for the intended verified domain.
+  // MAIL_FROM must be set explicitly when using any other verified domain.
+  const provider = selectMailProvider({
+    choice: process.env.MAIL_PROVIDER,
+    resendKey: process.env.RESEND_API_KEY,
+    smtpReady: Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD),
+  });
+  if (provider === "smtp" && process.env.SMTP_USER?.trim()) {
+    return `Alps3Dp <${process.env.SMTP_USER.trim()}>`;
+  }
+  return "Alps3Dp <order@alps3dp.ch>";
 }
 
 // Central branding config so the mail look & feel (logo, colors, texts) can
@@ -71,45 +84,51 @@ function parseBoolean(value: string | undefined, fallback: boolean) {
   return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
 }
 
-function getMailSender() {
-  if (cachedMailSender !== undefined) {
+function getMailSender(): MailSender | null {
+  if (cachedMailSender !== undefined) return cachedMailSender;
+
+  const smtpHost = process.env.SMTP_HOST?.trim();
+  const smtpUser = process.env.SMTP_USER?.trim();
+  const smtpPassword = process.env.SMTP_PASSWORD;
+  const provider = selectMailProvider({
+    choice: process.env.MAIL_PROVIDER,
+    resendKey: process.env.RESEND_API_KEY,
+    smtpReady: Boolean(smtpHost && smtpUser && smtpPassword),
+  });
+
+  // Resend wins when its key exists. Never silently fall back to SMTP on a
+  // Resend rejection: that would bypass the intended verified sending domain.
+  if (provider === "resend") {
+    const resendClient = getResendClient();
+    if (!resendClient) throw new Error("Resend provider selected but RESEND_API_KEY is missing");
+    cachedMailSender = {
+      provider,
+      sendMail: async (payload) => {
+        const { idempotencyKey, ...message } = payload;
+        const result = await resendClient.emails.send(
+          message,
+          idempotencyKey ? { idempotencyKey } : undefined,
+        );
+        assertResendAccepted(result);
+      },
+    };
     return cachedMailSender;
   }
 
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPassword = process.env.SMTP_PASSWORD;
-
-  if (smtpHost && smtpUser && smtpPassword) {
+  if (provider === "smtp" && smtpHost && smtpUser && smtpPassword) {
     const smtpPort = Number(process.env.SMTP_PORT || 465);
     const smtpSecure = parseBoolean(process.env.SMTP_SECURE, smtpPort === 465);
     const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpSecure,
-      auth: {
-        user: smtpUser,
-        pass: smtpPassword,
-      },
+      host: smtpHost, port: smtpPort, secure: smtpSecure,
+      auth: { user: smtpUser, pass: smtpPassword },
     });
-
     cachedMailSender = {
-      sendMail: async (payload) => {
+      provider,
+      sendMail: async ({ idempotencyKey: _idempotencyKey, ...payload }) => {
+        // SMTP has no provider-level deduplication; ignored key is intentional.
         await transporter.sendMail(payload);
       },
     };
-
-    return cachedMailSender;
-  }
-
-  const resendClient = getResendClient();
-  if (resendClient) {
-    cachedMailSender = {
-      sendMail: async (payload) => {
-        await resendClient.emails.send(payload);
-      },
-    };
-
     return cachedMailSender;
   }
 
@@ -121,26 +140,32 @@ async function sendMail(
   to: string,
   subject: string,
   html: string,
-  options?: { replyTo?: string },
+  options?: { replyTo?: string; idempotencyKey?: string },
 ) {
   const sender = getMailSender();
   if (!sender) {
-    const message =
-      "Mail-Versand ist nicht konfiguriert. RESEND_API_KEY oder SMTP-Zugangsdaten fehlen.";
-    console.error("[mail:disabled]", { to, subject, message });
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(message);
-    }
-    return;
+    // Do not silently claim a successful send in development or production.
+    throw new Error("E-Mail-Versand nicht konfiguriert: RESEND_API_KEY oder SMTP-Zugangsdaten fehlen.");
   }
 
-  await sender.sendMail({
-    from: getMailFrom(),
-    to,
-    subject,
-    html,
-    replyTo: options?.replyTo,
-  });
+  try {
+    await sender.sendMail({
+      from: getMailFrom(),
+      to,
+      subject,
+      html,
+      text: htmlToPlainText(html),
+      replyTo: options?.replyTo,
+      idempotencyKey: options?.idempotencyKey,
+    });
+  } catch (error) {
+    // Never log raw provider exceptions: they may contain recipient addresses,
+    // request bodies, verification links, or credentials.
+    const detail = error instanceof Error && error.message.startsWith("Resend:")
+      ? error.message : "Transport request failed";
+    console.error("[mail:delivery]", { provider: sender.provider, reason: detail });
+    throw new Error(\`E-Mail konnte nicht versendet werden (\${sender.provider}).\`);
+  }
 }
 
 function renderMailShell(params: {
@@ -424,7 +449,7 @@ export async function sendOrderEmails(params: OrderMailData) {
       preview: `Deine Bestellung ${orderNumber} ist bei uns eingegangen.`,
       contentHtml: `<p style="margin:0 0 6px;">Hallo ${safeCustomerName}</p><p style="margin:0;">Vielen Dank für deine Bestellung <strong>${safeOrderNumber}</strong> vom ${escapeHtml(orderedAt)}. Wir bereiten sie nun für dich vor und melden uns, sobald sie unterwegs ist.</p>${table}${address}${paymentLabel ? `<p style="margin:0;color:#64748b;font-size:13px;">Zahlungsart: ${escapeHtml(paymentLabel)}</p>` : ""}${renderButton(`${brand.appUrl}/account`, "Bestellstatus ansehen", brand)}<p style="margin-top:22px;color:#64748b;font-size:13px;">Fragen? Antworte einfach auf diese E-Mail.</p>`,
     }),
-    { replyTo: brand.supportEmail },
+    { replyTo: brand.supportEmail, idempotencyKey: `order-confirmation/${params.orderId}` },
   );
 
   if (owner) {
@@ -437,7 +462,7 @@ export async function sendOrderEmails(params: OrderMailData) {
           preview: `${params.customerName} hat für ${formatChf(params.totalCents)} bestellt.`,
           contentHtml: `<p style="margin:0;"><strong>Bestellt am:</strong> ${escapeHtml(orderedAt)}<br /><strong>Kunde:</strong> ${safeCustomerName}<br /><strong>E-Mail:</strong> <a href="mailto:${escapeHtml(params.customerEmail)}" style="color:${brand.accentColor};">${escapeHtml(params.customerEmail)}</a>${paymentLabel ? `<br /><strong>Zahlungsart:</strong> ${escapeHtml(paymentLabel)}` : ""}</p>${table}${address}${renderButton(`${brand.appUrl}/admin`, "Im Admin öffnen", brand)}`,
         }),
-        { replyTo: params.customerEmail },
+        { replyTo: params.customerEmail, idempotencyKey: `order-owner/${params.orderId}` },
       );
     } catch (error) {
       console.error("[mail:order-owner-notification]", error);
