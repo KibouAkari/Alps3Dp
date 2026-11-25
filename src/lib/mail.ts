@@ -41,21 +41,20 @@ function getResendClient() {
   return new Resend(apiKey);
 }
 
-function getMailFrom() {
-  const configured = process.env.MAIL_FROM?.trim();
+type MailCategory = "account" | "support" | "order";
+
+function getMailFrom(category: MailCategory) {
+  const configured = {
+    account: process.env.MAIL_FROM_ACCOUNT,
+    support: process.env.MAIL_FROM_SUPPORT,
+    order: process.env.MAIL_FROM_ORDER || process.env.MAIL_FROM,
+  }[category]?.trim();
   if (configured) return configured;
 
-  // Use a human-replyable default for the intended verified domain.
-  // MAIL_FROM must be set explicitly when using any other verified domain.
-  const provider = selectMailProvider({
-    choice: process.env.MAIL_PROVIDER,
-    resendKey: process.env.RESEND_API_KEY,
-    smtpReady: Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD),
-  });
-  if (provider === "smtp" && process.env.SMTP_USER?.trim()) {
-    return `Alps3Dp <${process.env.SMTP_USER.trim()}>`;
-  }
-  return "Alps3Dp <order@alps3dp.ch>";
+  // Distinct verified-domain defaults for customer account, support and orders.
+  // SMTP users must ensure their provider permits the selected From addresses.
+  const mailbox = category === "order" ? "order" : "info";
+  return `Alps3Dp <${mailbox}@alps3dp.ch>`;
 }
 
 // Central branding config so the mail look & feel (logo, colors, texts) can
@@ -140,7 +139,7 @@ async function sendMail(
   to: string,
   subject: string,
   html: string,
-  options?: { replyTo?: string; idempotencyKey?: string },
+  options?: { replyTo?: string; idempotencyKey?: string; category?: MailCategory },
 ) {
   const sender = getMailSender();
   if (!sender) {
@@ -150,7 +149,7 @@ async function sendMail(
 
   try {
     await sender.sendMail({
-      from: getMailFrom(),
+      from: getMailFrom(options?.category ?? "account"),
       to,
       subject,
       html,
@@ -454,7 +453,7 @@ export async function sendOrderEmails(params: OrderMailData) {
         preview: `Deine Bestellung ${orderNumber} ist bei uns eingegangen.`,
         contentHtml: `<p style="margin:0 0 6px;">Hallo ${safeCustomerName}</p><p style="margin:0;">Wir haben deine Bestellung <strong>${safeOrderNumber}</strong> vom ${escapeHtml(orderedAt)} erhalten.</p>${table}${address}${paymentLabel ? `<p style="margin:0;color:#64748b;font-size:13px;">Zahlungsart: ${escapeHtml(paymentLabel)}</p>` : ""}${renderButton(`${brand.appUrl}/account`, "Bestellung ansehen", brand)}<p style="margin-top:22px;color:#64748b;font-size:13px;">Bei Fragen kannst du auf diese E-Mail antworten.</p>`,
       }),
-      { replyTo: brand.supportEmail, idempotencyKey: `order-confirmation/${params.orderId}` },
+      { replyTo: brand.supportEmail, idempotencyKey: `order-confirmation/${params.orderId}`, category: "order" },
     );
   } catch {
     console.error("[mail:order-customer-notification] Provider rejected customer confirmation");
@@ -475,6 +474,7 @@ export async function sendOrderEmails(params: OrderMailData) {
         }),
         {
           replyTo: params.customerEmail,
+          category: "order",
           // Different recipients need different deduplication keys. Hash
           // sensitive values before exposing metadata to the provider.
           idempotencyKey: `order-operator/${createHash("sha256").update(params.orderId + "\0" + recipient.toLowerCase()).digest("hex")}`,
@@ -517,7 +517,7 @@ export async function sendContactMessage(params: {
           preview: `Kontaktanfrage von ${params.firstName} ${params.lastName}`,
           contentHtml: `<p style="margin:0 0 8px;"><strong>Absender:</strong> ${safeName}<br /><strong>E-Mail:</strong> <a href="mailto:${safeEmail}" style="color:${brand.accentColor};">${safeEmail}</a><br /><strong>Betreff:</strong> ${safeSubject}</p><p style="margin:14px 0 0;"><strong>Nachricht</strong></p><p style="margin:6px 0 0;">${safeMessage}</p>`,
         }),
-        { replyTo: params.email },
+        { replyTo: params.email, category: "support" },
       );
     } catch {
       console.error("[mail:contact-operator] Provider rejected operator notification");
@@ -538,7 +538,7 @@ export async function sendContactMessage(params: {
         preview: "Wir melden uns so schnell wie möglich bei dir.",
         contentHtml: `<p>Wir haben deine Nachricht zum Thema "${safeSubject}" erhalten und melden uns so schnell wie möglich.</p><p style="margin-top:14px;color:#64748b;font-size:13px;">Deine Nachricht:<br />${safeMessage}</p>`,
       }),
-      { replyTo: brand.supportEmail },
+      { replyTo: brand.supportEmail, category: "support" },
     );
   } catch {
     console.error("[mail:contact-confirmation] Provider rejected customer acknowledgement");
