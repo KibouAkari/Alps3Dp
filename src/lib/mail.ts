@@ -214,7 +214,7 @@ function renderButton(
   label: string,
   brand: ReturnType<typeof getBrandConfig>,
 ) {
-  return `<p style="margin:22px 0 0;"><a href="${escapeHtml(url)}" style="display:inline-block;background:${brand.accentColor};color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:10px;font-weight:700;font-size:15px;">${escapeHtml(label)}</a></p>`;
+  return `<p style="margin:22px 0 0;"><a href="${escapeHtml(url)}" style="display:inline-block;background:${brand.accentColor};color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:6px;font-weight:700;font-size:15px;">${escapeHtml(label)}</a></p>`;
 }
 
 function renderLinkFallback(url: string) {
@@ -265,6 +265,10 @@ function renderOrderTable(data: OrderMailData) {
   const summaryRow = (label: string, value: string, bold = false) =>
     `<tr><td style="padding:6px 0;${bold ? "font-weight:700;font-size:16px;color:#0f172a;" : "color:#64748b;"}">${label}</td><td align="right" style="padding:6px 0;white-space:nowrap;${bold ? "font-weight:700;font-size:16px;color:#0f172a;" : ""}">${value}</td></tr>`;
 
+  const subtotalRow =
+    typeof data.subtotalCents === "number"
+      ? summaryRow("Zwischensumme", formatChf(data.subtotalCents))
+      : "";
   const shippingRow =
     typeof data.shippingCents === "number"
       ? summaryRow(
@@ -273,7 +277,7 @@ function renderOrderTable(data: OrderMailData) {
         )
       : "";
 
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0;font-size:14px;">${rows}<tr><td colspan="2" style="padding-top:8px;"></td></tr>${shippingRow}${summaryRow("Total", formatChf(data.totalCents), true)}</table>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0;font-size:14px;">${rows}<tr><td colspan="2" style="padding-top:8px;"></td></tr>${subtotalRow}${shippingRow}${summaryRow("Total", formatChf(data.totalCents), true)}</table>`;
 }
 
 function renderAddressBlock(data: OrderMailData) {
@@ -331,7 +335,7 @@ export async function sendWelcomeVerifyEmail(params: {
       title: `Willkommen, ${params.name || brand.name}!`,
       preview:
         "Dein Konto wurde erstellt. Bitte bestätige noch kurz deine E-Mail-Adresse.",
-      contentHtml: `<p style="margin:0 0 10px;">Schön, dass du da bist! Dein Konto ist bereit – bestätige noch kurz deine E-Mail-Adresse, um dein Konto vollständig einzurichten.</p>${renderButton(params.verifyUrl, "E-Mail bestätigen", brand)}${renderLinkFallback(params.verifyUrl)}<p style="margin-top:22px;">Danach kannst du direkt unsere Produkte entdecken und den Status deiner Bestellungen verfolgen.</p>`,
+      contentHtml: `<p style="margin:0 0 10px;">Schön, dass du da bist! Dein Kundenkonto wurde erstellt. Bitte bestätige deine E-Mail-Adresse.</p>${renderButton(params.verifyUrl, "E-Mail bestätigen", brand)}${renderLinkFallback(params.verifyUrl)}<p style="margin-top:22px;">Danach kannst du Bestellungen und Lieferadressen in deinem Konto verwalten.</p>`,
     }),
   );
 }
@@ -345,7 +349,7 @@ export async function sendWelcomeEmail(params: { to: string; name: string }) {
     renderMailShell({
       title: `Willkommen, ${params.name || brand.name}!`,
       preview: "Dein Konto wurde erfolgreich erstellt.",
-      contentHtml: `<p style="margin:0 0 10px;">Schön, dass du da bist.</p><p style="margin:0;">Dein Konto ist bereit und du kannst direkt Produkte entdecken, bestellen und den Status deiner Bestellungen verfolgen.</p>${renderButton(brand.appUrl, "Zum Shop", brand)}`,
+      contentHtml: `<p style="margin:0 0 10px;">Dein Kundenkonto wurde erstellt.</p><p style="margin:0;">Du kannst deine Bestellungen und Lieferadressen im Konto verwalten.</p>${renderButton(brand.appUrl, "Zum Shop", brand)}`,
     }),
   );
 }
@@ -448,9 +452,9 @@ export async function sendOrderEmails(params: OrderMailData) {
       params.customerEmail,
       `Bestellbestätigung ${orderNumber}`,
       renderMailShell({
-        title: "Danke für deine Bestellung!",
+        title: "Bestellbestätigung",
         preview: `Deine Bestellung ${orderNumber} ist bei uns eingegangen.`,
-        contentHtml: `<p style="margin:0 0 6px;">Hallo ${safeCustomerName}</p><p style="margin:0;">Vielen Dank für deine Bestellung <strong>${safeOrderNumber}</strong> vom ${escapeHtml(orderedAt)}. Wir bereiten sie nun für dich vor und melden uns, sobald sie unterwegs ist.</p>${table}${address}${paymentLabel ? `<p style="margin:0;color:#64748b;font-size:13px;">Zahlungsart: ${escapeHtml(paymentLabel)}</p>` : ""}${renderButton(`${brand.appUrl}/account`, "Bestellstatus ansehen", brand)}<p style="margin-top:22px;color:#64748b;font-size:13px;">Fragen? Antworte einfach auf diese E-Mail.</p>`,
+        contentHtml: `<p style="margin:0 0 6px;">Hallo ${safeCustomerName}</p><p style="margin:0;">Wir haben deine Bestellung <strong>${safeOrderNumber}</strong> vom ${escapeHtml(orderedAt)} erhalten.</p>${table}${address}${paymentLabel ? `<p style="margin:0;color:#64748b;font-size:13px;">Zahlungsart: ${escapeHtml(paymentLabel)}</p>` : ""}${renderButton(`${brand.appUrl}/account`, "Bestellung ansehen", brand)}<p style="margin-top:22px;color:#64748b;font-size:13px;">Bei Fragen kannst du auf diese E-Mail antworten.</p>`,
       }),
       { replyTo: brand.supportEmail, idempotencyKey: `order-confirmation/${params.orderId}` },
     );
