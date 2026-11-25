@@ -14,7 +14,7 @@ The shop uses one shared mailer in [`src/lib/mail.ts`](../src/lib/mail.ts). The 
 | Confirmed paid Stripe order | Order confirmation with items, delivery address and totals | **Always** `Alp.Kasemi@alps3Dp.ch`, plus a distinct `ADMIN_ORDER_EMAIL` |
 | Contact form submitted | Acknowledgment of enquiry | **Always** `Alp.Kasemi@alps3Dp.ch`, plus a distinct `MAIL_SUPPORT_EMAIL` |
 
-The designated manager email is explicitly configured in [`mail-recipients.ts`](../src/lib/mail-recipients.ts). It is attempted even when optional Vercel variables are missing or differ. Matching addresses are compared case-insensitively, so the manager is not emailed twice. Every operator order recipient has a separate hashed Resend idempotency key.
+The designated manager email is explicitly configured in [`mail-recipients.ts`](../src/lib/mail-recipients.ts). It is attempted even when optional Vercel variables are missing or differ. If no separate support mailbox is configured, the manager is also the default support and Reply-To address. Matching addresses are compared case-insensitively, so the manager is not emailed twice. Every operator order recipient has a separate hashed Resend idempotency key.
 
 **Privacy:** Password-reset URLs, verification tokens and login notifications are *not* forwarded to the manager. An operator notification contains only business data needed to handle the order or customer enquiry.
 
@@ -84,6 +84,7 @@ The GitHub suite tests transport responses and route behavior using fake tokens,
 ## 6. Important remaining limitations
 
 - **No durable order-email outbox yet.** Paid orders are marked `PAID` by verified Stripe events before emails are sent. If the provider fails, every configured recipient is attempted, failure is logged, but a failed send is **not automatically retried**. A production-grade guarantee requires a durable queue/worker, individual delivery state and reviewed Prisma migration.
+- An optional support inbox failure is logged, but the contact form succeeds when the manager's message was accepted, preventing unnecessary customer retries. The manager's own send failure is returned as an error. A manager acceptance is still not inbox delivery.
 - Resend's idempotency keys help deduplicate attempts within the provider's supported window but are not a delivery guarantee. A manager's mailbox can still reject or filter a message.
 - Rate limiting is process-local, not shared across all serverless instances. Production abuse controls should use centrally stored limits.
 - Changing a customer's account email currently changes the stored address before verifying the new mailbox. If sending fails, the account can be left unverified, although a resend route exists. A pending-email confirmation model is recommended.

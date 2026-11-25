@@ -14,7 +14,7 @@ The GitHub Actions mail suite runs TypeScript typechecking, provider-selection t
 | Verification | Link consumption and replay rejection, replacement/resend, email change; UI presents a resend option | Clicking links through live domain, accessibility on mobile |
 | Login security | Successful login message and no duplicate welcome mail | Live provider acceptance and user inbox |
 | Password reset | Generic request handling, latest-token-only, single use, password update and session revocation | Real reset mail, expiry boundary and live database transaction |
-| Contact form | Manager notification, separate optional support copy and customer acknowledgment, escaped submitted content | Real manager and support inboxes, Reply-To, spam handling |
+| Contact form | Manager notification, separate optional support copy and customer acknowledgment, escaped submitted content; manager fallback when support unset; optional-copy failure does not force customer to retry | Real manager and support inboxes, Reply-To, spam handling |
 | Paid order | Signed Stripe test webhook, order PAID transition, customer mail, manager and distinct optional admin copies, recipient-specific dedupe keys and duplicate webhook handling | Stripe test event delivery, real database, Resend dashboard and actual manager inbox |
 | Provider errors | Resend `{data,error}` and missing IDs are rejected; errors sanitized | API key permission, domain verification, real provider status |
 

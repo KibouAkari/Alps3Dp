@@ -35,6 +35,7 @@ Use this checklist before launching to production.
 - [ ] Shop-manager order email is delivered to `Alp.Kasemi@alps3Dp.ch`
 - [ ] If a separate `ADMIN_ORDER_EMAIL` is set, it independently receives an order copy without duplicates when equal to manager
 - [ ] Support enquiry goes to the manager and any different support inbox; customer receives acknowledgement
+- [ ] Missing optional support mailbox still sends to the manager; optional support rejection does not incorrectly fail a successfully accepted manager enquiry
 - [ ] SPF/DKIM/DMARC pass and align for the actual sending domain; Resend reports Verified
 - [ ] Test delivery in Gmail and Outlook or other actual recipient providers with raw headers showing SPF/DKIM/DMARC pass and no junk/quarantine
 - [ ] Check spam/junk, Resend bounce/suppression history and message content; inbox placement is not guaranteed by passing DNS checks
