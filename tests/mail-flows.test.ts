@@ -53,23 +53,54 @@ function assertBrandAndFallback(message: Sent) {
 }
 
 test("Each mail flow uses the intended sender, independently of legacy MAIL_FROM", async () => {
-  await mail.sendWelcomeVerifyEmail({
-    to: "new@example.test", name: "New customer",
-    verifyUrl: "https://www.alps3dp.ch/api/auth/verify-email?token=example",
-  });
-  await mail.sendContactMessage({
-    firstName: "Alex", lastName: "Test", email: "contact@example.test",
-    subject: "Question", message: "Hello",
-  });
-  await mail.sendOrderEmails({
-    orderId: "sender-test-order", orderNumber: 777,
-    customerName: "Buyer", customerEmail: "buyer@example.test",
-    totalCents: 1000, lines: [{ title: "Part", quantity: 1, unitCents: 1000 }],
-  });
-  assert.equal(sent.length, 7);
-  assert.equal(sent[0].from, "Alps3Dp <info@alps3dp.ch>");
-  assert.ok(sent.slice(1, 4).every(message => message.from === "Alps3Dp <info@alps3dp.ch>"));
-  assert.ok(sent.slice(4).every(message => message.from === "Alps3Dp <order@alps3dp.ch>"));
+  const keys = ["MAIL_FROM", "MAIL_FROM_ACCOUNT", "MAIL_FROM_SUPPORT", "MAIL_FROM_ORDER"] as const;
+  const previous = keys.map(key => process.env[key]);
+  const legacy = "Alps3Dp <legacy@example.test>";
+  const account = "Alps3Dp <account@example.test>";
+  const support = "Alps3Dp <support-sender@example.test>";
+  const order = "Alps3Dp <orders@example.test>";
+  const defaultInfo = "Alps3Dp <info@alps3dp.ch>";
+  const defaultOrder = "Alps3Dp <order@alps3dp.ch>";
+  const cases = [
+    { values: [legacy, account, support, order], expected: [account, support, order] },
+    { values: [legacy, undefined, undefined, undefined], expected: [defaultInfo, defaultInfo, legacy] },
+    { values: [undefined, undefined, undefined, undefined], expected: [defaultInfo, defaultInfo, defaultOrder] },
+  ];
+
+  try {
+    for (const { values, expected } of cases) {
+      keys.forEach((key, index) => {
+        const value = values[index];
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      });
+      sent.length = 0;
+      idempotencyKeys.length = 0;
+      await mail.sendWelcomeVerifyEmail({
+        to: "new@example.test", name: "New customer",
+        verifyUrl: "https://www.alps3dp.ch/api/auth/verify-email?token=example",
+      });
+      await mail.sendContactMessage({
+        firstName: "Alex", lastName: "Test", email: "contact@example.test",
+        subject: "Question", message: "Hello",
+      });
+      await mail.sendOrderEmails({
+        orderId: "sender-test-order", orderNumber: 777,
+        customerName: "Buyer", customerEmail: "buyer@example.test",
+        totalCents: 1000, lines: [{ title: "Part", quantity: 1, unitCents: 1000 }],
+      });
+      const [accountFrom, supportFrom, orderFrom] = expected;
+      assert.deepEqual(sent.map(message => message.from), [
+        accountFrom, supportFrom, supportFrom, supportFrom, orderFrom, orderFrom, orderFrom,
+      ]);
+    }
+  } finally {
+    keys.forEach((key, index) => {
+      const value = previous[index];
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    });
+  }
 });
 
 test("Registration combines welcome and verifiable link into one email", async () => {
