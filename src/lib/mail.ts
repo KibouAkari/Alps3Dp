@@ -323,12 +323,12 @@ export async function sendWelcomeVerifyEmail(params: {
   verifyUrl: string;
 }) {
   const brand = getBrandConfig();
-  const safeName = escapeHtml(params.name || brand.name);
+
   await sendMail(
     params.to,
     `Willkommen bei ${brand.name} – bitte E-Mail bestätigen`,
     renderMailShell({
-      title: `Willkommen, ${safeName}!`,
+      title: `Willkommen, ${params.name || brand.name}!`,
       preview:
         "Dein Konto wurde erstellt. Bitte bestätige noch kurz deine E-Mail-Adresse.",
       contentHtml: `<p style="margin:0 0 10px;">Schön, dass du da bist! Dein Konto ist bereit – bestätige noch kurz deine E-Mail-Adresse, um dein Konto vollständig einzurichten.</p>${renderButton(params.verifyUrl, "E-Mail bestätigen", brand)}${renderLinkFallback(params.verifyUrl)}<p style="margin-top:22px;">Danach kannst du direkt unsere Produkte entdecken und den Status deiner Bestellungen verfolgen.</p>`,
@@ -338,12 +338,12 @@ export async function sendWelcomeVerifyEmail(params: {
 
 export async function sendWelcomeEmail(params: { to: string; name: string }) {
   const brand = getBrandConfig();
-  const safeName = escapeHtml(params.name || brand.name);
+
   await sendMail(
     params.to,
     `Willkommen bei ${brand.name}`,
     renderMailShell({
-      title: `Willkommen, ${safeName}!`,
+      title: `Willkommen, ${params.name || brand.name}!`,
       preview: "Dein Konto wurde erfolgreich erstellt.",
       contentHtml: `<p style="margin:0 0 10px;">Schön, dass du da bist.</p><p style="margin:0;">Dein Konto ist bereit und du kannst direkt Produkte entdecken, bestellen und den Status deiner Bestellungen verfolgen.</p>${renderButton(brand.appUrl, "Zum Shop", brand)}`,
     }),
@@ -501,7 +501,7 @@ export async function sendContactMessage(params: {
     `Kontaktformular: ${params.subject}`,
     renderMailShell({
       title: "Neue Kontaktanfrage",
-      preview: `Neue Nachricht von ${safeName}`,
+      preview: `Neue Nachricht von ${params.firstName} ${params.lastName}`, 
       contentHtml: `<p><strong>Von:</strong> ${safeName} (${safeEmail})</p><p><strong>Betreff:</strong> ${safeSubject}</p><p>${safeMessage}</p>`,
     }),
     { replyTo: params.email },
@@ -514,7 +514,7 @@ export async function sendContactMessage(params: {
       params.email,
       "Wir haben deine Nachricht erhalten",
       renderMailShell({
-        title: `Danke, ${safeName}`,
+        title: `Danke, ${params.firstName} ${params.lastName}`, 
         preview: "Wir melden uns so schnell wie möglich bei dir.",
         contentHtml: `<p>Wir haben deine Nachricht zum Thema "${safeSubject}" erhalten und melden uns so schnell wie möglich.</p><p style="margin-top:14px;color:#64748b;font-size:13px;">Deine Nachricht:<br />${safeMessage}</p>`,
       }),
