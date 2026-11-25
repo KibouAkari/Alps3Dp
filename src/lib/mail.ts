@@ -65,8 +65,7 @@ function getBrandConfig() {
   return {
     name: process.env.MAIL_BRAND_NAME?.trim() || "Alps3Dp",
     appUrl,
-    logoUrl: process.env.MAIL_LOGO_URL?.trim() || `${appUrl}/images/logo.jpeg`,
-    primaryColor: process.env.MAIL_PRIMARY_COLOR?.trim() || "#0ea5e9",
+    logoUrl: `${appUrl}/images/logo.jpeg`,
     accentColor: process.env.MAIL_ACCENT_COLOR?.trim() || "#0369a1",
     supportEmail:
       process.env.MAIL_SUPPORT_EMAIL?.trim() ||
