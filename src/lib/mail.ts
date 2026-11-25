@@ -4,7 +4,7 @@ import { Resend } from "resend";
 
 import { getConfiguredAppBaseUrl } from "@/lib/app-url";
 import { formatOrderNumber } from "@/lib/order-number";
-import { getShopOperatorRecipients } from "@/lib/mail-recipients";
+import { getShopOperatorRecipients, SHOP_MANAGER_EMAIL } from "@/lib/mail-recipients";
 import { assertResendAccepted, htmlToPlainText, selectMailProvider } from "@/lib/mail-delivery";
 
 type MailPayload = {
@@ -70,7 +70,7 @@ function getBrandConfig() {
     supportEmail:
       process.env.MAIL_SUPPORT_EMAIL?.trim() ||
       process.env.ADMIN_ORDER_EMAIL?.trim() ||
-      "support@alps3dp.ch",
+      SHOP_MANAGER_EMAIL,
     footerText:
       process.env.MAIL_FOOTER_TEXT?.trim() ||
       "Alps3Dp · Schweiz",
@@ -507,7 +507,7 @@ export async function sendContactMessage(params: {
   // Send the customer's enquiry to the manager and any distinct support inbox.
   // These are separate sends so the manager still receives an attempt if
   // support's mailbox is temporarily unavailable.
-  let operatorFailed = false;
+  let managerFailed = false;
   for (const recipient of getShopOperatorRecipients([brand.supportEmail])) {
     try {
       await sendMail(
@@ -522,7 +522,9 @@ export async function sendContactMessage(params: {
       );
     } catch {
       console.error("[mail:contact-operator] Provider rejected operator notification");
-      operatorFailed = true;
+      if (recipient.toLowerCase() === SHOP_MANAGER_EMAIL.toLowerCase()) {
+        managerFailed = true;
+      }
     }
   }
 
@@ -542,8 +544,9 @@ export async function sendContactMessage(params: {
   } catch {
     console.error("[mail:contact-confirmation] Provider rejected customer acknowledgement");
   }
-  if (operatorFailed) {
-    // Partial success is recorded. No durable retry queue exists yet.
-    throw new Error("One or more contact operator notifications were not accepted");
+  if (managerFailed) {
+    // A failed optional support copy does not make the customer retry a
+    // request already received by the designated shop manager.
+    throw new Error("Shop manager did not receive a provider acceptance");
   }
 }
