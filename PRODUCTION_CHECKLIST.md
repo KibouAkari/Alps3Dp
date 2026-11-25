@@ -31,6 +31,7 @@ Use this checklist before launching to production.
 - [ ] Mail provider is configured (SMTP or Resend)
 - [ ] Sender domain is verified
 - [ ] Customer order email is delivered
+- [ ] A failed customer order email still triggers the operator notification attempt
 - [ ] Admin order email is delivered
 - [ ] SPF/DKIM/DMARC are configured for the actual sending domain and Resend reports Verified
 - [ ] `MAIL_FROM`, `ADMIN_ORDER_EMAIL`, `MAIL_SUPPORT_EMAIL` use valid sender/recipient mailboxes
@@ -48,7 +49,9 @@ Use this checklist before launching to production.
 
 ## 6. Functional QA
 
-- [ ] Registration and email verification, login notification and password reset tested with controlled mailboxes
+- [ ] Registration and email verification, verified-account login notification and password reset tested with controlled mailboxes
+- [ ] Unverified accounts can request a new verification email; links become invalid after use, replacement or email change
+- [ ] Password reset consumes a token once, invalidates earlier reset links and revokes all signed-in sessions
 - [ ] Contact-form owner and customer messages delivered
 - [ ] Cart and checkout tested
 - [ ] Test payment completed end-to-end

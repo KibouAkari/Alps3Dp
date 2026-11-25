@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
-import { sendLoginSuccessEmail, sendWelcomeEmail } from "@/lib/mail";
+import { sendLoginSuccessEmail } from "@/lib/mail";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { verifyPassword } from "@/lib/security";
 import { createSessionForUser, AUTH_COOKIE_NAME } from "@/lib/session";
@@ -62,8 +62,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "E-Mail oder Passwort ist falsch." }, { status: 401 });
   }
 
-  const previousSessionCount = await db.userSession.count({ where: { userId: user.id } });
-
   const { token, expiresAt } = await createSessionForUser(user.id);
 
   const response = NextResponse.json({
@@ -89,23 +87,13 @@ export async function POST(request: Request) {
     expires: expiresAt,
   });
 
-  if (previousSessionCount === 0) {
-    const displayName =
-      [user.firstName, user.lastName].filter(Boolean).join(" ") ||
-      user.username ||
-      user.email.split("@")[0] ||
-      "bei Alps3Dp";
-    try {
-      await sendWelcomeEmail({ to: user.email, name: displayName });
-    } catch (error) {
-      console.error("[auth:login:welcome-mail]", error);
-    }
-  } else {
-    try {
-      await sendLoginSuccessEmail(user.email);
-    } catch (error) {
-      console.error("[auth:login:mail]", error);
-    }
+  // Welcome + verification was already sent during registration. Session
+  // count is not a reliable first-login indicator because expired sessions
+  // are cleaned up; do not send duplicate welcome messages.
+  try {
+    await sendLoginSuccessEmail(user.email);
+  } catch {
+    console.error("[auth:login:mail] Login notice failed");
   }
 
   return response;

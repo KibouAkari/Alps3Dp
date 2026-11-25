@@ -44,6 +44,14 @@ For environments that use both preview and production domains, Alp3D Shop now re
 
 Email delivery is handled in `src/lib/mail.ts`. Resend is the default whenever `RESEND_API_KEY` is present. SMTP can be selected explicitly with `MAIL_PROVIDER=smtp`, or is used when no Resend key is configured. The mailer checks Resend SDK responses for rejected messages and sends branded HTML **plus a plain-text alternative**. Missing provider configuration raises an error instead of silently reporting success. See [Mail setup](docs/MAIL_SETUP.md) for DNS, sender addresses, safe testing and order-email reliability limitations.
 
+## Email verification and delivery
+
+The transactional flows include branded registration welcome + verification, login security notices, password reset, account email verification, customer and operator order confirmations, and contact-form notifications. Verification links can be requested again by signed-in users whose email is not confirmed. Password reset links are one-time and replace earlier pending reset links.
+
+Source tests simulate these complete routes with in-memory fixtures and intercepted Resend responses; they never send real email or charge a card. Passing CI **does not prove** the custom sender domain is verified, Vercel has the correct secrets, Resend accepted live messages or the receiving mailbox delivered them.
+
+See [mail configuration](docs/MAIL_SETUP.md), [verification report](docs/MAIL_VERIFICATION.md) and [release checklist](PRODUCTION_CHECKLIST.md).
+
 ## Production Readiness
 
 Alp3D Shop includes rate limiting, input validation, role checks for admin routes, and Stripe webhook signature verification. Recent hardening work also added stricter checkout email validation, stronger webhook checks for amount and payment status, safer upload file validation based on binary signatures, and better Stripe diagnostics when a webhook is registered on the correct endpoint path but a different domain.

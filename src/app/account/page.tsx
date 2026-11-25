@@ -55,6 +55,8 @@ export default function AccountPage() {
 
   const [newEmail, setNewEmail] = useState("");
   const [emailPassword, setEmailPassword] = useState("");
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
+  const [verificationSending, setVerificationSending] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
@@ -101,9 +103,10 @@ export default function AccountPage() {
             totalCents: entry.totalCents,
           }))
         );
-        const profile = data.profile as { addresses?: SavedAddress[]; email?: string } | undefined;
+        const profile = data.profile as { addresses?: SavedAddress[]; email?: string; emailVerified?: boolean } | undefined;
         setAddresses(profile?.addresses || []);
         setNewEmail(profile?.email || "");
+        setEmailVerified(Boolean(profile?.emailVerified));
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Konto konnte nicht geladen werden."));
   }, [user]);
@@ -339,7 +342,9 @@ export default function AccountPage() {
                   if (!response.ok) {
                     throw new Error((data.error as string | undefined) || "E-Mail konnte nicht aktualisiert werden.");
                   }
-                  setStatus("E-Mail geändert. Bitte Verifizierungs-Mail bestätigen.");
+                  setStatus((data.message as string | undefined) ||
+                    "E-Mail geändert. Bitte Verifizierungs-Mail bestätigen.");
+                  setEmailVerified(false);
                   setEmailPassword("");
                 } catch (err) {
                   setError(err instanceof Error ? err.message : "E-Mail konnte nicht aktualisiert werden.");
@@ -349,6 +354,38 @@ export default function AccountPage() {
             >
               E-Mail aktualisieren
             </button>
+            {emailVerified === false && (
+              <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-4">
+                <p className="text-sm text-slate-700">Deine E-Mail-Adresse ist noch nicht bestätigt.</p>
+                <button
+                  type="button"
+                  disabled={verificationSending}
+                  onClick={async () => {
+                    setVerificationSending(true);
+                    setError(null);
+                    setStatus(null);
+                    try {
+                      const response = await fetch("/api/auth/resend-verification", {
+                        method: "POST",
+                        credentials: "include",
+                      });
+                      const data = await parseJsonSafely(response);
+                      if (!response.ok) {
+                        throw new Error((data.error as string | undefined) || "Bestätigung konnte nicht angefordert werden.");
+                      }
+                      setStatus("Bestätigungs-E-Mail wurde vom Anbieter angenommen. Bitte Posteingang und Spam prüfen.");
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "E-Mail-Versand fehlgeschlagen.");
+                    } finally {
+                      setVerificationSending(false);
+                    }
+                  }}
+                  className="mt-2 rounded-lg border border-sky-500 px-4 py-2 text-sm font-semibold text-sky-900 disabled:opacity-50"
+                >
+                  {verificationSending ? "Wird versendet…" : "Bestätigungs-E-Mail erneut senden"}
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="panel-surface rounded-2xl p-6 shadow-sm soft-pop">

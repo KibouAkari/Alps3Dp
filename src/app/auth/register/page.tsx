@@ -35,7 +35,7 @@ export default function RegisterPage() {
           }
           setSubmitting(true);
           try {
-            await register({
+            const registered = await register({
               salutation: salutation || undefined,
               firstName: firstName || undefined,
               lastName: lastName || undefined,
@@ -43,7 +43,9 @@ export default function RegisterPage() {
               email: email.trim(),
               password,
             });
-            setStatus(`Registrierung erfolgreich. Wir haben dir eine E-Mail an ${email.trim()} gesendet – bitte bestätige sie.`);
+            setStatus(registered.verificationEmailAccepted
+              ? "Konto erstellt. Die Bestätigungs-E-Mail wurde vom Anbieter angenommen. Bitte Posteingang und Spam prüfen."
+              : "Konto erstellt, aber der E-Mail-Versand ist fehlgeschlagen. Du kannst unter Konto → Sicherheit eine neue Bestätigung anfordern.");
             window.setTimeout(() => router.push("/account"), 2500);
           } catch (err) {
             setError(err instanceof Error ? err.message : "Registrierung fehlgeschlagen.");

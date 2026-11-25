@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getAppBaseUrl } from "@/lib/app-url";
-import { db } from "@/lib/db";
+import { db, lockUserForUpdate } from "@/lib/db";
 import { sendVerifyEmail } from "@/lib/mail";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { createOpaqueToken, hashOpaqueToken, verifyPassword } from "@/lib/security";
@@ -65,37 +65,63 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Neue E-Mail ist identisch zur aktuellen." }, { status: 400 });
   }
 
-  const taken = await db.user.findUnique({ where: { email: newEmail } });
-  if (taken) {
-    return NextResponse.json({ error: "E-Mail ist bereits vergeben." }, { status: 409 });
-  }
-
   const verifyToken = createOpaqueToken();
 
-  await db.$transaction([
-    db.user.update({
+  const result = await db.$transaction(async (tx) => {
+    await lockUserForUpdate(tx, user.id);
+    const currentUser = await tx.user.findUnique({
       where: { id: user.id },
+      select: { id: true, email: true },
+    });
+    if (!currentUser) return "missing" as const;
+    if (currentUser.email === newEmail) return "same" as const;
+
+    const taken = await tx.user.findUnique({ where: { email: newEmail }, select: { id: true } });
+    if (taken) return "taken" as const;
+
+    await tx.emailVerificationToken.deleteMany({ where: { userId: currentUser.id } });
+    await tx.user.update({
+      where: { id: currentUser.id },
       data: {
         email: newEmail,
         emailVerifiedAt: null,
       },
-    }),
-    db.emailVerificationToken.create({
+    });
+    await tx.emailVerificationToken.create({
       data: {
-        userId: user.id,
+        userId: currentUser.id,
         tokenHash: hashOpaqueToken(verifyToken),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
-    }),
-  ]);
+    });
+    return "updated" as const;
+  });
+  if (result === "missing") {
+    return NextResponse.json({ error: "Benutzer nicht gefunden." }, { status: 404 });
+  }
+  if (result === "same") {
+    return NextResponse.json({ error: "Neue E-Mail ist identisch zur aktuellen." }, { status: 400 });
+  }
+  if (result === "taken") {
+    return NextResponse.json({ error: "E-Mail ist bereits vergeben." }, { status: 409 });
+  }
 
   const appUrl = getAppBaseUrl();
-  await sendVerifyEmail(newEmail, `${appUrl}/api/auth/verify-email?token=${verifyToken}`);
+  let verificationEmailAccepted = false;
+  try {
+    await sendVerifyEmail(newEmail, `${appUrl}/api/auth/verify-email?token=${verifyToken}`);
+    verificationEmailAccepted = true;
+  } catch {
+    console.error("[account:email-change] Verification mail provider unavailable");
+  }
 
   return NextResponse.json({
     success: true,
+    verificationEmailAccepted,
     email: newEmail,
     emailVerified: false,
-    message: "E-Mail aktualisiert. Bitte neue Adresse verifizieren.",
+    message: verificationEmailAccepted
+      ? "E-Mail aktualisiert. Bitte neue Adresse verifizieren."
+      : "E-Mail geändert, aber der Versand ist fehlgeschlagen. Bitte im Konto die Verifizierung erneut anfordern.",
   });
 }

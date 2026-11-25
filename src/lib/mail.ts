@@ -323,12 +323,12 @@ export async function sendWelcomeVerifyEmail(params: {
   verifyUrl: string;
 }) {
   const brand = getBrandConfig();
-  const safeName = escapeHtml(params.name || brand.name);
+
   await sendMail(
     params.to,
     `Willkommen bei ${brand.name} – bitte E-Mail bestätigen`,
     renderMailShell({
-      title: `Willkommen, ${safeName}!`,
+      title: `Willkommen, ${params.name || brand.name}!`,
       preview:
         "Dein Konto wurde erstellt. Bitte bestätige noch kurz deine E-Mail-Adresse.",
       contentHtml: `<p style="margin:0 0 10px;">Schön, dass du da bist! Dein Konto ist bereit – bestätige noch kurz deine E-Mail-Adresse, um dein Konto vollständig einzurichten.</p>${renderButton(params.verifyUrl, "E-Mail bestätigen", brand)}${renderLinkFallback(params.verifyUrl)}<p style="margin-top:22px;">Danach kannst du direkt unsere Produkte entdecken und den Status deiner Bestellungen verfolgen.</p>`,
@@ -338,12 +338,12 @@ export async function sendWelcomeVerifyEmail(params: {
 
 export async function sendWelcomeEmail(params: { to: string; name: string }) {
   const brand = getBrandConfig();
-  const safeName = escapeHtml(params.name || brand.name);
+
   await sendMail(
     params.to,
     `Willkommen bei ${brand.name}`,
     renderMailShell({
-      title: `Willkommen, ${safeName}!`,
+      title: `Willkommen, ${params.name || brand.name}!`,
       preview: "Dein Konto wurde erfolgreich erstellt.",
       contentHtml: `<p style="margin:0 0 10px;">Schön, dass du da bist.</p><p style="margin:0;">Dein Konto ist bereit und du kannst direkt Produkte entdecken, bestellen und den Status deiner Bestellungen verfolgen.</p>${renderButton(brand.appUrl, "Zum Shop", brand)}`,
     }),
@@ -439,18 +439,25 @@ export async function sendOrderEmails(params: OrderMailData) {
   const table = renderOrderTable(params);
   const address = renderAddressBlock(params);
 
-  // Customer confirmation is business-critical, so its failure is propagated
-  // to the caller; the owner notification below is best-effort only.
-  await sendMail(
-    params.customerEmail,
-    `Bestellbestätigung ${orderNumber}`,
-    renderMailShell({
-      title: "Danke für deine Bestellung!",
-      preview: `Deine Bestellung ${orderNumber} ist bei uns eingegangen.`,
-      contentHtml: `<p style="margin:0 0 6px;">Hallo ${safeCustomerName}</p><p style="margin:0;">Vielen Dank für deine Bestellung <strong>${safeOrderNumber}</strong> vom ${escapeHtml(orderedAt)}. Wir bereiten sie nun für dich vor und melden uns, sobald sie unterwegs ist.</p>${table}${address}${paymentLabel ? `<p style="margin:0;color:#64748b;font-size:13px;">Zahlungsart: ${escapeHtml(paymentLabel)}</p>` : ""}${renderButton(`${brand.appUrl}/account`, "Bestellstatus ansehen", brand)}<p style="margin-top:22px;color:#64748b;font-size:13px;">Fragen? Antworte einfach auf diese E-Mail.</p>`,
-    }),
-    { replyTo: brand.supportEmail, idempotencyKey: `order-confirmation/${params.orderId}` },
-  );
+  // Customer and operator sends are independent. An outage for one
+  // recipient must not prevent attempting the other notification.
+  let customerFailed = false;
+  let ownerFailed = false;
+  try {
+    await sendMail(
+      params.customerEmail,
+      `Bestellbestätigung ${orderNumber}`,
+      renderMailShell({
+        title: "Danke für deine Bestellung!",
+        preview: `Deine Bestellung ${orderNumber} ist bei uns eingegangen.`,
+        contentHtml: `<p style="margin:0 0 6px;">Hallo ${safeCustomerName}</p><p style="margin:0;">Vielen Dank für deine Bestellung <strong>${safeOrderNumber}</strong> vom ${escapeHtml(orderedAt)}. Wir bereiten sie nun für dich vor und melden uns, sobald sie unterwegs ist.</p>${table}${address}${paymentLabel ? `<p style="margin:0;color:#64748b;font-size:13px;">Zahlungsart: ${escapeHtml(paymentLabel)}</p>` : ""}${renderButton(`${brand.appUrl}/account`, "Bestellstatus ansehen", brand)}<p style="margin-top:22px;color:#64748b;font-size:13px;">Fragen? Antworte einfach auf diese E-Mail.</p>`,
+      }),
+      { replyTo: brand.supportEmail, idempotencyKey: `order-confirmation/${params.orderId}` },
+    );
+  } catch {
+    console.error("[mail:order-customer-notification] Provider rejected customer confirmation");
+    customerFailed = true;
+  }
 
   if (owner) {
     try {
@@ -464,9 +471,13 @@ export async function sendOrderEmails(params: OrderMailData) {
         }),
         { replyTo: params.customerEmail, idempotencyKey: `order-owner/${params.orderId}` },
       );
-    } catch (error) {
-      console.error("[mail:order-owner-notification]", error);
+    } catch {
+      console.error("[mail:order-owner-notification] Provider rejected operator notification");
+      ownerFailed = true;
     }
+  }
+  if (customerFailed || ownerFailed) {
+    throw new Error("One or more order notifications were not accepted by the mail provider");
   }
 }
 
@@ -490,7 +501,7 @@ export async function sendContactMessage(params: {
     `Kontaktformular: ${params.subject}`,
     renderMailShell({
       title: "Neue Kontaktanfrage",
-      preview: `Neue Nachricht von ${safeName}`,
+      preview: `Neue Nachricht von ${params.firstName} ${params.lastName}`, 
       contentHtml: `<p><strong>Von:</strong> ${safeName} (${safeEmail})</p><p><strong>Betreff:</strong> ${safeSubject}</p><p>${safeMessage}</p>`,
     }),
     { replyTo: params.email },
@@ -503,7 +514,7 @@ export async function sendContactMessage(params: {
       params.email,
       "Wir haben deine Nachricht erhalten",
       renderMailShell({
-        title: `Danke, ${safeName}`,
+        title: `Danke, ${params.firstName} ${params.lastName}`, 
         preview: "Wir melden uns so schnell wie möglich bei dir.",
         contentHtml: `<p>Wir haben deine Nachricht zum Thema "${safeSubject}" erhalten und melden uns so schnell wie möglich.</p><p style="margin-top:14px;color:#64748b;font-size:13px;">Deine Nachricht:<br />${safeMessage}</p>`,
       }),

@@ -2,6 +2,20 @@
 
 ## Unreleased (25 November 2026)
 
+### Verification and account recovery hardening (PR #3)
+
+- Added authenticated, rate-limited resend of an unreceived account-verification email, accessible in the account security page while the email remains unverified.
+- Revoked old account-verification links on email address change to prevent an old inbox from verifying a newly configured address.
+- Invalidated prior password-reset links when a new one is issued, atomically consumed a reset token to prevent concurrent reuse, and revoked all active sessions on a successful password change.
+- Removed an unreliable session-count check that could send duplicate welcome emails on a later login. Registration remains the source of welcome + verification; later logins get the security notice.
+- Made order customer and operator notifications independent: a customer delivery failure no longer skips attempting the operator notification.
+- Added safe simulated transport tests and route-level integration checks for registration, verification, reset, contact and signed Stripe webhook paths. No real recipient or live payment was used.
+- Fixed double HTML escaping of display names in welcome and support messages.
+- Registration now reports whether Resend accepted its verification message instead of always claiming mail was sent. Email address changes similarly explain when the new verification email could not be sent, while correctly reporting that the address was already changed.
+- **Important:** True production provider acceptance, DNS verification and recipient inbox placement are separate, unverified checks until controlled live tests pass. A durable order-mail retry queue is still outstanding.
+
+## Previously merged mail transport fixes
+
 ### Fixed
 
 - Corrected transactional-mail provider selection: Resend now wins when `RESEND_API_KEY` is configured, with an explicit `MAIL_PROVIDER` override for SMTP.
