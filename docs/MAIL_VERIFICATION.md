@@ -18,7 +18,7 @@ The GitHub Actions mail suite runs TypeScript typechecking, provider-selection t
 | Paid order | Signed Stripe test webhook, order PAID transition, customer mail, manager and distinct optional admin copies, recipient-specific dedupe keys and duplicate webhook handling | Stripe test event delivery, real database, Resend dashboard and actual manager inbox |
 | Provider errors | Resend `{data,error}` and missing IDs are rejected; errors sanitized | API key permission, domain verification, real provider status |
 
-The latest completed automated run on the PR #4 branch passed **20 of 20 mail tests**, the TypeScript check and the Next.js production build. That run included the shop-manager routing changes and minimized email template. The test suite confirms the **application logic under controlled assumptions**. It does not independently verify the external mail infrastructure.
+The latest completed automated run on the PR #4 branch passed **23 of 23 mail tests**, the TypeScript check and the isolated Next.js production build (GitHub Actions run `45623309360`). The newest tests also cover missing support configuration and partial provider failures for the manager versus an additional support mailbox. That run included the shop-manager routing changes and minimized email template. The test suite confirms the **application logic under controlled assumptions**. It does not independently verify the external mail infrastructure.
 
 ## Copilot security review (25 November 2026)
 
