@@ -94,12 +94,21 @@ export async function PATCH(request: Request) {
   ]);
 
   const appUrl = getAppBaseUrl();
-  await sendVerifyEmail(newEmail, `${appUrl}/api/auth/verify-email?token=${verifyToken}`);
+  let verificationEmailAccepted = false;
+  try {
+    await sendVerifyEmail(newEmail, `${appUrl}/api/auth/verify-email?token=${verifyToken}`);
+    verificationEmailAccepted = true;
+  } catch {
+    console.error("[account:email-change] Verification mail provider unavailable");
+  }
 
   return NextResponse.json({
     success: true,
+    verificationEmailAccepted,
     email: newEmail,
     emailVerified: false,
-    message: "E-Mail aktualisiert. Bitte neue Adresse verifizieren.",
+    message: verificationEmailAccepted
+      ? "E-Mail aktualisiert. Bitte neue Adresse verifizieren."
+      : "E-Mail geändert, aber der Versand ist fehlgeschlagen. Bitte im Konto die Verifizierung erneut anfordern.",
   });
 }

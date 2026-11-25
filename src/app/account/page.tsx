@@ -342,7 +342,8 @@ export default function AccountPage() {
                   if (!response.ok) {
                     throw new Error((data.error as string | undefined) || "E-Mail konnte nicht aktualisiert werden.");
                   }
-                  setStatus("E-Mail geändert. Bitte Verifizierungs-Mail bestätigen.");
+                  setStatus((data.message as string | undefined) ||
+                    "E-Mail geändert. Bitte Verifizierungs-Mail bestätigen.");
                   setEmailVerified(false);
                   setEmailPassword("");
                 } catch (err) {

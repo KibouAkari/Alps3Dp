@@ -160,7 +160,7 @@ export function useMockSession() {
 
     window.dispatchEvent(new Event(AUTH_EVENT));
     setUser(nextUser);
-    return nextUser;
+    return { ...nextUser, verificationEmailAccepted: data.verificationEmailAccepted === true };
   }, []);
 
   const signOut = useCallback(async () => {

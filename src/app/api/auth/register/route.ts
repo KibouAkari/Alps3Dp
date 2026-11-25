@@ -94,19 +94,22 @@ export async function POST(request: Request) {
     user.email.split("@")[0] ||
     "bei Alps3Dp";
 
+  let verificationEmailAccepted = false;
   try {
     await sendWelcomeVerifyEmail({
       to: email,
       name: displayName,
       verifyUrl: `${appUrl}/api/auth/verify-email?token=${verifyToken}`,
     });
-  } catch (error) {
-    console.error("[auth:register:mail]", error);
+    verificationEmailAccepted = true;
+  } catch {
+    console.error("[auth:register:mail] Provider rejected or unavailable");
   }
 
   const { token, expiresAt } = await createSessionForUser(user.id);
 
   const response = NextResponse.json({
+    verificationEmailAccepted,
     user: {
       id: user.id,
       avatarUrl: user.avatarUrl,
