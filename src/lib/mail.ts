@@ -294,7 +294,7 @@ function renderAddressBlock(data: OrderMailData) {
     .filter(Boolean)
     .map((line) => escapeHtml(String(line)))
     .join("<br />");
-  return `<div style="margin:16px 0;padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;font-size:14px;line-height:1.6;"><div style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:4px;">Lieferadresse</div>${lines}</div>`;
+  return `<div style="margin:16px 0;padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;font-size:14px;line-height:1.6;"><div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:4px;">Lieferadresse</div>${lines}</div>`;
 }
 
 function formatSwissDateTime(date: Date) {
