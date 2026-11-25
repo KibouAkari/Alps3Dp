@@ -50,7 +50,7 @@ The above addresses match historical repository examples; confirm which real mai
 
 `MAIL_FROM` defaults to `Alps3Dp <order@alps3dp.ch>` for Resend when unset, so verifying the correct domain can unblock the first message without another setting. Nevertheless, explicitly setting the correct sender is recommended. `ADMIN_ORDER_EMAIL` is required for **owner order notifications**; without it, only the customer confirmation is attempted. `MAIL_SUPPORT_EMAIL` is the contact-form inbox and Reply-To.
 
-The application reads `NEXT_PUBLIC_APP_URL` first, then `APP_URL` for email links and hosted logo URLs. Unlike LifeOrbit, it does not use `PUBLIC_APP_URL`. Use the canonical domain actually reachable by customers. Both local and production changes require a deployment restart.
+The application reads `NEXT_PUBLIC_APP_URL` first, then `APP_URL`; `PUBLIC_APP_URL` is now accepted as a compatibility fallback (useful when migrating from LifeOrbit), but **set `NEXT_PUBLIC_APP_URL` or `APP_URL` for the normal Alps3DP configuration**. Use the canonical domain actually reachable by customers. Both local and production changes require a deployment restart.
 
 ## 3. Provider selection, error handling and plain text
 
