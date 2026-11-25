@@ -73,6 +73,10 @@ export async function PATCH(request: Request) {
   const verifyToken = createOpaqueToken();
 
   await db.$transaction([
+    // Tokens are scoped to user ID, not a specific email address. Revoke
+    // prior links before changing the address to prevent old inbox links
+    // from verifying a newly configured address.
+    db.emailVerificationToken.deleteMany({ where: { userId: user.id } }),
     db.user.update({
       where: { id: user.id },
       data: {

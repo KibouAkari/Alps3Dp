@@ -51,19 +51,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Reset-Link ist ungueltig oder abgelaufen." }, { status: 400 });
   }
 
-  await db.$transaction([
-    db.user.update({
-      where: { id: tokenRecord.userId },
-      data: { passwordHash: await hashPassword(parsed.data.password) },
-    }),
-    db.passwordResetToken.update({
-      where: { id: tokenRecord.id },
-      data: { usedAt: new Date() },
-    }),
-    // Invalidate every existing session so a leaked/old cookie stops working
-    // once the password has been reset.
-    db.userSession.deleteMany({ where: { userId: tokenRecord.userId } }),
-  ]);
+  const passwordHash = await hashPassword(parsed.data.password);
+  try {
+    await db.$transaction(async (tx) => {
+      // Atomically claim the token before changing anything. Concurrent
+      // reset requests cannot both consume the same one-time token.
+      const consumed = await tx.passwordResetToken.updateMany({
+        where: { id: tokenRecord.id, usedAt: null, expiresAt: { gt: new Date() } },
+        data: { usedAt: new Date() },
+      });
+      if (consumed.count !== 1) {
+        throw new Error("Reset token already consumed");
+      }
+      await tx.user.update({
+        where: { id: tokenRecord.userId },
+        data: { passwordHash },
+      });
+      await tx.passwordResetToken.deleteMany({
+        where: { userId: tokenRecord.userId, usedAt: null },
+      });
+      // Revoke every existing session after the password is changed.
+      await tx.userSession.deleteMany({ where: { userId: tokenRecord.userId } });
+    });
+  } catch {
+    // Do not leak database details or valid-user/token information.
+    return NextResponse.json({ error: "Reset-Link ist ungueltig oder abgelaufen." }, { status: 400 });
+  }
 
   return NextResponse.json({ success: true });
 }

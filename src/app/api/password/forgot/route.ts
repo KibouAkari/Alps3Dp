@@ -59,13 +59,20 @@ export async function POST(request: Request) {
   if (user) {
     const token = createOpaqueToken();
 
-    await db.passwordResetToken.create({
-      data: {
-        userId: user.id,
-        tokenHash: hashOpaqueToken(token),
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
-      },
-    });
+    // Invalidate previous pending reset links. Only the latest link can
+    // reset the account, reducing risk from delayed or forwarded emails.
+    await db.$transaction([
+      db.passwordResetToken.deleteMany({
+        where: { userId: user.id, usedAt: null },
+      }),
+      db.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: hashOpaqueToken(token),
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        },
+      }),
+    ]);
 
     const appUrl = getAppBaseUrl();
     try {
