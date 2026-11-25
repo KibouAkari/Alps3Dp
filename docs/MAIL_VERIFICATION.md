@@ -6,7 +6,7 @@
 
 ## What is checked automatically
 
-The GitHub Actions mail suite runs TypeScript typechecking, provider-selection tests, simulated Resend integration tests and in-memory API route tests. Mock provider responses exercise both acceptance and rejection without sending mail. The tests use fictitious `example.test` accounts, a fake PostgreSQL client, a fake Resend key and a signed Stripe *test-only* webhook event generated using a fake webhook secret.
+The GitHub Actions mail suite runs TypeScript typechecking, provider-selection tests, simulated Resend integration tests, shop-manager routing tests, in-memory API route tests and an isolated Next.js production build. Mock provider responses exercise both acceptance and rejection without sending mail. The tests use fictitious `example.test` accounts, a fake PostgreSQL client, a fake Resend key and a signed Stripe *test-only* webhook event generated using a fake webhook secret.
 
 | Flow | What is tested | Remaining verification |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ The GitHub Actions mail suite runs TypeScript typechecking, provider-selection t
 | Paid order | Signed Stripe test webhook, order PAID transition, customer mail, manager and distinct optional admin copies, recipient-specific dedupe keys and duplicate webhook handling | Stripe test event delivery, real database, Resend dashboard and actual manager inbox |
 | Provider errors | Resend `{data,error}` and missing IDs are rejected; errors sanitized | API key permission, domain verification, real provider status |
 
-The test suite confirms the **application logic under controlled assumptions**. It does not independently verify the external mail infrastructure.
+The latest completed automated run on the PR #4 branch passed **20 of 20 mail tests**, the TypeScript check and the Next.js production build. That run included the shop-manager routing changes and minimized email template. The test suite confirms the **application logic under controlled assumptions**. It does not independently verify the external mail infrastructure.
 
 ## Copilot security review (25 November 2026)
 

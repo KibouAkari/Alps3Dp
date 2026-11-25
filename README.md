@@ -1,8 +1,8 @@
-# Alp3D Shop
+# Alps3Dp
 
-<p align="center"><img src="public/images/logo.jpeg" alt="Alp3D Shop Logo" width="72"></p>
+<p align="center"><img src="public/images/logo.jpeg" alt="Alps3Dp Logo" width="72"></p>
 
-Alp3D Shop is an ecommerce website for 3D-printed products, designed to feel straightforward for customers and practical for operators. It combines product browsing, account management, checkout, payments, and order communication in one coherent flow.
+Alps3Dp is an ecommerce website for 3D-printed products, designed to feel straightforward for customers and practical for operators. It combines product browsing, account management, checkout, payments, and order communication in one coherent flow.
 
 The main goal of this repository is to provide a clean foundation for a real online shop. It is more than a UI prototype: it includes server routes, database models, payment integration, and transactional email handling, so the full order lifecycle can be tested and operated end to end.
 
@@ -18,7 +18,7 @@ The main goal of this repository is to provide a clean foundation for a real onl
 
 ## Built With
 
-Alp3D Shop uses Next.js 15 with the App Router, React 19, and TypeScript. Data is managed with Prisma and PostgreSQL. Payments are handled through Stripe Checkout and webhook events. Transactional emails are sent via SMTP or Resend, depending on your environment. Styling is implemented with Tailwind CSS, and deployment is prepared for Vercel.
+Alps3Dp uses Next.js 15 with the App Router, React 19, and TypeScript. Data is managed with Prisma and PostgreSQL. Payments are handled through Stripe Checkout and webhook events. Transactional emails are sent via SMTP or Resend, depending on your environment. Styling is implemented with Tailwind CSS, and deployment is prepared for Vercel.
 
 ## How The System Is Structured
 
@@ -26,7 +26,7 @@ The codebase is organized around clear responsibilities. `src/app` contains page
 
 ## Local Setup
 
-To run Alp3D Shop locally, install dependencies with `npm install`, then create your local environment file by copying `.env.example` to `.env.local`.
+To run Alps3Dp locally, install dependencies with `npm install`, then create your local environment file by copying `.env.example` to `.env.local`.
 
 After that, prepare the database with `npm run db:generate`, `npm run db:migrate`, and `npm run db:seed`. Once setup is complete, start the app with `npm run dev`.
 
@@ -40,7 +40,7 @@ Checkout sessions are created server-side in `src/app/api/checkout/route.ts`. Pa
 
 The storefront search ranks live suggestions across product titles, descriptions, and categories as the customer types. Light and dark appearance follows the device setting until the customer explicitly chooses a theme; reduced-motion settings use a short static intro instead of suppressing the intro entirely.
 
-For environments that use both preview and production domains, Alp3D Shop now resolves Stripe redirect URLs from the active request host when possible. This reduces the risk of a working Stripe setup being misread as broken simply because `APP_URL` still points at an older Vercel or preview domain.
+For environments that use both preview and production domains, Alps3Dp now resolves Stripe redirect URLs from the active request host when possible. This reduces the risk of a working Stripe setup being misread as broken simply because `APP_URL` still points at an older Vercel or preview domain.
 
 Email delivery is handled in `src/lib/mail.ts` using Resend (preferred with `RESEND_API_KEY`) or explicitly configured SMTP. The shared template is intentionally minimal, using the **same Alps3Dp logo as the website** (`/images/logo.jpeg`), a white layout, readable typography and concise order/account details. Every message includes HTML and plain text. Provider rejections are detected rather than treated as successful sends.
 
@@ -58,7 +58,7 @@ See [mail configuration](docs/MAIL_SETUP.md), [verification report](docs/MAIL_VE
 
 ## Production Readiness
 
-Alp3D Shop includes rate limiting, input validation, role checks for admin routes, and Stripe webhook signature verification. Recent hardening work also added input validation for checkout email addresses, stronger webhook checks for amount and payment status, safer upload file validation based on binary signatures, and better Stripe diagnostics when a webhook is registered on the correct endpoint path but a different domain. **Email verification is currently not enforced at checkout**; the former check is commented out in the checkout route.
+Alps3Dp includes rate limiting, input validation, role checks for admin routes, and Stripe webhook signature verification. Recent hardening work also added input validation for checkout email addresses, stronger webhook checks for amount and payment status, safer upload file validation based on binary signatures, and better Stripe diagnostics when a webhook is registered on the correct endpoint path but a different domain. **Email verification is currently not enforced at checkout**; the former check is commented out in the checkout route.
 
 For production rollout, secrets must stay in Vercel environment settings and never be committed to Git. Database migrations should be run intentionally, and deployment builds should not silently seed production data.
 
@@ -74,4 +74,4 @@ Project behavior and collaboration standards are documented in `CONTRIBUTING.md`
 
 ## License
 
-Alp3D Shop is released under the MIT License. See `LICENSE` for details.
+Alps3Dp is released under the MIT License. See `LICENSE` for details.
