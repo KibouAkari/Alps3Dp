@@ -10,6 +10,8 @@
 - Removed an unreliable session-count check that could send duplicate welcome emails on a later login. Registration remains the source of welcome + verification; later logins get the security notice.
 - Made order customer and operator notifications independent: a customer delivery failure no longer skips attempting the operator notification.
 - Added safe simulated transport tests and route-level integration checks for registration, verification, reset, contact and signed Stripe webhook paths. No real recipient or live payment was used.
+- Fixed double HTML escaping of display names in welcome and support messages.
+- Registration now reports whether Resend accepted its verification message instead of always claiming mail was sent. Email address changes similarly explain when the new verification email could not be sent, while correctly reporting that the address was already changed.
 - **Important:** True production provider acceptance, DNS verification and recipient inbox placement are separate, unverified checks until controlled live tests pass. A durable order-mail retry queue is still outstanding.
 
 ## Previously merged mail transport fixes

@@ -10,8 +10,8 @@ The GitHub Actions mail suite runs TypeScript typechecking, provider-selection t
 
 | Flow | What is tested | Remaining verification |
 | --- | --- | --- |
-| New registration | Account creation, combined welcome+verification HTML/text, token link | Real mailbox delivery and verified sender domain |
-| Verification | Link consumption and replay rejection, replacement/resend, email change | Clicking links through live domain, accessibility on mobile |
+| New registration | Account creation, combined welcome+verification HTML/text, token link; API/UI distinguish provider acceptance and failure | Real mailbox delivery and verified sender domain |
+| Verification | Link consumption and replay rejection, replacement/resend, email change; UI presents a resend option | Clicking links through live domain, accessibility on mobile |
 | Login security | Successful login message and no duplicate welcome mail | Live provider acceptance and user inbox |
 | Password reset | Generic request handling, latest-token-only, single use, password update and session revocation | Real reset mail, expiry boundary and live database transaction |
 | Contact form | Operator notification plus customer acknowledgment, escaped submitted content | Both real inboxes, Reply-To, spam handling |
@@ -43,6 +43,7 @@ Perform this only after a reviewed deploy, with a newly registered test account 
 - Paid-order emails do **not** have a durable delivery outbox and retry worker. A provider outage after an order is marked PAID can lose a notification. Create this separately with a reviewed Prisma migration and queue.
 - Current rate limiting is process-local; Vercel serverless instances do not share limits. Migrate to a centrally stored limiter for production-grade abuse controls.
 - Changing the registered email currently switches the address before the new one is verified; a mail outage can strand the account. A staged pending-email model would be safer and requires a database migration.
+- The registration and email-change UI only report that a message was accepted by the provider; they do not claim inbox delivery. An error after email change is explained without falsely claiming the database update failed.
 - Email verification is not currently enforced during checkout. Do not imply that a confirmation email gates shopping until this policy is intentionally implemented and tested.
 - Live domain, sender verification, provider permissions and mailbox delivery remain unconfirmed in this connected environment.
 
