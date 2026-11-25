@@ -30,7 +30,7 @@ export function assertResendAccepted(result: {
     const errorName = result.error.name || "";
     const safeName = /^[a-zA-Z0-9_-]{1,48}$/.test(errorName)
       ? errorName : "provider_error";
-    throw new Error(\`Resend: \${safeName}\`);
+    throw new Error(`Resend: ${safeName}`);
   }
   if (!result.data?.id) {
     throw new Error("Resend: missing_delivery_id");
@@ -70,7 +70,7 @@ export function htmlToPlainText(html: string): string {
     (_match, _before, href: string, _after, label: string) => {
       const cleanLabel = decodeEntities(label.replace(/<[^>]*>/g, "").trim());
       const destination = decodeEntities(href);
-      return cleanLabel === destination ? destination : \`\${cleanLabel} (\${destination})\`;
+      return cleanLabel === destination ? destination : `${cleanLabel} (${destination})`;
     },
   );
   const text = withLinks

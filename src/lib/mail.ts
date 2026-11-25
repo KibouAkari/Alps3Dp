@@ -164,7 +164,7 @@ async function sendMail(
     const detail = error instanceof Error && error.message.startsWith("Resend:")
       ? error.message : "Transport request failed";
     console.error("[mail:delivery]", { provider: sender.provider, reason: detail });
-    throw new Error(\`E-Mail konnte nicht versendet werden (\${sender.provider}).\`);
+    throw new Error(`E-Mail konnte nicht versendet werden (${sender.provider}).`);
   }
 }
 
