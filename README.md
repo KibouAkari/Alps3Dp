@@ -75,3 +75,7 @@ Project behavior and collaboration standards are documented in `CONTRIBUTING.md`
 ## License
 
 Alps3Dp is released under the MIT License. See `LICENSE` for details.
+
+### Transactional email sender identities
+
+Account creation, verification, login and password recovery use `MAIL_FROM_ACCOUNT` (default `Alps3Dp <info@alps3dp.ch>`); contact messages and confirmations use `MAIL_FROM_SUPPORT` (default `Alps3Dp <info@alps3dp.ch>`); order confirmations and operator notices use `MAIL_FROM_ORDER` (default `Alps3Dp <order@alps3dp.ch>`). Legacy `MAIL_FROM` remains an order-only fallback. Recipient routing is separate: `Alp.Kasemi@alps3Dp.ch` still receives management notifications. See `docs/MAIL_SETUP.md`.
