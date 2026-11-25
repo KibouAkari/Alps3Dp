@@ -32,7 +32,11 @@ Use this checklist before launching to production.
 - [ ] Sender domain is verified
 - [ ] Customer order email is delivered
 - [ ] Admin order email is delivered
-- [ ] SPF/DKIM/DMARC are configured for production domain
+- [ ] SPF/DKIM/DMARC are configured for the actual sending domain and Resend reports Verified
+- [ ] `MAIL_FROM`, `ADMIN_ORDER_EMAIL`, `MAIL_SUPPORT_EMAIL` use valid sender/recipient mailboxes
+- [ ] Both customer and owner test emails appear in Resend delivery logs and controlled mailboxes
+- [ ] `NEXT_PUBLIC_APP_URL` and `APP_URL` point at the canonical site; logo and links work
+- [ ] Order-email failure recovery is documented; no durable retry queue exists yet
 
 ## 5. Security
 
@@ -44,7 +48,8 @@ Use this checklist before launching to production.
 
 ## 6. Functional QA
 
-- [ ] Registration/login/password reset tested
+- [ ] Registration and email verification, login notification and password reset tested with controlled mailboxes
+- [ ] Contact-form owner and customer messages delivered
 - [ ] Cart and checkout tested
 - [ ] Test payment completed end-to-end
 - [ ] Canceled/expired checkout flow tested

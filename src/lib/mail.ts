@@ -331,7 +331,7 @@ export async function sendWelcomeVerifyEmail(params: {
       title: `Willkommen, ${safeName}!`,
       preview:
         "Dein Konto wurde erstellt. Bitte bestätige noch kurz deine E-Mail-Adresse.",
-      contentHtml: `<p style="margin:0 0 10px;">Schön, dass du da bist! Dein Konto ist bereit – bestätige nur noch kurz deine E-Mail-Adresse, damit du bestellen kannst.</p>${renderButton(params.verifyUrl, "E-Mail bestätigen", brand)}${renderLinkFallback(params.verifyUrl)}<p style="margin-top:22px;">Danach kannst du direkt unsere Produkte entdecken und den Status deiner Bestellungen verfolgen.</p>`,
+      contentHtml: `<p style="margin:0 0 10px;">Schön, dass du da bist! Dein Konto ist bereit – bestätige noch kurz deine E-Mail-Adresse, um dein Konto vollständig einzurichten.</p>${renderButton(params.verifyUrl, "E-Mail bestätigen", brand)}${renderLinkFallback(params.verifyUrl)}<p style="margin-top:22px;">Danach kannst du direkt unsere Produkte entdecken und den Status deiner Bestellungen verfolgen.</p>`,
     }),
   );
 }

@@ -1,164 +1,102 @@
-# Mail Setup Guide
+# Alps3DP transactional email setup
 
-This shop sends real transactional e-mails for: contact form (owner + confirmation to
-sender), order confirmation (customer + owner), first login / welcome, e-mail
-verification, login notification and password reset. Everything is driven by
-environment variables — no code changes are needed for a new deployment.
+All transactional email templates use the same production branding from `src/lib/mail.ts`, including the real logo at `/images/logo.jpeg`. Outbound email is not enabled merely by setting an API key: the sending domain, sender, recipients and Vercel environment must also be correct.
 
-All mail logic lives in [src/lib/mail.ts](../src/lib/mail.ts). All variables below
-go into your `.env` (local) or your hosting provider's environment settings
-(e.g. Vercel → Project → Settings → Environment Variables).
+## Email flows already available
 
-## 1. Choose a provider (5 minutes)
+| Event | Customer | Shop operator | Trigger |
+| --- | --- | --- | --- |
+| Registration | Combined welcome + email verification link | No | Successful new registration |
+| First subsequent login | Welcome email | No | First password login if no previous session record |
+| Later password logins | Login security alert | No | Successful login |
+| Password forgotten | Single-use reset link | No | Forgot-password request |
+| Email address change | Verify new email | No | Authenticated email-change request |
+| Successful paid Stripe checkout | Order confirmation | Order notification | Verified paid Stripe webhook |
+| Contact form | Receipt confirmation | New contact message | Valid form submission |
 
-You only need **one** of the two. If `SMTP_HOST`, `SMTP_USER` and `SMTP_PASSWORD` are all set, SMTP is used; otherwise Resend (if `RESEND_API_KEY` is set).
+Important: checkout email verification is currently not enforced; changing this is a separate payment/account-policy decision.
 
-### Option A — Resend (recommended)
+## 1. Finish Resend domain verification
 
-1. Create a free account at https://resend.com.
-2. Add and verify your sending domain (Resend → Domains → Add Domain), then add
-   the shown SPF, DKIM and DMARC DNS records at your domain registrar.
-   Verification usually completes within a few minutes up to a few hours.
-3. Create an API key (Resend → API Keys) with "Sending access".
-4. Set:
-   ```
-   RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxx
-   ```
+1. Open [Resend Domains](https://resend.com/domains) and add the **actual sending domain**, normally `alps3dp.ch`.
+2. Publish the precise DNS records supplied by Resend in the authoritative DNS provider. These typically include DKIM and a sending/return-path subdomain. Verify SPF and DMARC for the actual From domain; do not create a duplicate SPF TXT record.
+3. Wait until Resend shows the sending domain as **Verified**. DNS propagation is outside the application's control.
+4. Preserve your existing MX records and unrelated website DNS. Do not replace root SPF, MX or nameservers blindly.
+5. An initial `_dmarc.alps3dp.ch` TXT monitoring policy such as `v=DMARC1; p=none` is reasonable **only if no existing DMARC record is present**. Review alignment and delivery results before switching to `quarantine` or `reject`.
 
-### Option B — SMTP (e.g. IONOS mailbox, SES, Postmark, Mailgun, etc.)
+Only the DNS owner can finish this step. The GitHub repository alone cannot verify the domain.
 
-#### IONOS (alps3dp.ch)
+## 2. Configure Vercel production settings
 
-Use the mailbox `order@alps3dp.ch` as the sender. IONOS only accepts mails whose
-`From` address equals the authenticated mailbox, so `MAIL_FROM` must match `SMTP_USER`.
+These settings are added in **Vercel → Alps3DP project → Settings → Environment Variables**. Never paste API keys into source files, issues, support messages or screenshots.
 
-```
-SMTP_HOST=smtp.ionos.de
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=order@alps3dp.ch
-SMTP_PASSWORD=<mailbox password>
+```env
+# Existing; secret / server-only
+RESEND_API_KEY=<already configured>
+# Default is Resend whenever RESEND_API_KEY is set, even if old SMTP vars remain.
+# MAIL_PROVIDER=resend                  # Optional explicit override
+
+# Sender domain must be verified in your Resend account
 MAIL_FROM=Alps3Dp <order@alps3dp.ch>
+# These inboxes must actually be able to receive mail
 ADMIN_ORDER_EMAIL=order@alps3dp.ch
 MAIL_SUPPORT_EMAIL=info@alps3dp.ch
-```
 
-(Port 465 with `SMTP_SECURE=true` also works.) Also make sure SPF (and ideally DKIM/DMARC)
-for alps3dp.ch is set in the IONOS DNS so mails do not land in spam. Set the same
-variables in Vercel → Settings → Environment Variables and redeploy.
-
-#### Generic SMTP
-
-
-```
-SMTP_HOST=smtp.your-provider.com
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER=your-smtp-username
-SMTP_PASSWORD=your-smtp-password
-```
-
-## 2. Set the sender & support addresses
-
-```
-MAIL_FROM=Alps3Dp <noreply@alps3dp.ch>
-ADMIN_ORDER_EMAIL=orders@alps3dp.ch
-MAIL_SUPPORT_EMAIL=support@alps3dp.ch
-```
-
-- `MAIL_FROM` must use a domain you verified in step 1 (Resend rejects unverified
-  domains; most SMTP providers require the same or will land in spam otherwise).
-- `ADMIN_ORDER_EMAIL` receives new-order and contact-form notifications.
-- `MAIL_SUPPORT_EMAIL` is shown in every e-mail footer and used as the contact
-  form's owner inbox if `ADMIN_ORDER_EMAIL` is not set. Customer replies to the
-  contact-form owner notification are set up with `Reply-To` so support can just
-  hit "reply" in their inbox.
-
-## 3. Branding — logo, colors, texts
-
-These variables control the look of every e-mail without touching any template code:
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `MAIL_BRAND_NAME` | `Alps3Dp` | Shown in the header and subject lines |
-| `MAIL_LOGO_URL` | `${NEXT_PUBLIC_APP_URL}/images/logo.jpeg` | Must be a **public, absolute** URL — e-mail clients fetch it over the internet, they cannot see local files |
-| `MAIL_PRIMARY_COLOR` | `#0ea5e9` | Header gradient start (matches the site's sky-blue theme) |
-| `MAIL_ACCENT_COLOR` | `#0369a1` | Header gradient end, buttons, links |
-| `MAIL_FOOTER_TEXT` | `Alps3Dp · Handgefertigte 3D-gedruckte Produkte aus der Schweiz` | Footer tagline |
-
-Leave them empty to use the defaults, which already match the site's design.
-Change `MAIL_LOGO_URL` only if you want a different image than the site logo
-(e.g. a version with a white background, since some mail clients render on white).
-
-## 4. Application URL (used for links & the logo)
-
-```
 NEXT_PUBLIC_APP_URL=https://www.alps3dp.ch
 APP_URL=https://www.alps3dp.ch
 ```
 
-Set these to your real production domain — they're used to build the logo URL and
-all links/buttons inside e-mails (shop link, "view order" button, verify/reset links).
+The above addresses match historical repository examples; confirm which real mailboxes the shop owner operates. For a different verified domain, change `MAIL_FROM` accordingly. Do not use `noreply@` if you expect customer replies.
 
-## 5. Full variable reference
+`MAIL_FROM` defaults to `Alps3Dp <order@alps3dp.ch>` for Resend when unset, so verifying the correct domain can unblock the first message without another setting. Nevertheless, explicitly setting the correct sender is recommended. `ADMIN_ORDER_EMAIL` is required for **owner order notifications**; without it, only the customer confirmation is attempted. `MAIL_SUPPORT_EMAIL` is the contact-form inbox and Reply-To.
 
-Copy from [.env.example](../.env.example) and fill in every value marked below.
+The application reads `NEXT_PUBLIC_APP_URL` first, then `APP_URL` for email links and hosted logo URLs. Unlike LifeOrbit, it does not use `PUBLIC_APP_URL`. Use the canonical domain actually reachable by customers. Both local and production changes require a deployment restart.
 
-```
-RESEND_API_KEY=            # Option A
-MAIL_FROM=                 # required
-ADMIN_ORDER_EMAIL=         # required (order + contact notifications)
-MAIL_SUPPORT_EMAIL=        # optional, defaults to ADMIN_ORDER_EMAIL
+## 3. Provider selection, error handling and plain text
 
-SMTP_HOST=                 # Option B (only if no RESEND_API_KEY)
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER=
-SMTP_PASSWORD=
+The default provider is **Resend if `RESEND_API_KEY` exists**; otherwise SMTP is selected when all SMTP credentials exist. The optional `MAIL_PROVIDER=resend|smtp` selects explicitly. A failed Resend send does **not** silently fall back to SMTP.
 
-MAIL_BRAND_NAME=Alps3Dp
-MAIL_LOGO_URL=
-MAIL_PRIMARY_COLOR=#0ea5e9
-MAIL_ACCENT_COLOR=#0369a1
-MAIL_FOOTER_TEXT=
-```
+The SDK returns `{ data, error }`. The mailer explicitly checks `error` and `data.id` and fails on rejection instead of silently reporting success. Logs carry sanitized provider error names, not full payloads, recipients, reset tokens or API credentials. Each email now includes a readable `text` alternative alongside the branded HTML.
 
-## 6. Test it
+The default logo URL is `${NEXT_PUBLIC_APP_URL}/images/logo.jpeg`. This is hosted on the sending website instead of a third party, with an alt-text fallback when images are blocked. The templates use inline CSS, a compact white/blue design and no inline SVGs.
 
-1. Fill in the variables above and restart the dev server (`npm run dev`) or
-   redeploy.
-2. Go to `/contact` and send yourself a test message — check that **both** the
-   owner inbox (`ADMIN_ORDER_EMAIL`) and the sender's own address receive an
-   e-mail.
-3. Register a new account at `/auth/register` — check the welcome + verify e-mail.
-4. Use "Passwort vergessen" on `/auth/login` — check the reset e-mail.
-5. As an admin, open `/admin` → Ops tools → "Testbestellung erstellen" to trigger
-   the full order-confirmation + owner-notification flow without a real payment.
-6. Log out and log back in on the same account — you should get a "Login
-   erfolgreich" e-mail (only the **first** login after registration sends the
-   welcome e-mail; every login after that sends a short security notice).
+You can customize `MAIL_BRAND_NAME`, `MAIL_LOGO_URL`, `MAIL_PRIMARY_COLOR`, `MAIL_ACCENT_COLOR` and `MAIL_FOOTER_TEXT` without touching code.
 
-## 7. Reliability & security notes (already implemented)
+### SMTP alternative
 
-- If no provider is configured, mail sending is skipped with a logged warning in
-  development, but **throws in production** so misconfiguration is caught early
-  instead of silently losing e-mails.
-- Order-confirmation e-mails are sent from the Stripe webhook. A failure to
-  notify the *owner* (or a transient provider hiccup after the customer e-mail
-  already went out) never fails the webhook response, so Stripe won't endlessly
-  retry an already-paid order.
-- The "forgot password" endpoint always returns success regardless of whether
-  the account exists or the e-mail could be sent, to avoid leaking which
-  addresses have an account (user enumeration).
-- All user-supplied content (name, message, subject) is HTML-escaped before
-  being inserted into e-mail templates to prevent HTML/script injection.
-- Contact-form and password-reset endpoints are rate-limited per IP (and per
-  e-mail for password reset) to prevent abuse/spam.
+SMTP works when `RESEND_API_KEY` is absent, or when `MAIL_PROVIDER=smtp` is explicitly selected and `SMTP_HOST`, `SMTP_USER` and `SMTP_PASSWORD` are configured. For IONOS, use the exact authenticated `SMTP_USER` as sender address, and an appropriate port/security setting such as 587 with STARTTLS. Do not store SMTP secrets in Git.
 
-## 8. Going further
+## 4. Test safely, without charging customers
 
-- For higher deliverability, keep using a verified custom domain (not a free
-  Gmail/Outlook address) as `MAIL_FROM`.
-- Monitor bounce/complaint rates in your provider's dashboard (Resend has this
-  built in).
-- Rotate `RESEND_API_KEY` / SMTP credentials if you ever suspect they leaked.
+Do not send to real customers for testing. Use mailboxes under your control.
+
+1. Open the contact form and confirm that both the owner and customer receive their intended messages.
+2. Register a **new** test account and verify that welcome and verification link arrive. Existing accounts do not trigger the registration mail again.
+3. Request a password-reset email for your own test account and confirm expiration and one-time use.
+4. Use the admin Ops test-order feature to send test order emails without a real payment. This creates test order records, so use only in a disposable test environment.
+5. Test a Stripe **test-mode** payment end to end, checking webhook processing and payment email notifications. Do not use live cards or a real purchase.
+6. Inspect [Resend Emails](https://resend.com/emails) and [API Logs](https://resend.com/logs) for accepted, delivered, bounced, rejected, suppressed and failed events. API acceptance does not guarantee inbox delivery.
+7. Repeat after any sender-domain or deployment changes. Check spam folders and header SPF/DKIM/DMARC alignment.
+
+## 5. Reliability caveats and recovery
+
+- The Stripe webhook marks an order **PAID** before sending its customer and operator emails. If the provider fails at that point, current code logs the problem but there is **no durable automatic retry queue**. A paid order still exists and must be reconciled and emailed safely. Never mark it unpaid just to retry a notification.
+- The newly added Resend idempotency keys for customer and operator order emails reduce duplicate provider sends within Resend's documented 24-hour window. SMTP does not support this provider-level guarantee.
+- Login notifications are sent after successful password logins; unexpected volume should be monitored.
+- Password-reset requests intentionally return generic responses to avoid account enumeration even on provider failure.
+- Email change currently updates the account before attempting verification delivery; a provider outage can strand an unverified new address. Fixing this requires a separate staged email-change workflow.
+- For reliably retried business-critical emails, add a durable mail outbox and a worker **with a reviewed database migration and rollback plan**, not detached serverless promises. This is a release requirement before claiming guaranteed order-email delivery.
+
+## 6. Diagnostics
+
+| Symptom | Check |
+| --- | --- |
+| Resend shows no API request | Deployment/version, server-side secret target, selected provider, function logs |
+| Resend rejected the API call | Exact sender domain verification and permissions, API key validity, sanitized error code |
+| API accepted but recipient has nothing | Resend delivery/bounce/suppression history and recipient spam/quarantine |
+| Wrong provider used | `MAIL_PROVIDER`; Resend takes priority by default when key is present |
+| Broken links or missing logo | `NEXT_PUBLIC_APP_URL`, `APP_URL` and public `/images/logo.jpeg` |
+| Order confirmation missing | Stripe webhook/payment state, provider status, and absence of durable retry |
+| Only customer received an order message | `ADMIN_ORDER_EMAIL` configuration and owner-send logs |
+
+See [Production checklist](../PRODUCTION_CHECKLIST.md), [README](../README.md), and [Changelog](../CHANGELOG.md).
