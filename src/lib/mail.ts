@@ -1,8 +1,10 @@
+import { createHash } from "node:crypto";
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
 
 import { getConfiguredAppBaseUrl } from "@/lib/app-url";
 import { formatOrderNumber } from "@/lib/order-number";
+import { getShopOperatorRecipients } from "@/lib/mail-recipients";
 import { assertResendAccepted, htmlToPlainText, selectMailProvider } from "@/lib/mail-delivery";
 
 type MailPayload = {
@@ -72,7 +74,7 @@ function getBrandConfig() {
       "support@alps3dp.ch",
     footerText:
       process.env.MAIL_FOOTER_TEXT?.trim() ||
-      "Alps3Dp · Handgefertigte 3D-gedruckte Produkte aus der Schweiz",
+      "Alps3Dp · Schweiz",
   };
 }
 
@@ -175,35 +177,33 @@ function renderMailShell(params: {
 }) {
   const brand = getBrandConfig();
   return `
-    <div style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;color:#0f172a;">
+    <div style="margin:0;padding:0;background:#f7f9fb;color:#1f2937;font-family:Arial,Helvetica,sans-serif;">
       <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;">${escapeHtml(params.preview)}</span>
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:28px 12px;">
-        <tr>
-          <td align="center">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden;">
-              <tr>
-                <td align="center" bgcolor="${brand.accentColor}" style="padding:28px 24px 24px;background-color:${brand.accentColor};background-image:linear-gradient(135deg,${brand.primaryColor},${brand.accentColor});">
-                  <img src="${escapeHtml(brand.logoUrl)}" alt="${escapeHtml(brand.name)}" width="76" height="76" style="display:block;margin:0 auto 10px;border-radius:50%;border:3px solid rgba(255,255,255,.85);background:#ffffff;" />
-                  <div style="color:#ffffff;font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;">${escapeHtml(brand.name)}</div>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:30px 28px 26px;">
-                  <h1 style="margin:0 0 16px;font-size:24px;line-height:1.25;color:#0f172a;">${escapeHtml(params.title)}</h1>
-                  <div style="font-size:15px;line-height:1.65;color:#334155;">${params.contentHtml}</div>
-                </td>
-              </tr>
-              <tr>
-                <td align="center" style="padding:18px 24px;background:#f8fafc;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;line-height:1.6;">
-                  ${escapeHtml(brand.footerText)}<br />
-                  <a href="${escapeHtml(brand.appUrl)}" style="color:${brand.accentColor};text-decoration:none;">${escapeHtml(brand.appUrl.replace(/^https?:\/\//, ""))}</a>
-                  &nbsp;·&nbsp;
-                  <a href="mailto:${escapeHtml(brand.supportEmail)}" style="color:${brand.accentColor};text-decoration:none;">${escapeHtml(brand.supportEmail)}</a>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;background:#f7f9fb;">
+        <tr><td align="center" style="padding:24px 12px 32px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:600px;background:#ffffff;border:1px solid #e5e7eb;border-collapse:separate;border-spacing:0;border-radius:10px;">
+            <tr><td style="padding:22px 28px 18px;border-bottom:1px solid #e5e7eb;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td valign="middle" style="padding-right:12px;">
+                    <img src="${escapeHtml(brand.logoUrl)}" alt="${escapeHtml(brand.name)} Logo" width="48" height="48" style="display:block;width:48px;height:48px;border:0;border-radius:6px;" />
+                  </td>
+                  <td valign="middle" style="font-size:20px;line-height:26px;font-weight:700;color:#1f2937;">${escapeHtml(brand.name)}</td>
+                </tr>
+              </table>
+            </td></tr>
+            <tr><td style="padding:26px 28px 28px;">
+              <h1 style="margin:0 0 16px;font-size:23px;line-height:1.3;font-weight:700;color:#111827;">${escapeHtml(params.title)}</h1>
+              <div style="font-size:15px;line-height:1.65;color:#374151;">${params.contentHtml}</div>
+            </td></tr>
+            <tr><td style="padding:18px 28px;border-top:1px solid #e5e7eb;background:#fafbfc;color:#6b7280;font-size:12px;line-height:1.7;">
+              ${escapeHtml(brand.footerText)}<br />
+              <a href="${escapeHtml(brand.appUrl)}" style="color:${brand.accentColor};text-decoration:underline;">${escapeHtml(brand.appUrl.replace(/^https?:\/\//, ""))}</a>
+              &nbsp;&middot;&nbsp;
+              <a href="mailto:${escapeHtml(brand.supportEmail)}" style="color:${brand.accentColor};text-decoration:underline;">${escapeHtml(brand.supportEmail)}</a>
+            </td></tr>
+          </table>
+        </td></tr>
       </table>
     </div>
   `;
