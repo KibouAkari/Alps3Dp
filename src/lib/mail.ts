@@ -428,7 +428,7 @@ export async function sendOrderEmailsForOrder(order: OrderWithItems) {
 
 export async function sendOrderEmails(params: OrderMailData) {
   const brand = getBrandConfig();
-  const owner = process.env.ADMIN_ORDER_EMAIL?.trim();
+  const operatorRecipients = getShopOperatorRecipients([process.env.ADMIN_ORDER_EMAIL]);
   const safeCustomerName = escapeHtml(params.customerName);
   const orderNumber = formatOrderNumber(params.orderNumber);
   const safeOrderNumber = escapeHtml(orderNumber);
@@ -442,7 +442,7 @@ export async function sendOrderEmails(params: OrderMailData) {
   // Customer and operator sends are independent. An outage for one
   // recipient must not prevent attempting the other notification.
   let customerFailed = false;
-  let ownerFailed = false;
+  let operatorFailed = false;
   try {
     await sendMail(
       params.customerEmail,
@@ -459,24 +459,31 @@ export async function sendOrderEmails(params: OrderMailData) {
     customerFailed = true;
   }
 
-  if (owner) {
+  // Every new order is sent to the shop manager, even when a different
+  // administrative mailbox is configured. Attempt each recipient independently.
+  for (const recipient of operatorRecipients) {
     try {
       await sendMail(
-        owner,
-        `Neue Bestellung ${orderNumber} – ${params.customerName} – ${formatChf(params.totalCents)}`,
+        recipient,
+        `Neue Bestellung ${orderNumber}`,
         renderMailShell({
           title: `Neue Bestellung ${safeOrderNumber}`,
-          preview: `${params.customerName} hat für ${formatChf(params.totalCents)} bestellt.`,
-          contentHtml: `<p style="margin:0;"><strong>Bestellt am:</strong> ${escapeHtml(orderedAt)}<br /><strong>Kunde:</strong> ${safeCustomerName}<br /><strong>E-Mail:</strong> <a href="mailto:${escapeHtml(params.customerEmail)}" style="color:${brand.accentColor};">${escapeHtml(params.customerEmail)}</a>${paymentLabel ? `<br /><strong>Zahlungsart:</strong> ${escapeHtml(paymentLabel)}` : ""}</p>${table}${address}${renderButton(`${brand.appUrl}/admin`, "Im Admin öffnen", brand)}`,
+          preview: `Neue Bestellung ${orderNumber} im Shop.`,
+          contentHtml: `<p style="margin:0 0 6px;"><strong>Bestellt am:</strong> ${escapeHtml(orderedAt)}<br /><strong>Kunde:</strong> ${safeCustomerName}<br /><strong>E-Mail:</strong> <a href="mailto:${escapeHtml(params.customerEmail)}" style="color:${brand.accentColor};">${escapeHtml(params.customerEmail)}</a>${paymentLabel ? `<br /><strong>Zahlungsart:</strong> ${escapeHtml(paymentLabel)}` : ""}</p>${table}${address}${renderButton(`${brand.appUrl}/admin`, "Bestellung verwalten", brand)}`,
         }),
-        { replyTo: params.customerEmail, idempotencyKey: `order-owner/${params.orderId}` },
+        {
+          replyTo: params.customerEmail,
+          // Different recipients need different deduplication keys. Hash
+          // sensitive values before exposing metadata to the provider.
+          idempotencyKey: `order-operator/${createHash("sha256").update(params.orderId + "\0" + recipient.toLowerCase()).digest("hex")}`,
+        },
       );
     } catch {
-      console.error("[mail:order-owner-notification] Provider rejected operator notification");
-      ownerFailed = true;
+      console.error("[mail:order-operator] Provider rejected operator notification");
+      operatorFailed = true;
     }
   }
-  if (customerFailed || ownerFailed) {
+  if (customerFailed || operatorFailed) {
     throw new Error("One or more order notifications were not accepted by the mail provider");
   }
 }
@@ -489,23 +496,32 @@ export async function sendContactMessage(params: {
   message: string;
 }) {
   const brand = getBrandConfig();
-  const owner = brand.supportEmail;
   const safeName = escapeHtml(`${params.firstName} ${params.lastName}`.trim());
   const safeEmail = escapeHtml(params.email);
   const safeSubject = escapeHtml(params.subject);
   const safeMessage = escapeHtml(params.message).replaceAll("\n", "<br />");
 
-  // Notify the owner (critical path, reply-to the customer directly).
-  await sendMail(
-    owner,
-    `Kontaktformular: ${params.subject}`,
-    renderMailShell({
-      title: "Neue Kontaktanfrage",
-      preview: `Neue Nachricht von ${params.firstName} ${params.lastName}`, 
-      contentHtml: `<p><strong>Von:</strong> ${safeName} (${safeEmail})</p><p><strong>Betreff:</strong> ${safeSubject}</p><p>${safeMessage}</p>`,
-    }),
-    { replyTo: params.email },
-  );
+  // Send the customer's enquiry to the manager and any distinct support inbox.
+  // These are separate sends so the manager still receives an attempt if
+  // support's mailbox is temporarily unavailable.
+  let operatorFailed = false;
+  for (const recipient of getShopOperatorRecipients([brand.supportEmail])) {
+    try {
+      await sendMail(
+        recipient,
+        "Neue Kontaktanfrage",
+        renderMailShell({
+          title: "Neue Kontaktanfrage",
+          preview: `Kontaktanfrage von ${params.firstName} ${params.lastName}`,
+          contentHtml: `<p style="margin:0 0 8px;"><strong>Absender:</strong> ${safeName}<br /><strong>E-Mail:</strong> <a href="mailto:${safeEmail}" style="color:${brand.accentColor};">${safeEmail}</a><br /><strong>Betreff:</strong> ${safeSubject}</p><p style="margin:14px 0 0;"><strong>Nachricht</strong></p><p style="margin:6px 0 0;">${safeMessage}</p>`,
+        }),
+        { replyTo: params.email },
+      );
+    } catch {
+      console.error("[mail:contact-operator] Provider rejected operator notification");
+      operatorFailed = true;
+    }
+  }
 
   // Confirmation to the person who submitted the form; failure here should
   // not fail the whole request since the owner already received the message.
@@ -518,9 +534,13 @@ export async function sendContactMessage(params: {
         preview: "Wir melden uns so schnell wie möglich bei dir.",
         contentHtml: `<p>Wir haben deine Nachricht zum Thema "${safeSubject}" erhalten und melden uns so schnell wie möglich.</p><p style="margin-top:14px;color:#64748b;font-size:13px;">Deine Nachricht:<br />${safeMessage}</p>`,
       }),
-      { replyTo: owner },
+      { replyTo: brand.supportEmail },
     );
-  } catch (error) {
-    console.error("[mail:contact-confirmation]", error);
+  } catch {
+    console.error("[mail:contact-confirmation] Provider rejected customer acknowledgement");
+  }
+  if (operatorFailed) {
+    // Partial success is recorded. No durable retry queue exists yet.
+    throw new Error("One or more contact operator notifications were not accepted");
   }
 }
