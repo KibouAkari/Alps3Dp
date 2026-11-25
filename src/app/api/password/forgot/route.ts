@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getAppBaseUrl } from "@/lib/app-url";
-import { db } from "@/lib/db";
+import { db, lockUserForUpdate } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/mail";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { createOpaqueToken, hashOpaqueToken } from "@/lib/security";
@@ -61,25 +61,35 @@ export async function POST(request: Request) {
 
     // Invalidate previous pending reset links. Only the latest link can
     // reset the account, reducing risk from delayed or forwarded emails.
-    await db.$transaction([
-      db.passwordResetToken.deleteMany({
+    const issued = await db.$transaction(async (tx) => {
+      await lockUserForUpdate(tx, user.id);
+      const currentUser = await tx.user.findUnique({
+        where: { id: user.id },
+        select: { id: true, email: true },
+      });
+      if (!currentUser || currentUser.email !== email) return false;
+
+      await tx.passwordResetToken.deleteMany({
         where: { userId: user.id, usedAt: null },
-      }),
-      db.passwordResetToken.create({
+      });
+      await tx.passwordResetToken.create({
         data: {
-          userId: user.id,
+          userId: currentUser.id,
           tokenHash: hashOpaqueToken(token),
           expiresAt: new Date(Date.now() + 60 * 60 * 1000),
         },
-      }),
-    ]);
+      });
+      return true;
+    });
 
-    const appUrl = getAppBaseUrl();
-    try {
-      await sendPasswordResetEmail(email, `${appUrl}/auth/reset-password?token=${token}`);
-    } catch (error) {
-      // Never let a mail-provider failure leak whether the account exists.
-      console.error("[auth:forgot-password:mail]", error);
+    if (issued) {
+      const appUrl = getAppBaseUrl();
+      try {
+        await sendPasswordResetEmail(email, `${appUrl}/auth/reset-password?token=${token}`);
+      } catch (error) {
+        // Never let a mail-provider failure leak whether the account exists.
+        console.error("[auth:forgot-password:mail]", error);
+      }
     }
   }
 

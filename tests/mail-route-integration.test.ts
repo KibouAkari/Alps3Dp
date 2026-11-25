@@ -15,6 +15,7 @@ let counter = 0;
 let order: Record<string, any> | null = null;
 const originalFetch = globalThis.fetch;
 const empty = () => ({ count: 0 });
+const userLocks = new Map<string, Promise<void>>();
 
 function tokenMatches(record: Token, where: Record<string,any>) {
   return record.tokenHash === where.tokenHash &&
@@ -84,8 +85,31 @@ const testDb: any = {
   },
   cart:{findUnique:async()=>null},
   cartItem:{deleteMany:async()=>empty()},
-  $transaction: async (steps:any) => typeof steps==="function"
-    ? steps(testDb) : Promise.all(steps),
+  $transaction: async (steps:any) => {
+    if (typeof steps !== "function") return Promise.all(steps);
+    const releases: Array<() => void> = [];
+    const tx = {
+      ...testDb,
+      $queryRaw: async (_query: TemplateStringsArray, userId: string) => {
+        const previous = userLocks.get(userId) || Promise.resolve();
+        let unlock!: () => void;
+        const current = new Promise<void>(resolve => { unlock = resolve; });
+        const tail = previous.then(() => current);
+        userLocks.set(userId, tail);
+        await previous;
+        releases.push(() => {
+          unlock();
+          if (userLocks.get(userId) === tail) userLocks.delete(userId);
+        });
+        return [];
+      },
+    };
+    try {
+      return await steps(tx);
+    } finally {
+      releases.reverse().forEach(release => release());
+    }
+  },
 };
 
 // db.ts supports global.prisma in development/test; no database connections.
@@ -152,71 +176,80 @@ test("Registration, resend verification, link consumption, email change and re-v
   assert.ok(messages[0].text);
   const originalToken=tokenFromMail(messages[0],/api\/auth\/verify-email\?token=([a-f0-9]+)/);
 
-  // Session is created during signup. A lost verification email can be safely
-  // reissued to the authenticated user, without changing user data.
+  // Session is created during signup. Concurrent resend and email change must
+  // serialize recipient reads and leave only one usable verification link.
   const cookie=result.headers.get("set-cookie");
   assert.ok(cookie);
   const resendRequest=new Request("https://www.alps3dp.ch/api/auth/resend-verification",{
     method:"POST",headers:{"cookie":cookie!,"x-forwarded-for":"192.0.2.16"},
   });
-  const resend=await routes.resend.POST(resendRequest);
-  assert.equal(resend.status,200);
-  assert.equal(messages.length,2);
-  const secondToken=tokenFromMail(messages[1],/api\/auth\/verify-email\?token=([a-f0-9]+)/);
-  assert.notEqual(secondToken,originalToken);
-  const invalid=await routes.verify.GET(new Request(
-    "https://www.alps3dp.ch/api/auth/verify-email?token="+originalToken));
-  assert.match(invalid.headers.get("location")||"",/verified=invalid/);
-  const verified=await routes.verify.GET(new Request(
-    "https://www.alps3dp.ch/api/auth/verify-email?token="+secondToken));
-  assert.match(verified.headers.get("location")||"",/verified=ok/);
-  assert.ok(users[0].emailVerifiedAt);
-  const replay=await routes.verify.GET(new Request(
-    "https://www.alps3dp.ch/api/auth/verify-email?token="+secondToken));
-  assert.match(replay.headers.get("location")||"",/verified=invalid/);
-
-  // Password authenticated email change revokes previous user verification
-  // tokens and creates an unverified new address with a new link.
-  const change=await routes.changeEmail.PATCH(new Request("https://www.alps3dp.ch/api/account/email",{
+  const changeRequest=new Request("https://www.alps3dp.ch/api/account/email",{
     method:"PATCH",headers:{"content-type":"application/json","cookie":cookie!,"x-forwarded-for":"192.0.2.18"},
     body:JSON.stringify({newEmail:"changed@example.test",currentPassword:"CorrectPassword123"}),
-  }));
+  });
+  const [resend,change]=await Promise.all([
+    routes.resend.POST(resendRequest),
+    routes.changeEmail.PATCH(changeRequest),
+  ]);
+  assert.equal(resend.status,200);
   assert.equal(change.status,200);
   assert.equal(users[0].email,"changed@example.test");
   assert.equal(users[0].emailVerifiedAt,null);
-  assert.equal(messages.at(-1)?.to,"changed@example.test");
-  const thirdToken=tokenFromMail(messages.at(-1)!,/api\/auth\/verify-email\?token=([a-f0-9]+)/);
-  assert.notEqual(thirdToken,secondToken);
-  const changedVerified=await routes.verify.GET(new Request(
-    "https://www.alps3dp.ch/api/auth/verify-email?token="+thirdToken));
-  assert.match(changedVerified.headers.get("location")||"",/verified=ok/);
+  assert.equal(verifyTokens.filter(token=>token.userId===users[0].id).length,1);
+
+  const issuedMessages=messages.slice(1);
+  const issuedTokens=issuedMessages.map(message =>
+    tokenFromMail(message,/api\/auth\/verify-email\?token=([a-f0-9]+)/));
+  assert.equal(new Set(issuedTokens).size,2);
+  const invalid=await routes.verify.GET(new Request(
+    "https://www.alps3dp.ch/api/auth/verify-email?token="+originalToken));
+  assert.match(invalid.headers.get("location")||"",/verified=invalid/);
+  const verificationResults=await Promise.all(issuedTokens.map(async token => {
+    const response=await routes.verify.GET(new Request(
+      "https://www.alps3dp.ch/api/auth/verify-email?token="+token));
+    return {token,location:response.headers.get("location")||""};
+  }));
+  const successful=verificationResults.filter(result=>result.location.includes("verified=ok"));
+  assert.equal(successful.length,1);
+  const finalToken=successful[0].token;
+  const finalMessage=issuedMessages.find(message =>
+    tokenFromMail(message,/api\/auth\/verify-email\?token=([a-f0-9]+)/)===finalToken);
+  assert.equal(finalMessage?.to,"changed@example.test");
   assert.ok(users[0].emailVerifiedAt);
+  const replay=await routes.verify.GET(new Request(
+    "https://www.alps3dp.ch/api/auth/verify-email?token="+finalToken));
+  assert.match(replay.headers.get("location")||"",/verified=invalid/);
 });
 
 test("Reset mails, invalidating older tokens, one-time reset, and session invalidation",async()=>{
   messages.length=0;
-  const first=await routes.forgot.POST(post("/api/password/forgot",{email:"changed@example.test"},"192.0.2.20"));
+  const [first,second]=await Promise.all([
+    routes.forgot.POST(post("/api/password/forgot",{email:"changed@example.test"},"192.0.2.20")),
+    routes.forgot.POST(post("/api/password/forgot",{email:"changed@example.test"},"192.0.2.21")),
+  ]);
   assert.equal(first.status,200);
-  assert.equal(messages.length,1);
-  const firstToken=tokenFromMail(messages[0],/auth\/reset-password\?token=([a-f0-9]+)/);
-  const second=await routes.forgot.POST(post("/api/password/forgot",{email:"changed@example.test"},"192.0.2.21"));
   assert.equal(second.status,200);
-  const newer=tokenFromMail(messages[1],/auth\/reset-password\?token=([a-f0-9]+)/);
-  assert.notEqual(firstToken,newer);
-  const invalid=await routes.reset.POST(post("/api/password/reset",{
-    token:firstToken,password:"MyNewPassword123",
-  },"192.0.2.22"));
-  assert.equal(invalid.status,400);
+  assert.equal(messages.length,2);
+  const resetTokensFromMail=messages.map(message =>
+    tokenFromMail(message,/auth\/reset-password\?token=([a-f0-9]+)/));
+  assert.equal(new Set(resetTokensFromMail).size,2);
+  assert.equal(resetTokens.filter(token=>token.userId===users[0].id&&token.usedAt===null).length,1);
 
   const before=sessions.length;
   assert.ok(before>0);
-  const accepted=await routes.reset.POST(post("/api/password/reset",{
-    token:newer,password:"MyNewPassword123",
-  },"192.0.2.23"));
-  assert.equal(accepted.status,200);
+  const resetResults=[];
+  for (const [index,token] of resetTokensFromMail.entries()) {
+    const response=await routes.reset.POST(post("/api/password/reset",{
+      token,password:"MyNewPassword123",
+    },`192.0.2.${23+index}`));
+    resetResults.push({token,status:response.status});
+  }
+  assert.deepEqual(resetResults.map(result=>result.status).sort(),[200,400]);
+  const acceptedToken=resetResults.find(result=>result.status===200)?.token;
+  assert.ok(acceptedToken);
   assert.equal(sessions.length,0,"All old sessions must be invalidated");
   const replay=await routes.reset.POST(post("/api/password/reset",{
-    token:newer,password:"AnotherPassword123",
+    token:acceptedToken,password:"AnotherPassword123",
   },"192.0.2.24"));
   assert.equal(replay.status,400);
   const bad=await routes.login.POST(post("/api/auth/login",{

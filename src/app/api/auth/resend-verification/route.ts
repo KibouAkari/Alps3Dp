@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getConfiguredAppBaseUrl } from "@/lib/app-url";
-import { db } from "@/lib/db";
+import { db, lockUserForUpdate } from "@/lib/db";
 import { sendVerifyEmail } from "@/lib/mail";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { createOpaqueToken, hashOpaqueToken } from "@/lib/security";
@@ -36,27 +36,35 @@ export async function POST(request: Request) {
     );
   }
 
-  const user = await db.user.findUnique({
-    where: { id: session.id },
-    select: { id: true, email: true, emailVerifiedAt: true },
-  });
-  if (!user) return NextResponse.json({ error: "Nicht eingeloggt." }, { status: 401 });
-  if (user.emailVerifiedAt) return NextResponse.json({ success: true, alreadyVerified: true });
-
   const token = createOpaqueToken();
-  await db.$transaction([
-    db.emailVerificationToken.deleteMany({ where: { userId: user.id } }),
-    db.emailVerificationToken.create({
+  const result = await db.$transaction(async (tx) => {
+    await lockUserForUpdate(tx, session.id);
+    const user = await tx.user.findUnique({
+      where: { id: session.id },
+      select: { id: true, email: true, emailVerifiedAt: true },
+    });
+    if (!user) return { status: "missing" as const };
+    if (user.emailVerifiedAt) return { status: "verified" as const };
+
+    await tx.emailVerificationToken.deleteMany({ where: { userId: user.id } });
+    await tx.emailVerificationToken.create({
       data: {
         userId: user.id,
         tokenHash: hashOpaqueToken(token),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
-    }),
-  ]);
+    });
+    return { status: "issued" as const, email: user.email };
+  });
+  if (result.status === "missing") {
+    return NextResponse.json({ error: "Nicht eingeloggt." }, { status: 401 });
+  }
+  if (result.status === "verified") {
+    return NextResponse.json({ success: true, alreadyVerified: true });
+  }
 
   try {
-    await sendVerifyEmail(user.email, `${getConfiguredAppBaseUrl().replace(/\/$/, "")}/api/auth/verify-email?token=${token}`);
+    await sendVerifyEmail(result.email, `${getConfiguredAppBaseUrl().replace(/\/$/, "")}/api/auth/verify-email?token=${token}`);
   } catch {
     console.error("[auth:resend-verification] Mail provider rejected verification");
     return NextResponse.json({ error: "E-Mail konnte momentan nicht versendet werden." }, { status: 503 });

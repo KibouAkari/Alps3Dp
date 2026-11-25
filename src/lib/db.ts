@@ -1,7 +1,7 @@
 // Shared Prisma client. Falls back through the various connection-string env var
 // names that different Vercel Postgres/Prisma integrations expose, and reuses a
 // single client instance in development to survive Next.js hot reloads.
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 function resolveDatabaseUrl() {
   return (
@@ -34,6 +34,10 @@ export const db =
   new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
+
+export async function lockUserForUpdate(tx: Prisma.TransactionClient, userId: string) {
+  await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${userId} FOR UPDATE`;
+}
 
 if (process.env.NODE_ENV !== "production") {
   global.prisma = db;
