@@ -7,8 +7,8 @@ All transactional email templates use the same production branding from `src/lib
 | Event | Customer | Shop operator | Trigger |
 | --- | --- | --- | --- |
 | Registration | Combined welcome + email verification link | No | Successful new registration |
-| First subsequent login | Welcome email | No | First password login if no previous session record |
-| Later password logins | Login security alert | No | Successful login |
+| Later password logins | Login security alert | No | Successful password login (welcome is sent at registration) |
+| Verification email resend | Verification link | No | Signed-in unverified user requests another link in Account → Sicherheit |
 | Password forgotten | Single-use reset link | No | Forgot-password request |
 | Email address change | Verify new email | No | Authenticated email-change request |
 | Successful paid Stripe checkout | Order confirmation | Order notification | Verified paid Stripe webhook |
@@ -80,10 +80,11 @@ Do not send to real customers for testing. Use mailboxes under your control.
 
 ## 5. Reliability caveats and recovery
 
-- The Stripe webhook marks an order **PAID** before sending its customer and operator emails. If the provider fails at that point, current code logs the problem but there is **no durable automatic retry queue**. A paid order still exists and must be reconciled and emailed safely. Never mark it unpaid just to retry a notification.
+- The Stripe webhook marks an order **PAID** before sending its customer and operator emails. Both recipient sends are attempted independently. If either provider send fails, current code logs the problem but there is **no durable automatic retry queue**. A paid order still exists and must be reconciled and emailed safely. Never mark it unpaid just to retry a notification.
 - The newly added Resend idempotency keys for customer and operator order emails reduce duplicate provider sends within Resend's documented 24-hour window. SMTP does not support this provider-level guarantee.
 - Login notifications are sent after successful password logins; unexpected volume should be monitored.
-- Password-reset requests intentionally return generic responses to avoid account enumeration even on provider failure.
+- Password-reset requests intentionally return generic responses to avoid account enumeration even on provider failure. Only the latest pending reset token is valid; tokens are consumed with an atomic conditional write, and old sessions are revoked after reset.
+- Previously issued email-verification links are invalidated when the account email address changes. A signed-in unverified user can request a new verification link with an account/IP-limited endpoint; the destination cannot be chosen arbitrarily.
 - Email change currently updates the account before attempting verification delivery; a provider outage can strand an unverified new address. Fixing this requires a separate staged email-change workflow.
 - For reliably retried business-critical emails, add a durable mail outbox and a worker **with a reviewed database migration and rollback plan**, not detached serverless promises. This is a release requirement before claiming guaranteed order-email delivery.
 
