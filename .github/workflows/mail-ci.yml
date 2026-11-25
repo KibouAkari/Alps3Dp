@@ -1,0 +1,36 @@
+name: Mail delivery checks
+
+on:
+  push:
+    branches: [main, fix/resend-mail-delivery-20261125]
+  pull_request:
+    paths:
+      - "src/lib/mail*"
+      - "tests/mail-delivery.test.ts"
+      - "package.json"
+      - "package-lock.json"
+      - "docs/MAIL_SETUP.md"
+      - ".github/workflows/mail-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  mail:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+        env:
+          DATABASE_URL: postgresql://local:local@127.0.0.1:5432/mail_ci
+      - run: npm run typecheck
+        env:
+          DATABASE_URL: postgresql://local:local@127.0.0.1:5432/mail_ci
+      - run: npm run test:mail

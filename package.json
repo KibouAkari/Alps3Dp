@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev --name init",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "test:mail": "tsx --test tests/mail-delivery.test.ts"
   },
   "private": true,
   "dependencies": {
