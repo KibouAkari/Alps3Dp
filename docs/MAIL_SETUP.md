@@ -12,7 +12,7 @@ The shop uses one shared mailer in [`src/lib/mail.ts`](../src/lib/mail.ts). The 
 | Password forgotten | Single-use reset link (60 minutes) | No copy |
 | Account email changed | Verification link for new email | No copy |
 | Confirmed paid Stripe order | Order confirmation with items, delivery address and totals | **Always** `Alp.Kasemi@alps3Dp.ch`, plus a distinct `ADMIN_ORDER_EMAIL` |
-| Contact form submitted | Acknowledgment of enquiry | **Always** `Alp.Kasemi@alps3Dp.ch`, plus a distinct `MAIL_SUPPORT_EMAIL` |
+| Contact form submitted | Acknowledgment of enquiry (From info@) | **Always** `Alp.Kasemi@alps3Dp.ch`, plus a distinct `MAIL_SUPPORT_EMAIL` |
 
 The designated manager email is explicitly configured in [`mail-recipients.ts`](../src/lib/mail-recipients.ts). It is attempted even when optional Vercel variables are missing or differ. If no separate support mailbox is configured, the manager is also the default support and Reply-To address. Matching addresses are compared case-insensitively, so the manager is not emailed twice. Every operator order recipient has a separate hashed Resend idempotency key.
 
@@ -41,7 +41,9 @@ Set these on the **Alps3DP Vercel project**, Production environment. No API key 
 ```dotenv
 RESEND_API_KEY=<server-only secret already configured>
 # MAIL_PROVIDER=resend            # Optional; Resend has priority automatically
-MAIL_FROM=Alps3Dp <order@alps3dp.ch>
+MAIL_FROM_ORDER=Alps3Dp <order@alps3dp.ch>
+MAIL_FROM_ACCOUNT=Alps3Dp <info@alps3dp.ch>
+MAIL_FROM_SUPPORT=Alps3Dp <info@alps3dp.ch>
 
 # Optional additional shop operations mailbox. The manager below always receives notifications.
 ADMIN_ORDER_EMAIL=Alp.Kasemi@alps3Dp.ch
@@ -52,7 +54,7 @@ NEXT_PUBLIC_APP_URL=https://www.alps3dp.ch
 APP_URL=https://www.alps3dp.ch
 ```
 
-These addresses are examples except the explicitly designated manager; only use `order@` and `info@` if those real mailboxes exist and the From domain is verified. If `ADMIN_ORDER_EMAIL` equals the manager address, only **one** manager copy is sent.
+Account and contact emails now use the info@ sender; paid order emails use order@. The legacy MAIL_FROM value remains an order-only fallback if MAIL_FROM_ORDER is unset. MAIL_SUPPORT_EMAIL is the destination for contact requests and Reply-To, not the outgoing sender identity. Resend must authorize the sending domain for all three From headers; an SMTP provider may require alias/send-as permissions. Never set From to a customer-supplied contact address.\n\nThese addresses are examples except the explicitly designated manager; only use `order@` and `info@` if those real mailboxes exist and the From domain is verified. If `ADMIN_ORDER_EMAIL` equals the manager address, only **one** manager copy is sent.
 
 The existing `PUBLIC_APP_URL` variable is a supported fallback for the app base URL, but prefer `NEXT_PUBLIC_APP_URL` and `APP_URL`. A redeployment is required after changing production environment variables.
 
