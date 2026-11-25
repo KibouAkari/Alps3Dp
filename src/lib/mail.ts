@@ -197,7 +197,7 @@ function renderMailShell(params: {
             <tr><td style="padding:18px 28px;border-top:1px solid #e5e7eb;background:#fafbfc;color:#6b7280;font-size:12px;line-height:1.7;">
               ${escapeHtml(brand.footerText)}<br />
               <a href="${escapeHtml(brand.appUrl)}" style="color:${brand.accentColor};text-decoration:underline;">${escapeHtml(brand.appUrl.replace(/^https?:\/\//, ""))}</a>
-              &nbsp;&middot;&nbsp;
+              &nbsp;·&nbsp;
               <a href="mailto:${escapeHtml(brand.supportEmail)}" style="color:${brand.accentColor};text-decoration:underline;">${escapeHtml(brand.supportEmail)}</a>
             </td></tr>
           </table>
